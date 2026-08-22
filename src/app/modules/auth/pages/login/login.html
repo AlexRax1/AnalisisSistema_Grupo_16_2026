@@ -1,0 +1,27 @@
+<div style="max-width: 400px; margin: 40px auto; padding: 25px; border: 1px solid #e2e8f0; border-radius: 8px; background: white; font-family: sans-serif;">
+  <h2 style="text-align: center; color: #1e293b; margin-top: 0;">Iniciar Sesión</h2>
+
+  <div *ngIf="errorMsg" style="background: #fecaca; color: #dc2626; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-size: 0.9rem;">
+    {{ errorMsg }}
+  </div>
+
+  <form (ngSubmit)="onLogin()">
+    <div style="margin-bottom: 15px;">
+      <label style="display: block; margin-bottom: 5px; font-weight: bold;">Correo Electrónico:</label>
+      <input type="email" [(ngModel)]="correo" name="correo" required style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;">
+    </div>
+
+    <div style="margin-bottom: 20px;">
+      <label style="display: block; margin-bottom: 5px; font-weight: bold;">Contraseña:</label>
+      <input type="password" [(ngModel)]="password" name="password" required style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;">
+    </div>
+
+    <button type="submit" style="width: 100%; background: #2563eb; color: white; padding: 10px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">
+      Ingresar
+    </button>
+  </form>
+
+  <p style="text-align: center; margin-top: 15px; font-size: 0.9rem;">
+    ¿No tienes cuenta? <a routerLink="/auth/registro" style="color: #2563eb; text-decoration: none; font-weight: bold;">Regístrate aquí</a>
+  </p>
+</div>

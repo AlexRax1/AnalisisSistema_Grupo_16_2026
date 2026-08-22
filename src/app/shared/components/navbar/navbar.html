@@ -1,0 +1,15 @@
+<nav style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 2rem; background-color: #1e293b; color: white;">
+  <div>
+    <h2 style="margin: 0; font-size: 1.2rem;">🏛️ Sistema Municipal de Quejas</h2>
+  </div>
+
+  <div style="display: flex; align-items: center; gap: 10px;">
+    <label for="role-select" style="font-size: 0.9rem;"><strong>Simular Rol (Demo):</strong></label>
+    <select id="role-select" [ngModel]="rolActual" (ngModelChange)="cambiarRol($event)" style="padding: 5px 10px; border-radius: 4px; font-weight: bold; color: #1e293b;">
+      <option value="CIUDADANO">Persona 1: Ciudadano</option>
+      <option value="FUNCIONARIO">Persona 2: Gestión Municipal</option>
+      <option value="INSPECTOR">Persona 3: Inspector (Campo)</option>
+      <option value="ESPECIALISTA">Persona 3: Especialista (Cuadrilla)</option>
+    </select>
+  </div>
+</nav>

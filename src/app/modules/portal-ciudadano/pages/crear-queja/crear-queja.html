@@ -1,0 +1,52 @@
+<div style="max-width: 650px; margin: 30px auto; padding: 25px; border: 1px solid #e2e8f0; border-radius: 8px; background: white; font-family: sans-serif;">
+  <h2 style="color: #1e293b; margin-top: 0;">Registrar Nueva Queja (CU04)</h2>
+
+  <form (ngSubmit)="onSubmit()">
+    <div style="margin-bottom: 15px;">
+      <label style="display: block; margin-bottom: 5px; font-weight: bold;">Título del Reporte:</label>
+      <input type="text" [(ngModel)]="nuevaQueja.titulo" name="titulo" required placeholder="Ej. Fuga de agua en avenida principal" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;">
+    </div>
+
+    <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+      <div style="flex: 1;">
+        <label style="display: block; margin-bottom: 5px; font-weight: bold;">Categoría:</label>
+        <select [(ngModel)]="nuevaQueja.categoria" name="categoria" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px;">
+          <option *ngFor="let cat of categorias" [value]="cat">{{ cat }}</option>
+        </select>
+      </div>
+
+      <div style="flex: 1;">
+        <label style="display: block; margin-bottom: 5px; font-weight: bold;">Zona Municipal:</label>
+        <select [(ngModel)]="nuevaQueja.zona" name="zona" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px;">
+          <option *ngFor="let z of zonas" [value]="z">Zona {{ z }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="margin-bottom: 15px;">
+      <label style="display: block; margin-bottom: 5px; font-weight: bold;">Dirección Exacta:</label>
+      <input type="text" [(ngModel)]="nuevaQueja.direccion" name="direccion" required placeholder="Ej. 12 Calle y 4ta Avenida, cerca de la farmacia" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;">
+    </div>
+
+    <div style="margin-bottom: 15px;">
+      <label style="display: block; margin-bottom: 5px; font-weight: bold;">Descripción Detallada:</label>
+      <textarea [(ngModel)]="nuevaQueja.descripcion" name="descripcion" rows="4" required style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;"></textarea>
+    </div>
+
+    <div style="margin-bottom: 20px;">
+      <label style="display: block; margin-bottom: 5px; font-weight: bold;">Cargar Fotografía (Evidencia Inicial):</label>
+      <input type="file" (change)="simularCargaFoto($event)" accept="image/*" style="width: 100%; padding: 6px;">
+
+      <div *ngIf="fotoSimuladaUrl" style="margin-top: 10px;">
+        <p style="margin: 0 0 5px 0; font-size: 0.85rem; color: #059669; font-weight: bold;">✓ Archivo simulado correctamente:</p>
+        <img [src]="fotoSimuladaUrl" alt="Previsualización" style="max-height: 150px; border-radius: 4px; border: 1px solid #ddd;">
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 10px;">
+      <button type="submit" style="flex: 1; background: #2563eb; color: white; padding: 10px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">
+        Enviar Reporte
+      </button>
+    </div>
+  </form>
+</div>
