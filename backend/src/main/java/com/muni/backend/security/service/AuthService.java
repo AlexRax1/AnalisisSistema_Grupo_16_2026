@@ -94,4 +94,24 @@ public class AuthService {
     private IllegalArgumentException excitingIllegalArgument(String msg) {
         return new IllegalArgumentException(msg);
     }
+
+
+    @Transactional
+    public Credencial crearCredencialCiudadano(String username, String rawPassword) {
+        if (credencialRepository.findByUsername(username).isPresent()) {
+            throw new IllegalArgumentException("El correo electrónico ingresado ya está asociado a otra cuenta.");
+        }
+
+        // Rol CIUDADANO (ID 1)
+        RolUser rolCiudadano = rolUserRepository.findById(1)
+                .orElseThrow(() -> new IllegalStateException("Rol CIUDADANO no configurado en el sistema."));
+
+        Credencial credencial = new Credencial();
+        credencial.setUsername(username);
+        credencial.setPassword(passwordEncoder.encode(rawPassword));
+        credencial.setRolUser(rolCiudadano);
+        credencial.setUsuarioCreacion("REGISTRO_PUBLICO");
+
+        return credencialRepository.save(credencial);
+    }
 }

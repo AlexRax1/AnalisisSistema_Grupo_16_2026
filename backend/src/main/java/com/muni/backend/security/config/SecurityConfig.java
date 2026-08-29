@@ -35,7 +35,8 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         // Rutas públicas de autenticación
-                        .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/auth/**", "/usuarios/registro-ciudadano").permitAll()
+
                         // Cualquier otra petición requiere autenticación vía JWT
                         .anyRequest().authenticated()
                 )

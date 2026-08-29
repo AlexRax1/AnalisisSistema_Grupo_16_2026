@@ -6,6 +6,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
@@ -19,23 +20,40 @@ public class Credencial implements UserDetails {
     @Column(name = "user_id")
     private Integer userId;
 
-    @Column(name = "username", unique = true, nullable = false)
+    @Column(name = "username", unique = true, nullable = false, length = 200)
     private String username;
 
     @Column(name = "password", nullable = false)
     private String password;
 
-    // Cambiado de com.aeropuerto.auth.model.RolUser a RolUser directo
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "rol_id", referencedColumnName = "rol_user_id")
+    @JoinColumn(name = "rol_id", referencedColumnName = "rol_user_id", nullable = false)
     private RolUser rolUser;
+
+    @Column(name = "estado", length = 20)
+    private String estado = "ACTIVO";
+
+    // --- CAMPOS DE AUDITORIA ---
+    @Column(name = "fecha_creacion")
+    private LocalDateTime fechaCreacion = LocalDateTime.now();
+
+    @Column(name = "usuario_creacion", length = 150)
+    private String usuarioCreacion;
+
+    @Column(name = "fecha_modificacion")
+    private LocalDateTime fechaModificacion;
+
+    @Column(name = "usuario_modificacion", length = 150)
+    private String usuarioModificacion;
+
+    // --- MÉTODOS DE USERDETAILS ---
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         if (this.rolUser == null || this.rolUser.getNombreRol() == null) {
             return List.of();
         }
-        return List.of(new SimpleGrantedAuthority(rolUser.getNombreRol()));
+        return List.of(new SimpleGrantedAuthority(this.rolUser.getNombreRol()));
     }
 
     @Override
