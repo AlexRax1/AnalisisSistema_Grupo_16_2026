@@ -1,4 +1,19 @@
-# See https://docs.github.com/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
+
+.env
+.env.*
+*.bak
+*.bak.*
+
+
+
+
+
+
+
+
+# ==========================================
+# Angular
+# ==========================================
 
 # Compiled output
 /dist
@@ -6,39 +21,98 @@
 /out-tsc
 /bazel-out
 
-# Node
-/node_modules
-npm-debug.log
-yarn-error.log
+# Angular cache
+/.angular/cache
 
-# IDEs and editors
+# Coverage
+/coverage
+
+# ==========================================
+# Node
+# ==========================================
+
+/node_modules
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ==========================================
+# Environment files
+# ==========================================
+
+
+# ==========================================
+# Angular / Miscellaneous
+# ==========================================
+
+.sass-cache/
+/connect.lock
+/libpeerconnection.log
+testem.log
+/typings
+__screenshots__/
+.history/
+
+# ==========================================
+# Java / Spring Boot
+# ==========================================
+
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+
+# Gradle (por si acaso)
+.gradle/
+build/
+
+# Spring Boot / Java
+*.class
+*.log
+
+# Spring Boot generated files
+spring-boot-starter.log
+
+# ==========================================
+# IDEs
+# ==========================================
+
+# IntelliJ IDEA
 .idea/
+*.iml
+*.iws
+*.ipr
+
+# Eclipse
 .project
 .classpath
-.c9/
-*.launch
 .settings/
-*.sublime-workspace
 
-# Visual Studio Code
+# VS Code
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
 !.vscode/mcp.json
-.history/*
 
-# Miscellaneous
-/.angular/cache
-.sass-cache/
-/connect.lock
-/coverage
-/libpeerconnection.log
-testem.log
-/typings
-__screenshots__/
+# Other editors
+.c9/
+*.launch
+*.sublime-workspace
+*.sublime-project
 
-# System files
+# ==========================================
+# OS generated files
+# ==========================================
+
 .DS_Store
 Thumbs.db
+Desktop.ini
