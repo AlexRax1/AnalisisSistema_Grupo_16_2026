@@ -1,27 +1,78 @@
-<div style="max-width: 400px; margin: 40px auto; padding: 25px; border: 1px solid #e2e8f0; border-radius: 8px; background: white; font-family: sans-serif;">
-  <h2 style="text-align: center; color: #1e293b; margin-top: 0;">Iniciar Sesión</h2>
+<div class="login-wrapper">
+  <div class="login-card">
+    <h2>Inicio de Sesión</h2>
+    <p class="subtitulo">Sistema de Gestión de Quejas Municipal</p>
 
-  <div *ngIf="errorMsg" style="background: #fecaca; color: #dc2626; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-size: 0.9rem;">
-    {{ errorMsg }}
+    <form [formGroup]="loginForm" (ngSubmit)="onLogin()" novalidate>
+      <div class="form-group">
+        <label for="correo">Correo electrónico *</label>
+        <input
+          type="email"
+          id="correo"
+          formControlName="correo"
+          placeholder="ejemplo@correo.com"
+          [class.is-invalid]="loginForm.get('correo')?.invalid && formEnviado">
+      </div>
+
+      <div class="form-group">
+        <label for="password">Contraseña *</label>
+        <input
+          type="password"
+          id="password"
+          formControlName="password"
+          placeholder="Ingrese su contraseña"
+          [class.is-invalid]="loginForm.get('password')?.invalid && formEnviado">
+      </div>
+
+      <p *ngIf="errorMsg && !mostrarModalRecuperacion" class="alert error-alert">{{ errorMsg }}</p>
+
+      <button type="submit" class="btn-primary">Iniciar Sesión</button>
+    </form>
+
+    <div class="opciones-login">
+      <a type="button" (click)="abrirRecuperacion()" class="link-opcion">¿Olvidó su contraseña?</a>
+      <a routerLink="/auth/registro" class="link-opcion">Registrarse</a>
+    </div>
   </div>
+</div>
 
-  <form (ngSubmit)="onLogin()">
-    <div style="margin-bottom: 15px;">
-      <label style="display: block; margin-bottom: 5px; font-weight: bold;">Correo Electrónico:</label>
-      <input type="email" [(ngModel)]="correo" name="correo" required style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;">
-    </div>
+<div class="modal-backdrop" *ngIf="mostrarModalRecuperacion">
+  <div class="modal-content">
+    <h3>Recuperar Contraseña</h3>
 
-    <div style="margin-bottom: 20px;">
-      <label style="display: block; margin-bottom: 5px; font-weight: bold;">Contraseña:</label>
-      <input type="password" [(ngModel)]="password" name="password" required style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;">
-    </div>
+    <form [formGroup]="recuperarForm" novalidate>
+      <div *ngIf="pasoRecuperacion === 'SOLICITAR_CODIGO'">
+        <div class="form-group">
+          <label>Ingrese su correo electrónico registrado *</label>
+          <input type="email" formControlName="correoRecuperacion" placeholder="correo@ejemplo.com">
+        </div>
+        <button type="button" (click)="onEnviarCodigo()" class="btn-primary">Enviar Código</button>
+      </div>
 
-    <button type="submit" style="width: 100%; background: #2563eb; color: white; padding: 10px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">
-      Ingresar
-    </button>
-  </form>
+      <div *ngIf="pasoRecuperacion === 'INGRESAR_CODIGO'">
+        <div class="form-group">
+          <label>Ingrese el Código de Verificación recibido *</label>
+          <input type="text" formControlName="codigo" placeholder="Ej: 123456">
+        </div>
+        <button type="button" (click)="onValidarCodigo()" class="btn-primary">Validar Código</button>
+      </div>
 
-  <p style="text-align: center; margin-top: 15px; font-size: 0.9rem;">
-    ¿No tienes cuenta? <a routerLink="/auth/registro" style="color: #2563eb; text-decoration: none; font-weight: bold;">Regístrate aquí</a>
-  </p>
+      <div *ngIf="pasoRecuperacion === 'NUEVA_CONTRASEÑA'">
+        <div class="form-group">
+          <label>Nueva Contraseña *</label>
+          <input type="password" formControlName="nuevaPassword" placeholder="1 Mayúscula, 1 Número y 1 Especial">
+        </div>
+        <div class="form-group">
+          <label>Confirmar Nueva Contraseña *</label>
+          <input type="password" formControlName="confirmarPassword" placeholder="Repita la contraseña">
+        </div>
+        <button type="button" (click)="onRestablecerPassword()" class="btn-primary">Restablecer Contraseña</button>
+      </div>
+
+      <p *ngIf="errorMsg && mostrarModalRecuperacion" class="alert error-alert">{{ errorMsg }}</p>
+      <p *ngIf="successMsg" class="alert success-alert">{{ successMsg }}</p>
+
+      <button type="button" (click)="cerrarRecuperacion()" class="btn-secondary">Cancelar</button>
+    </form>
+  </div>
 </div>

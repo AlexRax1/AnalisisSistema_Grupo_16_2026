@@ -1,46 +1,64 @@
 import { Injectable } from '@angular/core';
-import { Observable, of, throwError } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
 
+// Exportación de interfaces para evitar errores TS2305
 export interface Usuario {
+  token?: string;
+  rol?: 'CIUDADANO' | 'FUNCIONARIO' | 'INSPECTOR' | 'ESPECIALISTA' | 'ADMINISTRADOR';
+  correo?: string;
+}
+
+export interface RegistroCiudadanoReq {
   dpi: string;
-  nombreCompleto: string;
+  nombres: string;
+  apellidos: string;
   correo: string;
   telefono: string;
-  rol: 'CIUDADANO' | 'FUNCIONARIO' | 'INSPECTOR' | 'ESPECIALISTA';
+  direccion: string;
+  password: string;
+  confirmPassword: string;
+}
+
+export interface ResetPasswordReq {
+  userId: number;
+  newPassword: string;
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AuthService {
-  private usuariosMock: Usuario[] = [
-    {
-      dpi: '2540123450101',
-      nombreCompleto: 'Juan Pérez',
-      correo: 'ciudadano@muni.gt',
-      telefono: '55551234',
-      rol: 'CIUDADANO'
-    }
-  ];
+  private BASE_URL = 'http://localhost:8080';
 
-  private usuarioLogueado: Usuario | null = null;
+  constructor(private http: HttpClient) {}
 
-  login(correo: string, pass: string): Observable<Usuario> {
-    const user = this.usuariosMock.find(u => u.correo === correo);
-    if (user) {
-      this.usuarioLogueado = user;
-      return of(user);
-    }
-    return throwError(() => new Error('Credenciales inválidas'));
+  // CU02: Login
+  login(correo: string, password: string): Observable<Usuario> {
+    return this.http.post<Usuario>(`${this.BASE_URL}/auth/login`, { username: correo, password });
   }
 
-  registro(nuevoUsuario: Usuario, pass: string): Observable<Usuario> {
-    this.usuariosMock.push(nuevoUsuario);
-    this.usuarioLogueado = nuevoUsuario;
-    return of(nuevoUsuario);
+  // CU01: Registro de usuario ciudadano
+  registrarCiudadano(datos: RegistroCiudadanoReq): Observable<any> {
+    return this.http.post<any>(`${this.BASE_URL}/usuarios/registro-ciudadano`, datos);
   }
 
-  getUsuarioActual(): Usuario | null {
-    return this.usuarioLogueado;
+  // CU02 - FA02: Métodos de recuperación de contraseña
+  solicitarCodigoRecuperacion(correo: string): Observable<any> {
+    return this.http.post(`${this.BASE_URL}/auth/recuperar/solicitar-codigo`, { correo });
+  }
+
+  validarCodigo(correo: string, codigo: string): Observable<any> {
+    return this.http.post(`${this.BASE_URL}/auth/recuperar/validar-codigo`, { correo, codigo });
+  }
+
+  // PUT: http://localhost:8080/auth/reset-password
+  restablecerPassword(userId: number, newPassword: string): Observable<any> {
+    const body: ResetPasswordReq = {
+      userId: userId,
+      newPassword: newPassword,
+    };
+
+    return this.http.put<any>(`${this.BASE_URL}/auth/reset-password`, body);
   }
 }
