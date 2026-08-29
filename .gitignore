@@ -1,3 +1,6 @@
+# ==========================================
+# Environment
+# ==========================================
 
 .env
 .env.*
@@ -5,33 +8,29 @@
 *.bak.*
 
 
-
-
-
-
-
-
 # ==========================================
 # Angular
 # ==========================================
 
 # Compiled output
-/dist
-/tmp
-/out-tsc
-/bazel-out
+dist/
+tmp/
+out-tsc/
+bazel-out/
 
 # Angular cache
-/.angular/cache
+.angular/cache/
 
 # Coverage
-/coverage
+coverage/
+
 
 # ==========================================
 # Node
 # ==========================================
 
-/node_modules
+# Dependencies
+node_modules/
 
 # Logs
 npm-debug.log*
@@ -39,22 +38,19 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# ==========================================
-# Environment files
-# ==========================================
-
 
 # ==========================================
 # Angular / Miscellaneous
 # ==========================================
 
 .sass-cache/
-/connect.lock
-/libpeerconnection.log
+connect.lock
+libpeerconnection.log
 testem.log
-/typings
+typings/
 __screenshots__/
 .history/
+
 
 # ==========================================
 # Java / Spring Boot
@@ -69,16 +65,17 @@ pom.xml.next
 release.properties
 dependency-reduced-pom.xml
 
-# Gradle (por si acaso)
+# Gradle
 .gradle/
 build/
 
-# Spring Boot / Java
+# Java
 *.class
 *.log
 
 # Spring Boot generated files
 spring-boot-starter.log
+
 
 # ==========================================
 # IDEs
@@ -108,6 +105,7 @@ spring-boot-starter.log
 *.launch
 *.sublime-workspace
 *.sublime-project
+
 
 # ==========================================
 # OS generated files

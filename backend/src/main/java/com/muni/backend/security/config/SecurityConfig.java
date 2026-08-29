@@ -36,7 +36,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Rutas públicas de autenticación
                         .requestMatchers("/auth/**", "/usuarios/registro-ciudadano").permitAll()
-
+                        .requestMatchers("/subidas/evidencias/**").permitAll()
+                        .requestMatchers("/quejas/**").authenticated()
                         // Cualquier otra petición requiere autenticación vía JWT
                         .anyRequest().authenticated()
                 )
