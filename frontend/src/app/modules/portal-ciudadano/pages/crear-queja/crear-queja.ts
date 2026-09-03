@@ -356,11 +356,11 @@ export class CrearQuejaComponent implements OnInit, AfterViewInit, OnDestroy {
 
   confirmarCancelar() {
     this.mostrarModalCancelar = false;
-    this.router.navigate(['/portal-ciudadano']);
+    this.router.navigate(['/ciudadano/mis-quejas']);
   }
 
   cerrarExitoYNavegar() {
     this.mostrarModalConfirmacion = false;
-    this.router.navigate(['/portal-ciudadano']);
+    this.router.navigate(['/ciudadano/mis-quejas']);
   }
 }

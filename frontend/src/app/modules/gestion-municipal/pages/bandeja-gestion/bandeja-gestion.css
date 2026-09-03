@@ -1,0 +1,125 @@
+/* ═══════════════════════════════════════════
+   Bandeja de Gestión Municipal
+   ═══════════════════════════════════════════ */
+
+.bandeja-page {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.page-title {
+  font-size: var(--font-xl);
+  font-weight: 700;
+  color: var(--slate-900);
+  margin: 0;
+}
+
+.page-subtitle {
+  font-size: var(--font-sm);
+  color: var(--slate-500);
+  margin: 0.25rem 0 0 0;
+}
+
+/* Filters */
+.filters-bar {
+  margin-bottom: 1rem;
+}
+
+.filters-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.filter-group {
+  flex: 1;
+  min-width: 160px;
+}
+
+/* Layout */
+.bandeja-layout {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .bandeja-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Empty cell */
+.empty-cell {
+  text-align: center;
+  padding: 2rem !important;
+  color: var(--slate-400);
+}
+
+/* Expediente Panel */
+.expediente-panel {
+  position: sticky;
+  top: calc(var(--topbar-height) + 1.5rem);
+}
+
+.expediente-title {
+  margin: 0;
+  font-size: var(--font-md);
+  font-weight: 700;
+  color: var(--slate-900);
+}
+
+.expediente-info p {
+  font-size: var(--font-sm);
+  color: var(--slate-700);
+  margin: 0.35rem 0;
+  line-height: 1.5;
+}
+
+.expediente-info strong {
+  color: var(--slate-900);
+}
+
+.expediente-foto {
+  margin: 1rem 0;
+}
+
+.evidencia-img {
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--slate-200);
+}
+
+/* Asignación Box */
+.asignacion-box {
+  background: var(--slate-50);
+  border: 1px solid var(--slate-200);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.asignacion-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: var(--font-sm);
+  font-weight: 700;
+  color: var(--slate-900);
+  margin: 0 0 1rem 0;
+}
+
+.asignacion-actions {
+  display: flex;
+  gap: 0.75rem;
+}

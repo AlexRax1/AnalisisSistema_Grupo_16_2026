@@ -1,0 +1,115 @@
+/* ═══════════════════════════════════════════
+   Auth Layout — Split Screen
+   ═══════════════════════════════════════════ */
+
+.auth-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ── Branding Panel ───────────────────────── */
+.auth-branding {
+  flex: 0 0 420px;
+  background: linear-gradient(160deg, var(--primary-900) 0%, var(--primary-700) 60%, var(--primary-500) 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-branding::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 10% 90%, rgba(255,255,255,0.05) 0%, transparent 50%),
+    radial-gradient(circle at 90% 10%, rgba(255,255,255,0.04) 0%, transparent 50%);
+}
+
+.branding-content {
+  position: relative;
+  padding: 2.5rem;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.branding-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: var(--font-sm);
+  font-weight: 500;
+  transition: color var(--transition-fast);
+  text-decoration: none;
+}
+
+.branding-back:hover {
+  color: #ffffff;
+}
+
+.branding-center {
+  text-align: center;
+  padding: 2rem 0;
+}
+
+.branding-icon {
+  font-size: 48px !important;
+  margin-bottom: 1.25rem;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.branding-title {
+  font-size: var(--font-xl);
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+  margin-bottom: 1rem;
+}
+
+.branding-desc {
+  font-size: var(--font-sm);
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.6;
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+.branding-footer {
+  text-align: center;
+  font-size: var(--font-xs);
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* ── Form Area ────────────────────────────── */
+.auth-form-area {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-body);
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+.auth-form-container {
+  width: 100%;
+  max-width: 460px;
+  animation: slideUp 0.4s ease;
+}
+
+/* ── Responsive ───────────────────────────── */
+@media (max-width: 900px) {
+  .auth-branding {
+    display: none;
+  }
+
+  .auth-form-area {
+    padding: 2rem 1.5rem;
+  }
+}

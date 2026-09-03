@@ -1,0 +1,107 @@
+<div class="portal-page">
+  <!-- ═══ Navigation Bar ═══ -->
+  <nav class="portal-nav">
+    <div class="portal-nav-inner">
+      <div class="portal-brand">
+        <span class="mat-icon brand-icon">account_balance</span>
+        <span class="brand-text">Municipalidad de San Juan Sacatepéquez</span>
+      </div>
+      <div class="portal-nav-actions">
+        <a routerLink="/auth/login" class="btn btn-ghost nav-btn">Iniciar Sesión</a>
+        <a routerLink="/auth/registro" class="btn btn-primary nav-btn">Registrarse</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ═══ Hero Section ═══ -->
+  <section class="hero">
+    <div class="hero-bg-pattern"></div>
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="mat-icon" style="font-size: 16px;">location_city</span>
+        Sistema Municipal de Gestión Ciudadana
+      </div>
+      <h1 class="hero-title">
+        Tu voz construye una<br>
+        <span class="hero-highlight">mejor comunidad</span>
+      </h1>
+      <p class="hero-subtitle">
+        Plataforma digital para reportar problemas de infraestructura pública en
+        San Juan Sacatepéquez. Reporta baches, alumbrado, drenajes y más —
+        y dale seguimiento en tiempo real hasta su resolución.
+      </p>
+      <div class="hero-actions">
+        <a routerLink="/auth/registro" class="btn btn-primary btn-lg hero-btn">
+          <span class="mat-icon">person_add</span>
+          Crear Mi Cuenta
+        </a>
+        <a routerLink="/auth/login" class="btn btn-outline btn-lg hero-btn">
+          <span class="mat-icon">login</span>
+          Ya Tengo Cuenta
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ How It Works ═══ -->
+  <section class="how-it-works">
+    <div class="section-container">
+      <h2 class="section-title">¿Cómo Funciona?</h2>
+      <p class="section-subtitle">Un proceso transparente en tres simples pasos</p>
+
+      <div class="steps-grid">
+        <div class="step-card" *ngFor="let paso of pasos; let i = index">
+          <div class="step-number">{{ i + 1 }}</div>
+          <div class="step-icon-wrap">
+            <span class="mat-icon step-icon">{{ paso.icon }}</span>
+          </div>
+          <h3 class="step-title">{{ paso.titulo }}</h3>
+          <p class="step-desc">{{ paso.descripcion }}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ Stats Section ═══ -->
+  <section class="stats-section">
+    <div class="section-container">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="mat-icon stat-icon">assignment_turned_in</span>
+          <div class="stat-number">1,247</div>
+          <div class="stat-label">Quejas Resueltas</div>
+        </div>
+        <div class="stat-card">
+          <span class="mat-icon stat-icon">schedule</span>
+          <div class="stat-number">4.2</div>
+          <div class="stat-label">Días Promedio de Resolución</div>
+        </div>
+        <div class="stat-card">
+          <span class="mat-icon stat-icon">groups</span>
+          <div class="stat-number">3,580</div>
+          <div class="stat-label">Ciudadanos Registrados</div>
+        </div>
+        <div class="stat-card">
+          <span class="mat-icon stat-icon">map</span>
+          <div class="stat-number">25</div>
+          <div class="stat-label">Zonas Municipales Cubiertas</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ Footer ═══ -->
+  <footer class="portal-footer">
+    <div class="section-container">
+      <div class="footer-content">
+        <div class="footer-brand">
+          <span class="mat-icon" style="font-size: 24px;">account_balance</span>
+          <span>Municipalidad de San Juan Sacatepéquez</span>
+        </div>
+        <p class="footer-text">
+          Sistema de Gestión de Quejas Ciudadanas — Análisis de Sistemas 2, Grupo 16, 2026.
+        </p>
+      </div>
+    </div>
+  </footer>
+</div>

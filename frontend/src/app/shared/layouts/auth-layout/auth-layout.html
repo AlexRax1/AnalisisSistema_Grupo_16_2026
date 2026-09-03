@@ -1,0 +1,27 @@
+<div class="auth-layout">
+  <!-- Panel Branding (izquierdo) -->
+  <aside class="auth-branding">
+    <div class="branding-content">
+      <a routerLink="/" class="branding-back">
+        <span class="mat-icon">arrow_back</span>
+        Volver al Portal
+      </a>
+      <div class="branding-center">
+        <span class="mat-icon branding-icon">account_balance</span>
+        <h1 class="branding-title">Municipalidad de<br>San Juan Sacatepéquez</h1>
+        <p class="branding-desc">
+          Sistema de Gestión de Quejas Ciudadanas — Transparencia, eficiencia y
+          compromiso con tu comunidad.
+        </p>
+      </div>
+      <p class="branding-footer">Análisis de Sistemas 2 · Grupo 16 · 2026</p>
+    </div>
+  </aside>
+
+  <!-- Panel de Formulario (derecho) -->
+  <main class="auth-form-area">
+    <div class="auth-form-container">
+      <router-outlet></router-outlet>
+    </div>
+  </main>
+</div>

@@ -1,0 +1,237 @@
+/* ═══════════════════════════════════════════
+   Mis Quejas Page Styles
+   ═══════════════════════════════════════════ */
+
+.mis-quejas-page {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.page-title {
+  font-size: var(--font-xl);
+  font-weight: 700;
+  color: var(--slate-900);
+  margin: 0;
+}
+
+.page-subtitle {
+  font-size: var(--font-sm);
+  color: var(--slate-500);
+  margin: 0.25rem 0 0 0;
+}
+
+/* Layout */
+.quejas-layout {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (max-width: 768px) {
+  .quejas-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Lista */
+.quejas-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.queja-item {
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border: 1px solid var(--slate-200);
+}
+
+.queja-item:hover {
+  border-color: var(--primary-300);
+  box-shadow: var(--shadow-md);
+}
+
+.queja-item.active {
+  border-color: var(--primary-500);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+.queja-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.35rem;
+}
+
+.queja-correlativo {
+  font-size: var(--font-sm);
+  font-weight: 700;
+  color: var(--slate-900);
+}
+
+.queja-item-titulo {
+  font-size: var(--font-sm);
+  color: var(--slate-600);
+  margin: 0 0 0.5rem 0;
+  line-height: 1.4;
+}
+
+.queja-item-meta {
+  display: flex;
+  gap: 1rem;
+  font-size: var(--font-xs);
+  color: var(--slate-400);
+}
+
+.queja-item-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--slate-400);
+}
+
+.empty-state p {
+  margin: 0.75rem 0;
+  font-size: var(--font-sm);
+}
+
+/* Detalle */
+.queja-detalle {
+  position: sticky;
+  top: calc(var(--topbar-height) + 1.5rem);
+}
+
+.detalle-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.detalle-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.detalle-label {
+  font-size: var(--font-xs);
+  color: var(--slate-500);
+  font-weight: 500;
+}
+
+.detalle-value {
+  font-size: var(--font-sm);
+  font-weight: 600;
+  color: var(--slate-800);
+}
+
+.detalle-descripcion {
+  background: var(--slate-50);
+  padding: 0.875rem;
+  border-radius: var(--radius-md);
+  font-size: var(--font-sm);
+  margin-bottom: 1.25rem;
+}
+
+.detalle-descripcion strong {
+  font-size: var(--font-xs);
+  color: var(--slate-500);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.detalle-descripcion p {
+  margin: 0.35rem 0 0 0;
+  color: var(--slate-700);
+  line-height: 1.5;
+}
+
+/* Timeline */
+.timeline-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: var(--font-sm);
+  font-weight: 700;
+  color: var(--slate-900);
+  margin: 0 0 1rem 0;
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  padding-left: 0.5rem;
+}
+
+.timeline-item {
+  display: flex;
+  gap: 0.875rem;
+  position: relative;
+  padding-bottom: 1.25rem;
+}
+
+.timeline-item:not(.last)::before {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 14px;
+  bottom: 0;
+  width: 2px;
+  background: var(--slate-200);
+}
+
+.timeline-dot {
+  width: 12px;
+  height: 12px;
+  background: var(--primary-500);
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 2px;
+  border: 2px solid var(--primary-100);
+}
+
+.timeline-content {
+  flex: 1;
+}
+
+.timeline-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.timeline-date {
+  font-size: var(--font-xs);
+  color: var(--slate-400);
+}
+
+.timeline-text {
+  font-size: var(--font-sm);
+  color: var(--slate-700);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.timeline-responsable {
+  font-size: var(--font-xs);
+  color: var(--slate-400);
+  font-style: italic;
+}

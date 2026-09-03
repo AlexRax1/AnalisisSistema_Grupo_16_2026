@@ -1,12 +1,13 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { QuejaMockService } from '../../../../core/services/queja-mock.service';
 import { Queja } from '../../../../core/models/queja.model';
 
 @Component({
   selector: 'app-mis-quejas',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterLink],
   templateUrl: './mis-quejas.html',
   styleUrl: './mis-quejas.css'
 })

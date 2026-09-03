@@ -1,0 +1,187 @@
+/* ═══════════════════════════════════════════
+   Operaciones de Campo
+   ═══════════════════════════════════════════ */
+
+.campo-page {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.page-header {
+  margin-bottom: 1rem;
+}
+
+.page-title {
+  font-size: var(--font-xl);
+  font-weight: 700;
+  color: var(--slate-900);
+  margin: 0;
+}
+
+.page-subtitle {
+  font-size: var(--font-sm);
+  color: var(--slate-500);
+  margin: 0.25rem 0 0 0;
+}
+
+/* Role Tabs */
+.role-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.role-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--slate-300);
+  border-radius: var(--radius-md);
+  background: var(--slate-50);
+  color: var(--slate-600);
+  font-family: var(--font-family);
+  font-size: var(--font-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.role-tab:hover {
+  background: var(--slate-100);
+}
+
+.role-tab.active-inspector {
+  background: var(--primary-500);
+  color: #ffffff;
+  border-color: var(--primary-500);
+}
+
+.role-tab.active-cuadrilla {
+  background: var(--success-600);
+  color: #ffffff;
+  border-color: var(--success-600);
+}
+
+/* Layout */
+.campo-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (max-width: 768px) {
+  .campo-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Asignaciones List */
+.asignaciones-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.list-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: var(--font-sm);
+  font-weight: 700;
+  color: var(--slate-900);
+  margin: 0 0 0.5rem 0;
+}
+
+.asignacion-card {
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border: 1px solid var(--slate-200);
+}
+
+.asignacion-card:hover {
+  border-color: var(--primary-300);
+  box-shadow: var(--shadow-md);
+}
+
+.asignacion-card.selected {
+  border-color: var(--primary-500);
+  border-left: 4px solid var(--primary-500);
+}
+
+.asignacion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.25rem;
+}
+
+.asignacion-correlativo {
+  font-size: var(--font-sm);
+  font-weight: 700;
+  color: var(--slate-900);
+}
+
+.asignacion-detail {
+  font-size: var(--font-xs);
+  color: var(--slate-500);
+  margin: 0;
+}
+
+.empty-msg {
+  text-align: center;
+  padding: 2rem 1rem;
+  font-size: var(--font-sm);
+  color: var(--slate-400);
+}
+
+/* Acción Panel */
+.accion-panel {
+  position: sticky;
+  top: calc(var(--topbar-height) + 1.5rem);
+}
+
+.accion-title {
+  margin: 0;
+  font-size: var(--font-md);
+  font-weight: 700;
+  color: var(--slate-900);
+}
+
+.detalle-grid p {
+  font-size: var(--font-sm);
+  color: var(--slate-700);
+  margin: 0.25rem 0;
+  line-height: 1.5;
+}
+
+.detalle-grid strong {
+  color: var(--slate-900);
+}
+
+/* Formulario Sección */
+.formulario-seccion {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px dashed var(--slate-200);
+}
+
+.formulario-titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: var(--font-sm);
+  font-weight: 700;
+  margin: 0 0 1rem 0;
+}
+
+.foto-preview {
+  width: 100%;
+  max-height: 160px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--slate-200);
+}

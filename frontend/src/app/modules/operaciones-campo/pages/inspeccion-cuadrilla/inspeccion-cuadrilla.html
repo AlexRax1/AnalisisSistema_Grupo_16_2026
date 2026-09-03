@@ -1,101 +1,145 @@
-<div style="max-width: 500px; margin: 0 auto; padding: 15px; font-family: sans-serif; background: #f8fafc; min-height: 100vh;">
-  <!-- Header App Móvil Campo -->
-  <div style="background: #0f172a; color: white; padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 15px;">
-    <h3 style="margin: 0;">Módulo de Campo (Persona 3)</h3>
-    <small style="color: #94a3b8;">Inspecciones y Cuadrillas Técnicas</small>
+<div class="campo-page animate-fade-in">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Módulo de Operaciones de Campo</h1>
+      <p class="page-subtitle">Inspecciones técnicas y órdenes de trabajo de cuadrilla</p>
+    </div>
   </div>
 
-  <!-- Selector de Perfil de Campo -->
-  <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-    <button (click)="cambiarRol('INSPECTOR')"
-            [style.background]="rolCampo === 'INSPECTOR' ? '#2563eb' : '#cbd5e1'"
-            [style.color]="rolCampo === 'INSPECTOR' ? 'white' : '#334155'"
-            style="flex: 1; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer;">
-      Inspector (CU09/10)
+  <!-- Selector de Perfil -->
+  <div class="role-tabs">
+    <button class="role-tab" [class.active-inspector]="rolCampo === 'INSPECTOR'"
+            (click)="cambiarRol('INSPECTOR')">
+      <span class="mat-icon">search</span>
+      Inspector de Campo
     </button>
-    <button (click)="cambiarRol('CUADRILLA')"
-            [style.background]="rolCampo === 'CUADRILLA' ? '#059669' : '#cbd5e1'"
-            [style.color]="rolCampo === 'CUADRILLA' ? 'white' : '#334155'"
-            style="flex: 1; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer;">
-      Cuadrilla (CU12/13)
+    <button class="role-tab" [class.active-cuadrilla]="rolCampo === 'CUADRILLA'"
+            (click)="cambiarRol('CUADRILLA')">
+      <span class="mat-icon">build</span>
+      Cuadrilla Técnica
     </button>
   </div>
 
-  <!-- Lista de Asignaciones pendientes -->
-  <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; margin-bottom: 15px;">
-    <h4 style="margin: 0 0 10px 0; color: #1e293b;">
-      {{ rolCampo === 'INSPECTOR' ? 'Quejas por Inspeccionar' : 'Órdenes de Trabajo' }}
-    </h4>
+  <div class="campo-layout">
+    <!-- Lista de Asignaciones -->
+    <div class="asignaciones-list">
+      <h3 class="list-title">
+        <span class="mat-icon" style="font-size: 18px;">assignment</span>
+        {{ rolCampo === 'INSPECTOR' ? 'Quejas por Inspeccionar' : 'Órdenes de Trabajo' }}
+      </h3>
 
-    <div *ngIf="rolCampo === 'INSPECTOR'">
-      <div *ngFor="let q of quejasEnInspeccion" (click)="seleccionar(q)"
-           [style.border-left]="quejaSeleccionada?.id === q.id ? '4px solid #2563eb' : '1px solid #e2e8f0'"
-           style="padding: 10px; background: #f1f5f9; border-radius: 4px; margin-bottom: 8px; cursor: pointer;">
-        <strong>{{ q.correlativo }}</strong> - Zona {{ q.zona }}
-        <div style="font-size: 0.85rem; color: #475569;">{{ q.titulo }}</div>
+      <div *ngIf="rolCampo === 'INSPECTOR'">
+        <div *ngFor="let q of quejasEnInspeccion"
+             class="asignacion-card card"
+             [class.selected]="quejaSeleccionada?.id === q.id"
+             (click)="seleccionar(q)">
+          <div class="card-body" style="padding: 0.875rem;">
+            <div class="asignacion-header">
+              <span class="asignacion-correlativo">{{ q.correlativo }}</span>
+              <span class="badge badge-warning">En Inspección</span>
+            </div>
+            <p class="asignacion-detail">Zona {{ q.zona }} — {{ q.titulo }}</p>
+          </div>
+        </div>
+        <p *ngIf="quejasEnInspeccion.length === 0" class="empty-msg">
+          <span class="mat-icon" style="font-size: 32px; color: var(--slate-300);">check_circle</span><br>
+          No hay inspecciones pendientes.
+        </p>
       </div>
-      <p *ngIf="quejasEnInspeccion.length === 0" style="font-size: 0.85rem; color: #94a3b8; margin: 0;">No hay inspecciones pendientes.</p>
+
+      <div *ngIf="rolCampo === 'CUADRILLA'">
+        <div *ngFor="let q of quejasReparadas"
+             class="asignacion-card card"
+             [class.selected]="quejaSeleccionada?.id === q.id"
+             (click)="seleccionar(q)">
+          <div class="card-body" style="padding: 0.875rem;">
+            <div class="asignacion-header">
+              <span class="asignacion-correlativo">{{ q.correlativo }}</span>
+              <span class="badge badge-info">{{ q.estado }}</span>
+            </div>
+            <p class="asignacion-detail">{{ q.direccion }}</p>
+          </div>
+        </div>
+        <p *ngIf="quejasReparadas.length === 0" class="empty-msg">
+          <span class="mat-icon" style="font-size: 32px; color: var(--slate-300);">engineering</span><br>
+          No hay órdenes de trabajo activas.
+        </p>
+      </div>
     </div>
 
-    <div *ngIf="rolCampo === 'CUADRILLA'">
-      <div *ngFor="let q of quejasReparadas" (click)="seleccionar(q)"
-           [style.border-left]="quejaSeleccionada?.id === q.id ? '4px solid #059669' : '1px solid #e2e8f0'"
-           style="padding: 10px; background: #f1f5f9; border-radius: 4px; margin-bottom: 8px; cursor: pointer;">
-        <strong>{{ q.correlativo }}</strong> - Estado: {{ q.estado }}
-        <div style="font-size: 0.85rem; color: #475569;">{{ q.direccion }}</div>
+    <!-- Formulario de Acción -->
+    <div class="card accion-panel" *ngIf="quejaSeleccionada">
+      <div class="card-header">
+        <h3 class="accion-title">Detalle: {{ quejaSeleccionada.correlativo }}</h3>
       </div>
-      <p *ngIf="quejasReparadas.length === 0" style="font-size: 0.85rem; color: #94a3b8; margin: 0;">No hay órdenes de trabajo activas.</p>
-    </div>
-  </div>
+      <div class="card-body">
+        <div class="detalle-grid">
+          <p><strong>Dirección:</strong> {{ quejaSeleccionada.direccion }}</p>
+          <p><strong>Descripción:</strong> {{ quejaSeleccionada.descripcion }}</p>
+        </div>
 
-  <!-- Formulario de Acción Móvil -->
-  <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px;" *ngIf="quejaSeleccionada">
-    <h4 style="margin-top: 0; color: #0f172a;">Detalle: {{ quejaSeleccionada.correlativo }}</h4>
-    <p style="font-size: 0.9rem; margin: 5px 0;"><strong>Dirección:</strong> {{ quejaSeleccionada.direccion }}</p>
-    <p style="font-size: 0.9rem; margin: 5px 0;"><strong>Detalle:</strong> {{ quejaSeleccionada.descripcion }}</p>
+        <!-- Formulario INSPECTOR -->
+        <div *ngIf="rolCampo === 'INSPECTOR'" class="formulario-seccion">
+          <h4 class="formulario-titulo" style="color: var(--primary-500);">
+            <span class="mat-icon" style="font-size: 18px;">fact_check</span>
+            Dictamen Técnico Inicial
+          </h4>
 
-    <!-- Formulario para INSPECTOR (CU09 / CU10) -->
-    <div *ngIf="rolCampo === 'INSPECTOR'" style="margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 10px;">
-      <h5 style="margin: 0 0 10px 0; color: #2563eb;">Dictamen Técnico Inicial</h5>
+          <div class="form-group">
+            <label class="form-label">¿Procedente para reparación?</label>
+            <select class="form-select" [(ngModel)]="esProcedente">
+              <option [ngValue]="true">SÍ — Aprobada para Cuadrilla</option>
+              <option [ngValue]="false">NO — Improcedente / Rechazar</option>
+            </select>
+          </div>
 
-      <label style="display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px;">¿Procedente para reparación?</label>
-      <select [(ngModel)]="esProcedente" style="width: 100%; padding: 8px; margin-bottom: 10px; border-radius: 4px; border: 1px solid #cbd5e1;">
-        <option [ngValue]="true">SI - Aprobada para Cuadrilla</option>
-        <option [ngValue]="false">NO - Improcedente / Rechazar</option>
-      </select>
+          <div *ngIf="esProcedente" class="form-group">
+            <label class="form-label">Cuadrilla Especializada</label>
+            <select class="form-select" [(ngModel)]="cuadrillaAsignada">
+              <option *ngFor="let c of cuadrillas" [value]="c">{{ c }}</option>
+            </select>
+          </div>
 
-      <div *ngIf="esProcedente">
-        <label style="display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px;">Asignar Cuadrilla Especializada:</label>
-        <select [(ngModel)]="cuadrillaAsignada" style="width: 100%; padding: 8px; margin-bottom: 10px; border-radius: 4px; border: 1px solid #cbd5e1;">
-          <option *ngFor="let c of cuadrillas" [value]="c">{{ c }}</option>
-        </select>
+          <div class="form-group">
+            <label class="form-label">Dictamen / Observaciones</label>
+            <textarea class="form-textarea" [(ngModel)]="dictamenInspector" rows="3"
+                      placeholder="Evaluación física del problema..."></textarea>
+          </div>
+
+          <button class="btn btn-primary btn-block" (click)="guardarDictamenInspector()">
+            <span class="mat-icon">gavel</span>
+            Registrar Dictamen
+          </button>
+        </div>
+
+        <!-- Formulario CUADRILLA -->
+        <div *ngIf="rolCampo === 'CUADRILLA'" class="formulario-seccion">
+          <h4 class="formulario-titulo" style="color: var(--success-600);">
+            <span class="mat-icon" style="font-size: 18px;">construction</span>
+            Cierre de Trabajo en Sitio
+          </h4>
+
+          <div class="form-group">
+            <label class="form-label">Fotografía Post-Reparación</label>
+            <input type="file" class="form-input" (change)="simularFotoDespues($event)" accept="image/*">
+          </div>
+
+          <div *ngIf="fotoDespuesSimulada" style="margin-bottom: 1rem;">
+            <img [src]="fotoDespuesSimulada" alt="Después" class="foto-preview">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Informe del Trabajo Realizado</label>
+            <textarea class="form-textarea" [(ngModel)]="informeTecnico" rows="3"
+                      placeholder="Materiales y acciones realizadas..."></textarea>
+          </div>
+
+          <button class="btn btn-success btn-block" (click)="finalizarTrabajoCuadrilla()">
+            <span class="mat-icon">check_circle</span>
+            Completar Reparación
+          </button>
+        </div>
       </div>
-
-      <label style="display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px;">Dictamen / Observaciones:</label>
-      <textarea [(ngModel)]="dictamenInspector" rows="3" placeholder="Escriba la evaluación física del problema..." style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #cbd5e1; box-sizing: border-box; margin-bottom: 10px;"></textarea>
-
-      <button (click)="guardarDictamenInspector()" style="width: 100%; background: #2563eb; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer;">
-        Registrar Dictamen
-      </button>
-    </div>
-
-    <!-- Formulario para CUADRILLA (CU12 / CU13) -->
-    <div *ngIf="rolCampo === 'CUADRILLA'" style="margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 10px;">
-      <h5 style="margin: 0 0 10px 0; color: #059669;">Cierre de Trabajo en Sitio</h5>
-
-      <label style="display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px;">Cargar Foto Post-Reparación (Después):</label>
-      <input type="file" (change)="simularFotoDespues($event)" accept="image/*" style="width: 100%; margin-bottom: 10px;">
-
-      <div *ngIf="fotoDespuesSimulada" style="margin-bottom: 10px;">
-        <img [src]="fotoDespuesSimulada" alt="Previsualización Después" style="width: 100%; border-radius: 6px; max-height: 150px; object-fit: cover;">
-      </div>
-
-      <label style="display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px;">Informe del Trabajo Realizado:</label>
-      <textarea [(ngModel)]="informeTecnico" rows="3" placeholder="Detalle los materiales y acciones realizadas..." style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #cbd5e1; box-sizing: border-box; margin-bottom: 10px;"></textarea>
-
-      <button (click)="finalizarTrabajoCuadrilla()" style="width: 100%; background: #059669; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer;">
-        Completar Reparación
-      </button>
     </div>
   </div>
 </div>

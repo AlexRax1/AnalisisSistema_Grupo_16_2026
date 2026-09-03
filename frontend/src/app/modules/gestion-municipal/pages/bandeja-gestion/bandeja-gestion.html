@@ -1,109 +1,140 @@
-<div style="padding: 20px; font-family: sans-serif;">
-  <h2 style="color: #0f172a; margin-top: 0;">Bandeja de Gestión Municipal y Asignación (Persona 2 - CU06/CU07)</h2>
-
-  <!-- Bar de Filtros Avanzados (CU06) -->
-  <div style="display: flex; gap: 15px; background: #f1f5f9; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #cbd5e1; flex-wrap: wrap;">
+<div class="bandeja-page animate-fade-in">
+  <div class="page-header">
     <div>
-      <label style="font-weight: bold; display: block; font-size: 0.85rem;">Zona Municipal:</label>
-      <select [(ngModel)]="filtroZona" (change)="aplicarFiltros()" style="padding: 6px 10px; border-radius: 4px; border: 1px solid #94a3b8;">
-        <option [value]="0">Todas las Zonas</option>
-        <option *ngFor="let z of zonas" [value]="z">Zona {{ z }}</option>
-      </select>
-    </div>
-
-    <div>
-      <label style="font-weight: bold; display: block; font-size: 0.85rem;">Categoría:</label>
-      <select [(ngModel)]="filtroCategoria" (change)="aplicarFiltros()" style="padding: 6px 10px; border-radius: 4px; border: 1px solid #94a3b8;">
-        <option value="TODAS">Todas las Categorías</option>
-        <option *ngFor="let c of categorias" [value]="c">{{ c }}</option>
-      </select>
-    </div>
-
-    <div>
-      <label style="font-weight: bold; display: block; font-size: 0.85rem;">Estado:</label>
-      <select [(ngModel)]="filtroEstado" (change)="aplicarFiltros()" style="padding: 6px 10px; border-radius: 4px; border: 1px solid #94a3b8;">
-        <option value="TODOS">Todos los Estados</option>
-        <option value="REGISTRADA">REGISTRADA</option>
-        <option value="EN_INSPECCION">EN_INSPECCION</option>
-        <option value="REPARADA">REPARADA</option>
-        <option value="CERRADA">CERRADA</option>
-        <option value="RECHAZADA">RECHAZADA</option>
-      </select>
+      <h1 class="page-title">Bandeja de Gestión Municipal</h1>
+      <p class="page-subtitle">Validación, priorización y asignación de quejas ciudadanas</p>
     </div>
   </div>
 
-  <div style="display: flex; gap: 20px;">
-    <!-- Tabla / Lista de Quejas -->
-    <div style="flex: 1.5; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
-      <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
-        <thead style="background: #1e293b; color: white;">
-        <tr>
-          <th style="padding: 10px;">Correlativo</th>
-          <th style="padding: 10px;">Zona / Categoría</th>
-          <th style="padding: 10px;">Prioridad</th>
-          <th style="padding: 10px;">Estado</th>
-        </tr>
+  <!-- Filtros -->
+  <div class="filters-bar card">
+    <div class="card-body" style="padding: 0.875rem 1.25rem;">
+      <div class="filters-row">
+        <div class="filter-group">
+          <label class="form-label" style="margin-bottom: 0.25rem;">Zona Municipal</label>
+          <select class="form-select" [(ngModel)]="filtroZona" (change)="aplicarFiltros()">
+            <option [value]="0">Todas las Zonas</option>
+            <option *ngFor="let z of zonas" [value]="z">Zona {{ z }}</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="form-label" style="margin-bottom: 0.25rem;">Categoría</label>
+          <select class="form-select" [(ngModel)]="filtroCategoria" (change)="aplicarFiltros()">
+            <option value="TODAS">Todas las Categorías</option>
+            <option *ngFor="let c of categorias" [value]="c">{{ c }}</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="form-label" style="margin-bottom: 0.25rem;">Estado</label>
+          <select class="form-select" [(ngModel)]="filtroEstado" (change)="aplicarFiltros()">
+            <option value="TODOS">Todos los Estados</option>
+            <option value="REGISTRADA">REGISTRADA</option>
+            <option value="EN_INSPECCION">EN INSPECCIÓN</option>
+            <option value="EN_REPARACION_TECNICA">EN REPARACIÓN</option>
+            <option value="PENDIENTE_CIERRE">PENDIENTE CIERRE</option>
+            <option value="SOLUCIONADA">SOLUCIONADA</option>
+            <option value="CERRADA">CERRADA</option>
+            <option value="RECHAZADA">RECHAZADA</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Content Grid -->
+  <div class="bandeja-layout">
+    <!-- Tabla de Quejas -->
+    <div class="card">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Correlativo</th>
+            <th>Zona / Categoría</th>
+            <th>Prioridad</th>
+            <th>Estado</th>
+          </tr>
         </thead>
         <tbody>
-        <tr *ngFor="let q of quejasFiltradas" (click)="seleccionar(q)"
-            [style.background]="quejaSeleccionada?.id === q.id ? '#e2e8f0' : 'white'"
-            style="border-bottom: 1px solid #e2e8f0; cursor: pointer;">
-          <td style="padding: 10px; font-weight: bold;">{{ q.correlativo }}</td>
-          <td style="padding: 10px;">Zona {{ q.zona }} - <small>{{ q.categoria }}</small></td>
-          <td style="padding: 10px;">
-              <span [style.background]="q.prioridad === 'ALTA' ? '#fecaca' : '#dcfce7'"
-                    [style.color]="q.prioridad === 'ALTA' ? '#dc2626' : '#15803d'"
-                    style="padding: 3px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8rem;">
-                {{ q.prioridad }}
-              </span>
-          </td>
-          <td style="padding: 10px; font-weight: bold; color: #2563eb;">{{ q.estado }}</td>
-        </tr>
-        <tr *ngIf="quejasFiltradas.length === 0">
-          <td colspan="4" style="padding: 20px; text-align: center; color: #64748b;">No hay quejas que coincidan con los filtros.</td>
-        </tr>
+          <tr *ngFor="let q of quejasFiltradas"
+              (click)="seleccionar(q)"
+              [class.active]="quejaSeleccionada?.id === q.id">
+            <td style="font-weight: 700;">{{ q.correlativo }}</td>
+            <td>
+              Zona {{ q.zona }}
+              <span style="color: var(--slate-400); font-size: var(--font-xs); display: block;">{{ q.categoria }}</span>
+            </td>
+            <td>
+              <span class="badge" [ngClass]="{
+                'badge-danger': q.prioridad === 'ALTA' || q.prioridad === 'URGENTE',
+                'badge-warning': q.prioridad === 'MEDIA',
+                'badge-neutral': q.prioridad === 'BAJA'
+              }">{{ q.prioridad }}</span>
+            </td>
+            <td>
+              <span class="badge badge-primary">{{ q.estado }}</span>
+            </td>
+          </tr>
+          <tr *ngIf="quejasFiltradas.length === 0">
+            <td colspan="4" class="empty-cell">No hay quejas que coincidan con los filtros.</td>
+          </tr>
         </tbody>
       </table>
     </div>
 
-    <!-- Panel de Detalle y Asignación (CU07) -->
-    <div style="flex: 1; border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; background: #fafafa;" *ngIf="quejaSeleccionada">
-      <h3 style="margin-top: 0; color: #0f172a;">Expediente: {{ quejaSeleccionada.correlativo }}</h3>
-      <p><strong>Título:</strong> {{ quejaSeleccionada.titulo }}</p>
-      <p><strong>Ubicación:</strong> Zona {{ quejaSeleccionada.zona }} ({{ quejaSeleccionada.direccion }})</p>
-      <p><strong>Descripción:</strong> {{ quejaSeleccionada.descripcion }}</p>
-
-      <div style="margin: 15px 0;">
-        <label style="font-weight: bold; font-size: 0.85rem;">Foto de Evidencia:</label>
-        <br>
-        <img [src]="quejaSeleccionada.fotosAntes[0]" alt="Evidencia" style="width: 100%; max-height: 180px; object-fit: cover; border-radius: 6px; margin-top: 5px; border: 1px solid #ccc;">
+    <!-- Panel de Detalle y Asignación -->
+    <div class="card expediente-panel" *ngIf="quejaSeleccionada">
+      <div class="card-header">
+        <h3 class="expediente-title">Expediente: {{ quejaSeleccionada.correlativo }}</h3>
       </div>
-
-      <!-- Acciones de Validación y Asignación (CU07) -->
-      <div *ngIf="quejaSeleccionada.estado === 'REGISTRADA'" style="background: white; padding: 15px; border: 1px solid #cbd5e1; border-radius: 6px;">
-        <h4 style="margin-top: 0; color: #1e293b;">Validar y Asignar Inspector</h4>
-
-        <label style="display: block; margin-bottom: 5px; font-size: 0.85rem; font-weight: bold;">Seleccionar Inspector TÉCNICO:</label>
-        <select [(ngModel)]="inspectorSeleccionado" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #cbd5e1; margin-bottom: 10px;">
-          <option value="">-- Seleccionar Inspector --</option>
-          <option *ngFor="let ins of inspectoresDisponibles" [value]="ins">{{ ins }}</option>
-        </select>
-
-        <label style="display: block; margin-bottom: 5px; font-size: 0.85rem; font-weight: bold;">Instrucciones de Inspección:</label>
-        <textarea [(ngModel)]="comentarioAsignacion" rows="2" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #cbd5e1; box-sizing: border-box; margin-bottom: 10px;"></textarea>
-
-        <div style="display: flex; gap: 10px;">
-          <button (click)="asignarAInspector()" style="flex: 1; background: #2563eb; color: white; border: none; padding: 8px; border-radius: 4px; font-weight: bold; cursor: pointer;">
-            Asignar A Inspector
-          </button>
-          <button (click)="rechazarQueja()" style="background: #ef4444; color: white; border: none; padding: 8px 12px; border-radius: 4px; font-weight: bold; cursor: pointer;">
-            Rechazar
-          </button>
+      <div class="card-body">
+        <div class="expediente-info">
+          <p><strong>Título:</strong> {{ quejaSeleccionada.titulo }}</p>
+          <p><strong>Ubicación:</strong> Zona {{ quejaSeleccionada.zona }} — {{ quejaSeleccionada.direccion }}</p>
+          <p><strong>Descripción:</strong> {{ quejaSeleccionada.descripcion }}</p>
         </div>
-      </div>
 
-      <div *ngIf="quejaSeleccionada.estado !== 'REGISTRADA'" style="background: #e0f2fe; padding: 10px; border-radius: 6px; color: #0369a1; font-weight: bold; font-size: 0.9rem;">
-        Esta queja ya ha sido procesada o se encuentra en estado: {{ quejaSeleccionada.estado }}.
+        <div class="expediente-foto">
+          <label class="form-label">Evidencia Fotográfica</label>
+          <img [src]="quejaSeleccionada.fotosAntes[0]" alt="Evidencia" class="evidencia-img">
+        </div>
+
+        <!-- Acciones de Asignación (solo para REGISTRADA) -->
+        <div *ngIf="quejaSeleccionada.estado === 'REGISTRADA'" class="asignacion-box">
+          <h4 class="asignacion-title">
+            <span class="mat-icon" style="font-size: 18px;">assignment_ind</span>
+            Validar y Asignar Inspector
+          </h4>
+
+          <div class="form-group">
+            <label class="form-label">Inspector de Campo</label>
+            <select class="form-select" [(ngModel)]="inspectorSeleccionado">
+              <option value="">— Seleccionar Inspector —</option>
+              <option *ngFor="let ins of inspectoresDisponibles" [value]="ins">{{ ins }}</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Instrucciones de Inspección</label>
+            <textarea class="form-textarea" [(ngModel)]="comentarioAsignacion" rows="2"
+                      placeholder="Instrucciones para el inspector..."></textarea>
+          </div>
+
+          <div class="asignacion-actions">
+            <button class="btn btn-primary" (click)="asignarAInspector()" style="flex: 1;">
+              <span class="mat-icon">send</span>
+              Asignar Inspector
+            </button>
+            <button class="btn btn-danger" (click)="rechazarQueja()">
+              <span class="mat-icon">close</span>
+              Rechazar
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="quejaSeleccionada.estado !== 'REGISTRADA'" class="alert alert-info" style="margin-top: 1rem;">
+          <span class="mat-icon" style="font-size: 18px;">info</span>
+          <span>Esta queja ya fue procesada. Estado actual: <strong>{{ quejaSeleccionada.estado }}</strong></span>
+        </div>
       </div>
     </div>
   </div>

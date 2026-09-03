@@ -104,18 +104,22 @@ export class LoginComponent implements OnInit {
   private redirigirSegunRol(rol?: string): void {
     switch (rol) {
       case 'CIUDADANO':
-        this.router.navigate(['/portal-ciudadano']);
+        this.router.navigate(['/ciudadano/mis-quejas']);
         break;
       case 'FUNCIONARIO':
-      case 'ADMINISTRADOR':
-        this.router.navigate(['/gestion-municipal']);
+        this.router.navigate(['/funcionario/bandeja']);
         break;
       case 'INSPECTOR':
+        this.router.navigate(['/inspector/inspecciones']);
+        break;
       case 'ESPECIALISTA':
-        this.router.navigate(['/operaciones-campo']);
+        this.router.navigate(['/especialista/ordenes']);
+        break;
+      case 'ADMINISTRADOR':
+        this.router.navigate(['/admin/usuarios']);
         break;
       default:
-        this.router.navigate(['/portal-ciudadano']);
+        this.router.navigate(['/ciudadano/mis-quejas']);
     }
   }
 

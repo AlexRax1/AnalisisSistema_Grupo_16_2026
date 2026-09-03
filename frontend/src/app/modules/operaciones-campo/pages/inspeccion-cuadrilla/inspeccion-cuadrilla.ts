@@ -42,7 +42,7 @@ export class InspeccionCuadrillaComponent implements OnInit {
   cargarDatos() {
     this.quejaService.obtenerTodas().subscribe((data: Queja[]) => {
       this.quejasEnInspeccion = data.filter(q => q.estado === 'EN_INSPECCION');
-      this.quejasReparadas = data.filter(q => q.estado === 'REPARADA' || q.estado === 'ASIGNADA_CUADRILLA' || q.estado === 'EN_PROCESO');
+      this.quejasReparadas = data.filter(q => q.estado === 'EN_REPARACION_TECNICA' || q.estado === 'EN_VALIDACION_REPARACION');
 
       if (this.rolCampo === 'INSPECTOR' && this.quejasEnInspeccion.length > 0) {
         this.quejaSeleccionada = this.quejasEnInspeccion[0];
@@ -84,7 +84,7 @@ export class InspeccionCuadrillaComponent implements OnInit {
     const detalle = `Dictamen Procedente. Asignado a ${this.cuadrillaAsignada}. Obs: ${this.dictamenInspector}`;
     this.quejaService.actualizarEstado(
       this.quejaSeleccionada.id,
-      'ASIGNADA_CUADRILLA',
+      'EN_REPARACION_TECNICA',
       detalle,
       'Inspector Carlos Gómez'
     ).subscribe(() => {
@@ -114,7 +114,7 @@ export class InspeccionCuadrillaComponent implements OnInit {
     const detalle = `Trabajo finalizado por Cuadrilla. Obs: ${this.informeTecnico || 'Reparación completada sin novedades'}`;
     this.quejaService.actualizarEstado(
       this.quejaSeleccionada.id,
-      'REPARADA',
+      'EN_VALIDACION_REPARACION',
       detalle,
       'Líder de Cuadrilla'
     ).subscribe(() => {

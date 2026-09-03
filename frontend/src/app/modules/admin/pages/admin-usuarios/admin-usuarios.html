@@ -1,0 +1,108 @@
+<div class="admin-page animate-fade-in">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Gestión de Usuarios Internos</h1>
+      <p class="page-subtitle">Administración de cuentas del personal municipal</p>
+    </div>
+    <button class="btn btn-primary" (click)="abrirCrear()">
+      <span class="mat-icon">person_add</span>
+      Nuevo Usuario
+    </button>
+  </div>
+
+  <!-- Filtros -->
+  <div class="filters-bar card">
+    <div class="card-body" style="padding: 0.875rem 1.25rem;">
+      <div class="filters-row">
+        <div class="filter-group">
+          <label class="form-label" style="margin-bottom: 0.25rem;">Buscar</label>
+          <input type="text" class="form-input" placeholder="Nombre o correo..." [(ngModel)]="busqueda" (input)="aplicarFiltros()">
+        </div>
+        <div class="filter-group">
+          <label class="form-label" style="margin-bottom: 0.25rem;">Rol</label>
+          <select class="form-select" [(ngModel)]="filtroRol" (change)="aplicarFiltros()">
+            <option value="TODOS">Todos los Roles</option>
+            <option *ngFor="let r of roles" [value]="r">{{ r }}</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla de Usuarios -->
+  <div class="card" style="margin-top: 1rem;">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Correo</th>
+          <th>Rol</th>
+          <th>Estado</th>
+          <th>Registro</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let u of usuariosFiltrados">
+          <td style="font-weight: 600;">{{ u.nombre }}</td>
+          <td>{{ u.correo }}</td>
+          <td><span class="badge badge-primary">{{ u.rol }}</span></td>
+          <td>
+            <span class="badge" [ngClass]="u.estado === 'ACTIVO' ? 'badge-success' : 'badge-neutral'">
+              {{ u.estado }}
+            </span>
+          </td>
+          <td style="color: var(--slate-500); font-size: var(--font-xs);">{{ u.fechaCreacion | date:'dd/MM/yyyy' }}</td>
+          <td>
+            <div style="display: flex; gap: 0.5rem;">
+              <button class="btn btn-ghost btn-sm" (click)="editarUsuario(u)" title="Editar">
+                <span class="mat-icon" style="font-size: 18px;">edit</span>
+              </button>
+              <button class="btn btn-ghost btn-sm" (click)="toggleEstado(u)"
+                      [title]="u.estado === 'ACTIVO' ? 'Desactivar' : 'Activar'">
+                <span class="mat-icon" style="font-size: 18px;"
+                      [style.color]="u.estado === 'ACTIVO' ? 'var(--danger-500)' : 'var(--success-500)'">
+                  {{ u.estado === 'ACTIVO' ? 'block' : 'check_circle' }}
+                </span>
+              </button>
+            </div>
+          </td>
+        </tr>
+        <tr *ngIf="usuariosFiltrados.length === 0">
+          <td colspan="6" style="text-align: center; padding: 2rem; color: var(--slate-400);">
+            No se encontraron usuarios con los filtros aplicados.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal Crear/Editar -->
+<div class="modal-overlay" *ngIf="mostrarModal">
+  <div class="modal-card" style="text-align: left; max-width: 440px;">
+    <h3 style="margin: 0 0 1.25rem 0; font-size: var(--font-lg); color: var(--slate-900);">
+      {{ editando ? 'Editar Usuario' : 'Nuevo Usuario Interno' }}
+    </h3>
+    <div class="form-group">
+      <label class="form-label">Nombre Completo</label>
+      <input type="text" class="form-input" [(ngModel)]="nuevoUsuario.nombre" placeholder="Nombre del funcionario">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Correo Electrónico</label>
+      <input type="email" class="form-input" [(ngModel)]="nuevoUsuario.correo" placeholder="correo@muni.gob.gt">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Rol Asignado</label>
+      <select class="form-select" [(ngModel)]="nuevoUsuario.rol">
+        <option *ngFor="let r of roles" [value]="r">{{ r }}</option>
+      </select>
+    </div>
+    <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+      <button class="btn btn-outline" style="flex: 1;" (click)="mostrarModal = false">Cancelar</button>
+      <button class="btn btn-primary" style="flex: 1;" (click)="guardarUsuario()">
+        {{ editando ? 'Guardar Cambios' : 'Crear Usuario' }}
+      </button>
+    </div>
+  </div>
+</div>

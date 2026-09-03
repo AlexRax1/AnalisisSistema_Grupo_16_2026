@@ -1,0 +1,62 @@
+<div class="admin-page animate-fade-in">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Reportería Gerencial</h1>
+      <p class="page-subtitle">Métricas y estadísticas del sistema de quejas</p>
+    </div>
+    <button class="btn btn-outline">
+      <span class="mat-icon">download</span>
+      Exportar Datos
+    </button>
+  </div>
+
+  <!-- Métricas -->
+  <div class="metrics-grid">
+    <div class="metric-card card" *ngFor="let m of metricas">
+      <div class="card-body">
+        <div class="metric-top">
+          <span class="mat-icon metric-icon">{{ m.icon }}</span>
+          <span class="metric-change" [class.positive]="m.positivo">{{ m.variacion }}</span>
+        </div>
+        <div class="metric-value">{{ m.valor }}</div>
+        <div class="metric-label">{{ m.label }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla Resumen por Categoría -->
+  <div class="card" style="margin-top: 1.5rem;">
+    <div class="card-header">
+      <h3 style="margin: 0; font-size: var(--font-md); font-weight: 700; color: var(--slate-900);">Resumen por Categoría</h3>
+    </div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Categoría</th>
+          <th>Total</th>
+          <th>Resueltas</th>
+          <th>Efectividad</th>
+          <th>Progreso</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let r of resumenPorCategoria" style="cursor: default;">
+          <td style="font-weight: 600;">{{ r.categoria }}</td>
+          <td>{{ r.total }}</td>
+          <td>{{ r.resueltas }}</td>
+          <td>
+            <span class="badge" [ngClass]="r.porcentaje >= 85 ? 'badge-success' : 'badge-warning'">
+              {{ r.porcentaje }}%
+            </span>
+          </td>
+          <td>
+            <div class="progress-bar-container">
+              <div class="progress-bar-fill" [style.width.%]="r.porcentaje"
+                   [style.background]="r.porcentaje >= 85 ? 'var(--success-500)' : 'var(--warning-500)'"></div>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

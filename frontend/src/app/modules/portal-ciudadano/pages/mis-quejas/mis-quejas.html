@@ -1,34 +1,96 @@
-<div style="display: flex; gap: 20px; padding: 20px; font-family: sans-serif;">
-  <!-- Lista de Quejas -->
-  <div style="flex: 1; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; background: #f8fafc;">
-    <h3 style="margin-top: 0;">Mis Quejas Registradas (CU05)</h3>
-    <div *ngFor="let q of quejas" (click)="verDetalle(q)"
-         style="padding: 12px; margin-bottom: 10px; border: 1px solid #cbd5e1; cursor: pointer; border-radius: 6px; background: white;">
-      <strong style="color: #0f172a;">{{ q.correlativo }}</strong> - {{ q.titulo }}
-      <br>
-      <small>Estado: <b style="color: #2563eb;">{{ q.estado }}</b></small>
+<div class="mis-quejas-page animate-fade-in">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Mis Quejas Registradas</h1>
+      <p class="page-subtitle">Consulta el estado y trazabilidad de tus reportes ciudadanos</p>
     </div>
+    <a routerLink="/ciudadano/nueva-queja" class="btn btn-primary">
+      <span class="mat-icon">add_circle</span>
+      Nueva Queja
+    </a>
   </div>
 
-  <!-- Timeline Visual (CU05) -->
-  <div style="flex: 2; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; background: white;" *ngIf="quejaSeleccionada">
-    <h3 style="margin-top: 0; color: #1e293b;">Trazabilidad: {{ quejaSeleccionada.correlativo }}</h3>
-    <p><strong>Categoría:</strong> {{ quejaSeleccionada.categoria }} | <strong>Zona:</strong> {{ quejaSeleccionada.zona }}</p>
-    <p><strong>Descripción:</strong> {{ quejaSeleccionada.descripcion }}</p>
-    <div style="flex: 1; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; background: #f8fafc;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-        <h3 style="margin: 0;">Mis Quejas (CU05)</h3>
-        <button routerLink="/portal-ciudadano/crear" style="background: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold;">
-          + Nueva Queja
-        </button>
+  <div class="quejas-layout">
+    <!-- Lista de Quejas -->
+    <div class="quejas-list">
+      <div *ngFor="let q of quejas"
+           class="queja-item card"
+           [class.active]="quejaSeleccionada?.id === q.id"
+           (click)="verDetalle(q)">
+        <div class="card-body" style="padding: 1rem;">
+          <div class="queja-item-header">
+            <span class="queja-correlativo">{{ q.correlativo }}</span>
+            <span class="badge badge-primary">{{ q.estado }}</span>
+          </div>
+          <p class="queja-item-titulo">{{ q.titulo }}</p>
+          <div class="queja-item-meta">
+            <span><span class="mat-icon" style="font-size: 14px;">location_on</span> Zona {{ q.zona }}</span>
+            <span><span class="mat-icon" style="font-size: 14px;">calendar_today</span> {{ q.fechaCreacion | date:'dd/MM/yyyy' }}</span>
+          </div>
+        </div>
       </div>
-    <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;">
-    <h4>Línea de Tiempo del Historial</h4>
-    <div style="display: flex; flex-direction: column; gap: 15px;">
-      <div *ngFor="let h of quejaSeleccionada.historialEstados"
-           style="border-left: 4px solid #2563eb; padding-left: 12px; background: #f1f5f9; padding: 8px 12px; border-radius: 0 6px 6px 0;">
-        <strong style="color: #1e40af;">{{ h.estado }}</strong> - <small style="color: #64748b;">{{ h.fecha | date:'medium' }}</small>
-        <p style="margin: 5px 0 0 0; font-size: 0.95rem;">{{ h.comentario }} <em>({{ h.responsable }})</em></p>
+
+      <div *ngIf="quejas.length === 0" class="empty-state">
+        <span class="mat-icon" style="font-size: 48px; color: var(--slate-300);">inbox</span>
+        <p>No tienes quejas registradas aún.</p>
+        <a routerLink="/ciudadano/nueva-queja" class="btn btn-primary btn-sm">Registrar primera queja</a>
+      </div>
+    </div>
+
+    <!-- Detalle y Timeline -->
+    <div class="queja-detalle card" *ngIf="quejaSeleccionada">
+      <div class="card-header">
+        <h3 style="margin: 0; font-size: var(--font-lg); font-weight: 700; color: var(--slate-900);">
+          Trazabilidad: {{ quejaSeleccionada.correlativo }}
+        </h3>
+      </div>
+      <div class="card-body">
+        <div class="detalle-info">
+          <div class="detalle-row">
+            <span class="detalle-label">Categoría</span>
+            <span class="detalle-value">{{ quejaSeleccionada.categoria }}</span>
+          </div>
+          <div class="detalle-row">
+            <span class="detalle-label">Zona</span>
+            <span class="detalle-value">Zona {{ quejaSeleccionada.zona }}</span>
+          </div>
+          <div class="detalle-row">
+            <span class="detalle-label">Prioridad</span>
+            <span class="badge" [ngClass]="quejaSeleccionada.prioridad === 'ALTA' ? 'badge-danger' : 'badge-neutral'">
+              {{ quejaSeleccionada.prioridad }}
+            </span>
+          </div>
+        </div>
+
+        <div class="detalle-descripcion">
+          <strong>Descripción:</strong>
+          <p>{{ quejaSeleccionada.descripcion }}</p>
+        </div>
+
+        <h4 class="timeline-title">
+          <span class="mat-icon" style="font-size: 18px;">timeline</span>
+          Línea de Tiempo
+        </h4>
+
+        <div class="timeline">
+          <div *ngFor="let h of quejaSeleccionada.historialEstados; let last = last"
+               class="timeline-item" [class.last]="last">
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">
+              <div class="timeline-header">
+                <span class="badge badge-primary" style="font-size: 0.7rem;">{{ h.estado }}</span>
+                <span class="timeline-date">{{ h.fecha | date:'dd/MM/yyyy HH:mm' }}</span>
+              </div>
+              <p class="timeline-text">{{ h.comentario }}</p>
+              <span class="timeline-responsable">{{ h.responsable }}</span>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn btn-outline btn-block" style="margin-top: 1.5rem;" disabled>
+          <span class="mat-icon">picture_as_pdf</span>
+          Descargar Constancia PDF
+        </button>
       </div>
     </div>
   </div>
