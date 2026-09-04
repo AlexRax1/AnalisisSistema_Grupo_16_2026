@@ -1,0 +1,250 @@
+posiblemente cambiar a un md ? talvez este podria ser el readme del repositorio tratando de explicar cada cosa?
+
+A continuación tienes la **línea de tiempo integral y flujo cronológico de la aplicación**, diseñada de manera extensa para servir como mapa maestro de arquitectura, interfaces y datos para todo tu equipo de desarrollo:
+
+---
+
+### Panorama General del Ciclo de Vida
+
+```text
+[FASE 0: INICIALIZACIÓN]
+   └─ Administrador da de alta personal, zonas y dependencias (CU14)
+          │
+[FASE 1: CAPTURA CIUDADANA] ──► Estado: REGISTRADA
+   └─ Vecino radica queja con fotos y mapa (CU01, CU02, CU04)
+          │
+[FASE 2: TRIAJE Y DESPACHO] ──► Estado: EN INSPECCIÓN
+   └─ Funcionario evalúa demanda y asigna inspector por zona (CU06, CU07)
+          │
+[FASE 3: INSPECCIÓN INICIAL] ──► Estado: EN REPARACIÓN TÉCNICA
+   └─ Inspector visita en sitio, valida daño y deriva a cuadrilla (CU09, CU10)
+          │
+[FASE 4: EJECUCIÓN TÉCNICA] ──► Estado: EN VALIDACIÓN DE REPARACIÓN
+   └─ Especialista repara, registra insumos y carga fotos finales (CU12, CU13)
+          │
+[FASE 5: CONTROL DE CALIDAD] ──► Estado: PENDIENTE DE CIERRE
+   └─ Inspector audita obra en sitio y emite dictamen de conformidad (CU09, CU11)
+          │
+[FASE 6: CIERRE ADMINISTRATIVO] ──► Estado: SOLUCIONADA / CERRADA
+   └─ Funcionario audita expediente digital, firma cierre y notifica (CU08)
+          │
+[FASE 7: SEGUIMIENTO Y TRANSPARENCIA]
+   └─ Ciudadano consulta timeline al 100% y descarga constancia PDF (CU05) y resultados de la queja
+
+   ademas, pueden haber 'quejas hijas' que se pueden realizar de una queja.
+   cuando la queja siga activa(en reparaciones) el mismo usuario puede reportar un 'empeoramiento' de la situacion, por ejemplo que un bache se haya echo muchisimos mas grande o grave
+   cuando la queja ya se cerro puede hacer una queja sobre esa queja que no se 'reparo correctamente'algo como una quejja de inconformidad
+
+```
+
+---
+
+## Línea de Tiempo Detallada por Fases
+
+---
+
+### Fase 0: Configuración Previa y Base Operativa
+
+* **Actor principal**: Administrador del Sistema ([CU14: Gestionar Personal y Roles]().
+* **Propósito**: Dejar listo el ecosistema municipal antes de recibir quejas ciudadanas.
+
+1. **Configuración de Catálogos**: , las 4 categorías habilitadas (hojo que esto no se va a manejar por zonas(NO ZONAS)).
+2. **Alta de Personal Municipal**: Creación de cuentas internas (el personal municipal no se autoregistra):
+* A cada **Inspector**
+* A cada **Especialista Técnico** se le asigna su cuadrilla (`a un especialista se le asigna unos 'campos' en lo que es compenente y pueda tratar de arreglar el problema `).
+* A los **Funcionarios** se les asignan permisos de recepción, despacho y cierre.
+
+
+
+---
+
+### Fase 1: Entrada Ciudadana y Apertura del Expediente
+
+* **Actor principal**: Ciudadano (Vecino) ([
+* **Momento**: Cualquier día y hora a través del portal web ciudadano.
+
+1. **Registro y Acceso**: El vecino se registra con DPI (13 dígitos inmutables), teléfono (8 dígitos) y contraseña cifrada con BCrypt. Al iniciar sesión recibe su token JWT.
+2. **Formulación del Reporte**:
+* Selecciona categoría y subcategoría.
+* ingresa dirección con punto de referencia.
+* Sitúa un marcador en el **mapa interactivo** para registrar latitud y longitud.
+* Escribe la descripción de los hechos (entre 20 y 500 caracteres).
+* Adjunta de 1 a 3 fotografías de evidencia del daño (máximo 5 MB cada una).
+
+
+3. **Procesamiento del Sistema**:
+* Genera el correlativo único inmutable: `QUE-2026-XXXXXX`(esto puede que el sistema lo manejo solo guardando en la base de datos el correlativo y su id, o algo parecido(ajustar despues)).
+* El servicio backend calcula la `prioridad_sugerida` evaluando el volumen de quejas activas en la misma zona y categoría.(tratar de 'catalogar' si una o varias quejas apuntan hacia un problema en especifico para hacerlo de prioridad y que aparezca como 'primer resultado' en la bandeja de todos(asi tenerle mucha mas prioridad))
+* Guarda las fotos en `evidencias_digitales` con la etiqueta `REPORTE_CIUDADANO`.
+* Inserta el primer registro en `historial_estados_queja` (`estado_nuevo = 'REGISTRADA'`).
+
+
+4. **Respuesta en Pantalla**: El ciudadano ve su tarjeta de confirmación con el código de seguimiento y el caso aparece en su lista personal de "Mis Quejas"
+
+---
+
+### Fase 2: Triaje, Priorización y Despacho Territorial
+
+* **Actor principal**: Funcionario Municipal
+* **Momento**: Horas laborales en el centro de monitoreo municipal.
+
+1. **Monitoreo de Bandeja**: El funcionario visualiza en tiempo real las solicitudes en estado `REGISTRADA`.
+2. **Evaluación de Admisibilidad**:
+* Abre la queja y revisa si compete a la municipalidad.
+* Si no procede por ser propiedad privada o incompetencia legal, redacta la justificación obligatoria y transiciona a `RECHAZADA`, cerrando el caso y notificando al vecino.
+
+
+3. **Priorización por Demanda Comunitaria**:
+* Revisa el badge de prioridad sugerida calculado por el sistema (alertando si es un foco rojo con múltiples reportes vecinales).
+* El funcionario confirma o ajusta la prioridad formal (`prioridad_confirmada`).// esto esta pendiente de manejar correctamente, se debe de buscar una manera de manejarlo
+
+
+4. **Asignación Territorial**:
+* El selector de inspectores se filtra automáticamente mostrando únicamente al personal asignado a la zona geográfica del incidente.(ojo, no es una zona 'extremadamente grande' apenas tiene una extensión territorial de 287 kilómetros cuadrados asi que no hace falta el dividirlo por zonas, ya que es para una municipalidad en guatemala )
+* El funcionario selecciona al inspector y redacta las directrices de la visita.
+
+
+5. **Resultado**:
+* La queja pasa a `EN INSPECCIÓN`.
+* Se asignan `funcionario_id` e `inspector_id` en la tabla `quejas`.
+* Se añade la entrada correspondiente en `historial_estados_queja`.
+
+
+
+---
+
+### Fase 3: Inspección Técnica In Situ y Apertura de Carpeta Técnica
+
+* **Actor principal**: Inspector de Campo (
+* **Momento**: Desplazamiento presencial en campo (Interfaz optimizada para dispositivos móviles/tablets).
+
+1. **Gestión de Ruta**: El inspector abre su pestaña **"Inspección Inicial"**, revisa la dirección, las fotos que envió el ciudadano y abre la ruta en el mapa.
+2. **Constatación Presencial**: Acude físicamente al punto exacto para corroborar que el daño existe y no es una falsa alarma.
+3. **Informe de Inspección Inicial (Fase 1 del Expediente)**:
+* Marca el check de veracidad del daño.
+* Clasifica la gravedad real in situ (`LEVE`, `MODERADA`, `GRAVE`, `CRITICA`).
+* Redacta el diagnóstico técnico y recomienda maquinaria o recursos (ej. *"Se requiere camión cisterna y reemplazo de 4 metros de tubería PVC de 6 pulgadas"*).
+* Captura y carga de 1 a 3 fotos tomadas directamente en el lugar.
+* **Derivación a Cuadrilla(o especialista? ) **: Selecciona la dependencia técnica responsable según el tipo de daño y asigna la orden a la cuadrilla correspondiente.
+
+
+4. **Resultado**:
+* Se inserta un registro en `informes_queja` con `tipo_informe = 'INSPECCION_INICIAL'`.
+* Las fotos se vinculan a `evidencias_digitales` con etapa `INSPECCION_INICIAL`.
+* El estado de la queja cambia a `EN REPARACIÓN TÉCNICA`.
+* En el portal del vecino, el timeline avanza visualmente al paso 2.
+
+(ojo que tambien puede rechazar diciendo que es una falsa alarma, que tambien necesitara pruebas y el funcionario lo validara contrastando evidencias)
+
+---
+
+### Fase 4: Ejecución Operativa de la Obra en Terreno
+
+* **Actor principal**: Especialista Técnico / Jefe de Cuadrilla (
+* **Momento**: Programación y ejecución de la obra física.
+
+1. **Cola de Trabajo**: El especialista abre su bandeja técnica. Las órdenes aparecen ordenadas por nivel de urgencia (`Urgente` $\rightarrow$ `Alta` $\rightarrow$ `Media` $\rightarrow$ `Baja`)(esto tambien dependera de la demanda).
+2. **Revisión del Expediente**: Consulta el diagnóstico técnico que dejó el inspector y las fotos del daño antes de salir a trabajar.
+3. **Reparación en Sitio**: La cuadrilla realiza el trabajo físico (bacheo, cambio de lámpara, desazolve de alcantarilla, poda de ramas).
+4. **Informe de Solución Técnica**:
+* Redacta la descripción detallada del trabajo terminado.
+* Registra los materiales consumidos (ej. *"6 sacos de asfalto en frío, 1 tambor de emulsión"*).
+* Registra las horas invertidas y la fecha/hora de culminación.
+* Carga obligatoriamente fotografías nítidas de la obra concluida.
+
+
+5. **Resultado**:
+* Se inserta en `informes_queja` el registro con `tipo_informe = 'SOLUCION_TECNICA'`.
+* Las fotos se guardan en `evidencias_digitales` con etapa `SOLUCION_TECNICA`.
+* El estado cambia a `EN VALIDACIÓN DE REPARACIÓN`.
+* El caso se transfiere automáticamente a la bandeja del inspector original para control de calidad.
+
+
+
+---
+
+### Fase 5: Auditoría de Calidad y Visto Bueno de Campo
+
+* **Actor principal**: Inspector de Campo
+* **Momento**: Re-inspección presencial tras la finalización de la obra.
+
+1. **Bandeja de Validación**: El inspector accede a su pestaña **"Validación de Reparación"**.
+2. **Comparativa en Pantalla**: La interfaz le coloca lado a lado las fotos del daño original versus las fotos del trabajo entregado por el especialista.
+3. **Segunda Visita en Terreno**: El inspector acude nuevamente al sitio para auditar que la reparación fue sólida y cumple estándares de durabilidad.
+4. **Dictamen de Conformidad (Fase 2 del Expediente)**:
+* *Si la obra está defectuosa (No Conforme)*: Detalla las fallas observadas, toma fotos del defecto y presiona "Devolver a Cuadrilla". El estado regresa a `EN REPARACIÓN TÉCNICA` con máxima prioridad para re-trabajo.
+* *Si la obra es satisfactoria (Conforme - Happy Path)*: Marca el dictamen `CONFORME`, redacta las observaciones del visto bueno y adjunta fotos de la auditoría.
+
+
+5. **Resultado**:
+* Se inserta en `informes_queja` el registro con `tipo_informe = 'DICTAMEN_CONFORMIDAD'`.
+* Las fotos se guardan en `evidencias_digitales` con etapa `CONFORMIDAD_CALIDAD`.
+* El estado avanza a `PENDIENTE DE CIERRE`.
+* El caso regresa consolidado a la bandeja del Funcionario Municipal.
+
+
+
+---
+
+### Fase 6: Auditoría Integral y Cierre Administrativo
+
+* **Actor principal**: Funcionario Municipal
+* **Momento**: Validación administrativa final del expediente.
+
+1. **Revisión del Expediente Consolidado**: El funcionario abre la queja en su bandeja de "Pendientes de Cierre".
+2. **Comprobación de Cumplimiento**: Verifica que la carpeta digital cuente con todas las evidencias requeridas por la normativa (RN17):
+* Diagnóstico inicial del inspector.
+* Informe de materiales y horas del especialista.
+* Visto bueno de conformidad del inspector.
+* Galería visual completa (fotos del antes, durante y después).
+
+
+3. **Formalización del Cierre**:
+* Ingresa las conclusiones administrativas del expediente.
+* Presiona el botón "Aprobar Resolución y Cerrar Queja".
+
+
+4. **Resultado**:
+* Se inserta en `informes_queja` el registro con `tipo_informe = 'CIERRE_ADMINISTRATIVO'`.
+* En `quejas`, el estado cambia a `SOLUCIONADA / CERRADA` y se sella `fecha_cierre = CURRENT_TIMESTAMP`.
+* Si existían quejas hijas vinculadas por demanda comunitaria, se actualizan a cerradas en cascada.
+* Se despacha la notificación final al correo del ciudadano.
+
+
+
+---
+
+### Fase 7: Visualización Ciudadana y Descarga de Constancia Oficial
+
+* **Actor principal**: Ciudadano
+* **Momento**: Posterior al cierre del caso.
+
+1. **Trazabilidad Completa**: El vecino ingresa a "Mis Quejas" y abre el expediente.
+2. **Visualización de Resultados**:
+* Su barra de progreso (timeline) se muestra al **100% completada** con todas las fechas y etapas documentadas.
+* Puede visualizar la galería fotográfica pública con la comparativa del daño reportado y la obra terminada.
+* Puede leer las observaciones finales de la resolución municipal.
+
+
+3. **(puede) Descarga de Constancia PDF**: Presiona el botón "Descargar Constancia Oficial". El sistema compila y genera un PDF oficial con los datos del expediente, código QR y sello institucional.
+4. **Manejo de Casos Especiales (Subquejas / Reincidencias)**:
+* Si el ciudadano nota días después que la reparación falló, en esta misma pantalla dispone del botón **"Reportar Reincidencia / Inconformidad"**, creando una queja hija enlazada a este correlativo para reabrir la atención sin perder el historial.
+
+
+
+---
+
+### Fase Transversal: Inteligencia de Negocio y Reportería Gerencial
+
+* **Actores**: Funcionario y Administrador
+* **Momento**: Consultas periódicas, auditorías y toma de decisiones.
+* En cualquier momento del flujo, los directivos pueden emitir con filtros por fechas y zonas:
+1. **Reporte por Fechas y Estados**: Balance de volumen de quejas ingresadas, en proceso y resueltas.
+2. **Reporte por Zonas y Categorías**: Identificación de los sectores municipales con mayor incidencia de baches, luminarias o drenajes colapsados.
+3. **Reporte de Rendimiento de Cuadrillas**: Cálculo de tiempos promedio de atención, consumo de insumos y porcentaje de obras aprobadas en primera visita versus aquellas que requirieron re-trabajo.
+4. **Exportación Inmediata**: Opciones de descarga directa en formato PDF o Excel (.xlsx).
+
+
+notas importantes:
+Ojo que nuesstro sistema trabajara 'bajo demanda' esta segmentando las quejas(el sistema debera de determinar y agrugar las quejas que apuntan hacia el mismo problema) para darles prioridad a las que tienen muchos mas reportes, si los vecinos tienen 10 quejas de un poste danado, y 2 quejas de un bache, se priorizara la reparacion del poste
+no se manejaran zonas, todos los actores que trabajan en campo(inspector y especialista) podran moverse a cualquier lado del municipio
