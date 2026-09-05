@@ -39,8 +39,10 @@ export class AuthService {
   }
 
   // CU01: Registro de usuario ciudadano
-  registrarCiudadano(datos: RegistroCiudadanoReq): Observable<any> {
-    return this.http.post<any>(`${this.BASE_URL}/usuarios/registro-ciudadano`, datos);
+  registrarCiudadano(datos: RegistroCiudadanoReq): Observable<string> {
+    return this.http.post(`${this.BASE_URL}/usuarios/registro-ciudadano`, datos, {
+      responseType: 'text',
+    });
   }
 
   // CU02 - FA02: Métodos de recuperación de contraseña
@@ -53,12 +55,12 @@ export class AuthService {
   }
 
   // PUT: http://localhost:8080/auth/reset-password
-  restablecerPassword(userId: number, newPassword: string): Observable<any> {
+  restablecerPassword(userId: number, newPassword: string): Observable<string> {
     const body: ResetPasswordReq = {
       userId: userId,
       newPassword: newPassword,
     };
 
-    return this.http.put<any>(`${this.BASE_URL}/auth/reset-password`, body);
+    return this.http.put(`${this.BASE_URL}/auth/reset-password`, body, { responseType: 'text' });
   }
 }

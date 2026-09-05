@@ -8,7 +8,7 @@ import {
   AbstractControl,
   ValidationErrors,
 } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService, Usuario } from '../../../../modules/auth/auth.service';
 
 @Component({
@@ -35,9 +35,14 @@ export class LoginComponent implements OnInit {
     private fb: FormBuilder,
     private authService: AuthService,
     private router: Router,
+    private route: ActivatedRoute,
   ) {}
 
   ngOnInit(): void {
+    if (this.route.snapshot.queryParams['registrado'] === 'true') {
+      this.successMsg = '¡Su cuenta ha sido creada exitosamente! Ya puede iniciar sesión.';
+    }
+
     // Formulario de Inicio de Sesión
     this.loginForm = this.fb.group({
       correo: ['', [Validators.required, Validators.email]],

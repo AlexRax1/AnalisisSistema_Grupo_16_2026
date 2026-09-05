@@ -8,6 +8,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/usuarios")
 @RequiredArgsConstructor
@@ -15,18 +17,18 @@ import org.springframework.web.bind.annotation.*;
 public class UsuarioController {
 
     private final UsuarioService usuarioService;
-
+    
     @PostMapping("/registro-ciudadano")
-    public ResponseEntity<String> registrarCiudadano(@RequestBody UsuarioRegistroDTO dto) {
+    public ResponseEntity<?> registrarCiudadano(@RequestBody UsuarioRegistroDTO dto) {
         try {
             usuarioService.registrarCiudadano(dto);
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body("Su cuenta ha sido creada exitosamente. Ya puede iniciar sesión.");
+                    .body(Map.of("mensaje", "Su cuenta ha sido creada exitosamente. Ya puede iniciar sesión."));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error al procesar el registro: " + e.getMessage());
+                    .body(Map.of("error", "Error al procesar el registro: " + e.getMessage()));
         }
     }
 

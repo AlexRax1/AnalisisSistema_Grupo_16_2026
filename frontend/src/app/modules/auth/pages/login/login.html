@@ -36,6 +36,11 @@
       <span>{{ errorMsg }}</span>
     </div>
 
+    <div *ngIf="successMsg && !mostrarModalRecuperacion" class="alert alert-success">
+      <span class="mat-icon" style="font-size: 18px; flex-shrink: 0;">check_circle</span>
+      <span>{{ successMsg }}</span>
+    </div>
+
     <button type="submit" class="btn btn-primary btn-block btn-lg login-btn">
       <span class="mat-icon">login</span>
       Iniciar Sesión

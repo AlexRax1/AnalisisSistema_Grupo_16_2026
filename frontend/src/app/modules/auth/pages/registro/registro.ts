@@ -93,11 +93,14 @@ export class RegistroComponent implements OnInit {
     const datosUsuario = this.registroForm.value;
 
     this.authService.registrarCiudadano(datosUsuario).subscribe({
-      next: () => {
-        this.successMsg = 'Su cuenta ha sido creada exitosamente. Ya puede iniciar sesión.';
+      next: (res: string) => {
+        console.log('[REGISTRO OK - HTTP 201]:', res);
+        this.successMsg = res || 'Su cuenta ha sido creada exitosamente. Ya puede iniciar sesión.';
         setTimeout(() => {
-          this.router.navigate(['/auth/login']);
-        }, 2500);
+          this.router.navigate(['/auth/login'], {
+            queryParams: { registrado: 'true' },
+          });
+        }, 1500);
       },
       error: (err: any) => {
         let mensajeBackend = '';
