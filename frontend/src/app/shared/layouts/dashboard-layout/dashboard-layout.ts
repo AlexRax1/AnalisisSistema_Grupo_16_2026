@@ -68,6 +68,7 @@ export class DashboardLayoutComponent implements OnInit {
   };
 
   currentConfig: RolConfig | null = null;
+  segmentoActual: string = 'ciudadano';
 
   constructor(private router: Router) {}
 
@@ -81,14 +82,50 @@ export class DashboardLayoutComponent implements OnInit {
   private detectarRol() {
     const url = this.router.url;
     const segmento = url.split('/')[1]; // ciudadano, funcionario, inspector, etc.
-    this.currentConfig = this.rolConfigs[segmento] || null;
+    this.segmentoActual = segmento || 'ciudadano';
+    this.currentConfig = this.rolConfigs[this.segmentoActual] || null;
 
     // Intentar leer rol del localStorage (del login real)
     const rolStorage = localStorage.getItem('rol');
     if (rolStorage) {
       this.rolActual = rolStorage;
     } else {
-      this.rolActual = segmento?.toUpperCase() || 'USUARIO';
+      this.rolActual = this.segmentoActual.toUpperCase();
+    }
+  }
+
+  cambiarRolDemo(event: Event) {
+    const target = event.target as HTMLSelectElement;
+    const nuevoSegmento = target.value;
+    
+    const mapaRoles: Record<string, string> = {
+      ciudadano: 'CIUDADANO',
+      funcionario: 'FUNCIONARIO',
+      inspector: 'INSPECTOR',
+      especialista: 'ESPECIALISTA',
+      admin: 'ADMINISTRADOR'
+    };
+
+    if (mapaRoles[nuevoSegmento]) {
+      localStorage.setItem('rol', mapaRoles[nuevoSegmento]);
+    }
+
+    switch (nuevoSegmento) {
+      case 'ciudadano':
+        this.router.navigate(['/ciudadano/mis-quejas']);
+        break;
+      case 'funcionario':
+        this.router.navigate(['/funcionario/bandeja']);
+        break;
+      case 'inspector':
+        this.router.navigate(['/inspector/inspecciones']);
+        break;
+      case 'especialista':
+        this.router.navigate(['/especialista/ordenes']);
+        break;
+      case 'admin':
+        this.router.navigate(['/admin/usuarios']);
+        break;
     }
   }
 
