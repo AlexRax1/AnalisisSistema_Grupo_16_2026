@@ -1,57 +1,84 @@
 export type EstadoQueja =
   | 'REGISTRADA'
+  | 'EN INSPECCIÓN'
   | 'EN_INSPECCION'
+  | 'EN REPARACIÓN TÉCNICA'
   | 'EN_REPARACION_TECNICA'
+  | 'EN VALIDACIÓN DE REPARACIÓN'
   | 'EN_VALIDACION_REPARACION'
   | 'PENDIENTE_CIERRE'
+  | 'SOLUCIONADA / CERRADA'
   | 'SOLUCIONADA'
   | 'CERRADA'
   | 'RECHAZADA';
 
 export interface HistorialEstado {
   estado: EstadoQueja;
-  fecha: Date;
+  fecha: Date | string;
   comentario: string;
   responsable: string;
 }
 
+// Interfaz Queja con propiedades opcionales/obligatorias ajustadas para los Mocks
 export interface Queja {
-  id: string;
+  id: string; // Tipo estricto string para solucionar TS2345
   correlativo: string;
-  titulo: string;
+  titulo?: string;
   descripcion: string;
-  dpiCiudadano: string;
+  dpiCiudadano?: string;
   zona: number;
-  direccion: string;
+  direccion?: string;
+  direccionExacta?: string;
   categoria: string;
   estado: EstadoQueja;
+  estadoActual?: string;
   prioridad: 'ALTA' | 'MEDIA' | 'BAJA' | 'URGENTE';
-  fechaCreacion: Date;
-  fotosAntes: string[];
+  fechaCreacion?: Date | string;
+  fechaRegistro?: Date | string;
+  fotosAntes: string[]; // Obligatorio para evitar TS2532 en plantillas HTML
   fotosDespues?: string[];
-  historialEstados: HistorialEstado[];
+  historialEstados: HistorialEstado[]; // Obligatorio para evitar TS18048 en queja-mock.service.ts
 }
 
-/** Labels legibles para mostrar en la UI */
-export const ESTADO_LABELS: Record<EstadoQueja, string> = {
-  'REGISTRADA': 'Registrada',
-  'EN_INSPECCION': 'En Inspección',
-  'EN_REPARACION_TECNICA': 'En Reparación Técnica',
-  'EN_VALIDACION_REPARACION': 'En Validación',
-  'PENDIENTE_CIERRE': 'Pendiente de Cierre',
-  'SOLUCIONADA': 'Solucionada',
-  'CERRADA': 'Cerrada',
-  'RECHAZADA': 'Rechazada'
-};
+// DTOs para comunicación con Spring Boot (Portal Ciudadano)
+export interface EvidenciaDTO {
+  urlArchivo: string;
+  nombreArchivo: string;
+}
 
-/** Colores semánticos para badges de estado */
-export const ESTADO_COLORS: Record<EstadoQueja, string> = {
-  'REGISTRADA': 'badge-primary',
-  'EN_INSPECCION': 'badge-warning',
-  'EN_REPARACION_TECNICA': 'badge-info',
-  'EN_VALIDACION_REPARACION': 'badge-warning',
-  'PENDIENTE_CIERRE': 'badge-neutral',
-  'SOLUCIONADA': 'badge-success',
-  'CERRADA': 'badge-success',
-  'RECHAZADA': 'badge-danger'
+export interface QuejaDetalleDTO {
+  quejaId: number;
+  correlativo: string;
+  categoria: string;
+  subcategoria?: string;
+  zona: number;
+  direccionExacta: string;
+  puntoReferencia?: string;
+  latitud: number;
+  longitud: number;
+  descripcion: string;
+  estadoActual: string;
+  prioridadConfirmada: string;
+  fechaRegistro: string | Date;
+  evidencias?: EvidenciaDTO[];
+}
+
+export interface RespuestaRegistroQueja {
+  correlativo: string;
+  mensaje: string;
+}
+
+export const ESTADO_COLORS: Record<string, string> = {
+  REGISTRADA: 'badge-primary',
+  'EN INSPECCIÓN': 'badge-warning',
+  EN_INSPECCION: 'badge-warning',
+  'EN REPARACIÓN TÉCNICA': 'badge-info',
+  EN_REPARACION_TECNICA: 'badge-info',
+  'EN VALIDACIÓN DE REPARACIÓN': 'badge-warning',
+  EN_VALIDACION_REPARACION: 'badge-warning',
+  PENDIENTE_CIERRE: 'badge-neutral',
+  'SOLUCIONADA / CERRADA': 'badge-success',
+  SOLUCIONADA: 'badge-success',
+  CERRADA: 'badge-success',
+  RECHAZADA: 'badge-danger',
 };

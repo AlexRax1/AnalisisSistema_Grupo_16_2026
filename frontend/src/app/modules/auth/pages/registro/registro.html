@@ -5,7 +5,7 @@
   <form [formGroup]="registroForm" (ngSubmit)="onRegister()" novalidate>
     <div class="form-grid-2">
       <div class="form-group">
-        <label class="form-label" for="dpi">DPI / Cédula <span class="required">*</span></label>
+        <label class="form-label" for="dpi">DPI <span class="required">*</span></label>
         <input type="text" id="dpi" class="form-input" formControlName="dpi"
                placeholder="13 dígitos del DPI" maxlength="13"
                [class.is-invalid]="esCampoInvalido('dpi')">

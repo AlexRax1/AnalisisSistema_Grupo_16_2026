@@ -10,34 +10,62 @@
     </a>
   </div>
 
+  <!-- Barra de Búsqueda y Filtros -->
+  <div class="card p-3 mb-3" *ngIf="quejasOriginales.length > 0">
+    <div style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;">
+      <div style="flex: 1; min-width: 200px;">
+        <label class="form-label">Buscar por Correlativo:</label>
+        <input
+          type="text"
+          class="form-control"
+          placeholder="Ej: QUE-2026-000001"
+          [(ngModel)]="busquedaCorrelativo"
+          (input)="aplicarFiltros()">
+      </div>
+      <div style="flex: 1; min-width: 200px;">
+        <label class="form-label">Filtrar por Estado:</label>
+        <select class="form-select" [(ngModel)]="estadoSeleccionado" (change)="aplicarFiltros()">
+          <option *ngFor="let est of estadosDisponibles" [value]="est">{{ est }}</option>
+        </select>
+      </div>
+      <button class="btn btn-outline" (click)="limpiarFiltros()">Limpiar</button>
+    </div>
+  </div>
+
+  <div *ngIf="mensajeBusquedaVacia" class="alert alert-warning mb-3">
+    No se encontró ninguna queja con el número correlativo ingresado.
+  </div>
+
   <div class="quejas-layout">
     <!-- Lista de Quejas -->
     <div class="quejas-list">
       <div *ngFor="let q of quejas"
            class="queja-item card"
-           [class.active]="quejaSeleccionada?.id === q.id"
+           [class.active]="quejaSeleccionada?.quejaId === q.quejaId"
            (click)="verDetalle(q)">
         <div class="card-body" style="padding: 1rem;">
           <div class="queja-item-header">
             <span class="queja-correlativo">{{ q.correlativo }}</span>
-            <span class="badge badge-primary">{{ q.estado }}</span>
+            <span class="badge" [ngClass]="obtenerClaseBadge(q.estadoActual)">
+              {{ q.estadoActual }}
+            </span>
           </div>
-          <p class="queja-item-titulo">{{ q.titulo }}</p>
+          <p class="queja-item-titulo">{{ q.descripcion }}</p>
           <div class="queja-item-meta">
             <span><span class="mat-icon" style="font-size: 14px;">location_on</span> Zona {{ q.zona }}</span>
-            <span><span class="mat-icon" style="font-size: 14px;">calendar_today</span> {{ q.fechaCreacion | date:'dd/MM/yyyy' }}</span>
+            <span><span class="mat-icon" style="font-size: 14px;">calendar_today</span> {{ q.fechaRegistro | date:'dd/MM/yyyy' }}</span>
           </div>
         </div>
       </div>
 
-      <div *ngIf="quejas.length === 0" class="empty-state">
+      <div *ngIf="!cargando && quejasOriginales.length === 0" class="empty-state">
         <span class="mat-icon" style="font-size: 48px; color: var(--slate-300);">inbox</span>
-        <p>No tienes quejas registradas aún.</p>
+        <p>No cuenta con quejas radicadas actualmente.</p>
         <a routerLink="/ciudadano/nueva-queja" class="btn btn-primary btn-sm">Registrar primera queja</a>
       </div>
     </div>
 
-    <!-- Detalle y Timeline -->
+    <!-- Detalle y Ficha de Trazabilidad -->
     <div class="queja-detalle card" *ngIf="quejaSeleccionada">
       <div class="card-header">
         <h3 style="margin: 0; font-size: var(--font-lg); font-weight: 700; color: var(--slate-900);">
@@ -51,47 +79,90 @@
             <span class="detalle-value">{{ quejaSeleccionada.categoria }}</span>
           </div>
           <div class="detalle-row">
-            <span class="detalle-label">Zona</span>
-            <span class="detalle-value">Zona {{ quejaSeleccionada.zona }}</span>
+            <span class="detalle-label">Dirección</span>
+            <span class="detalle-value">Zona {{ quejaSeleccionada.zona }} - {{ quejaSeleccionada.direccionExacta }}</span>
           </div>
           <div class="detalle-row">
             <span class="detalle-label">Prioridad</span>
-            <span class="badge" [ngClass]="quejaSeleccionada.prioridad === 'ALTA' ? 'badge-danger' : 'badge-neutral'">
-              {{ quejaSeleccionada.prioridad }}
+            <span class="badge" [ngClass]="quejaSeleccionada.prioridadConfirmada === 'URGENTE' || quejaSeleccionada.prioridadConfirmada === 'ALTA' ? 'badge-danger' : 'badge-neutral'">
+              {{ quejaSeleccionada.prioridadConfirmada }}
             </span>
           </div>
         </div>
 
-        <div class="detalle-descripcion">
+        <div class="detalle-descripcion" style="margin-top: 1rem;">
           <strong>Descripción:</strong>
           <p>{{ quejaSeleccionada.descripcion }}</p>
         </div>
 
-        <h4 class="timeline-title">
-          <span class="mat-icon" style="font-size: 18px;">timeline</span>
-          Línea de Tiempo
-        </h4>
-
-        <div class="timeline">
-          <div *ngFor="let h of quejaSeleccionada.historialEstados; let last = last"
-               class="timeline-item" [class.last]="last">
-            <div class="timeline-dot"></div>
-            <div class="timeline-content">
-              <div class="timeline-header">
-                <span class="badge badge-primary" style="font-size: 0.7rem;">{{ h.estado }}</span>
-                <span class="timeline-date">{{ h.fecha | date:'dd/MM/yyyy HH:mm' }}</span>
-              </div>
-              <p class="timeline-text">{{ h.comentario }}</p>
-              <span class="timeline-responsable">{{ h.responsable }}</span>
-            </div>
+        <!-- Evidencias -->
+        <div *ngIf="quejaSeleccionada.evidencias && quejaSeleccionada.evidencias.length > 0" class="evidencias-seccion" style="margin-top: 1rem;">
+          <strong>Fotografías Adjuntas:</strong>
+          <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+            <a *ngFor="let ev of quejaSeleccionada.evidencias" [href]="ev.urlArchivo" target="_blank" class="btn btn-sm btn-outline">
+              <span class="mat-icon">image</span> {{ ev.nombreArchivo }}
+            </a>
           </div>
         </div>
 
-        <button class="btn btn-outline btn-block" style="margin-top: 1.5rem;" disabled>
-          <span class="mat-icon">picture_as_pdf</span>
-          Descargar Constancia PDF
-        </button>
+        <!-- Botones de Acción -->
+        <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1.5rem;">
+
+          <!-- FA05: Reportar Agravamiento -->
+          <button *ngIf="esQuejaActiva(quejaSeleccionada.estadoActual)" class="btn btn-warning btn-block" (click)="abrirModalDerivada('AGRAVAMIENTO')">
+            <span class="mat-icon">report_problem</span> Reportar Agravamiento
+          </button>
+
+          <!-- FA06: Reportar Inconformidad / Reincidencia -->
+          <button *ngIf="esQuejaCerrada(quejaSeleccionada.estadoActual)" class="btn btn-danger btn-block" (click)="abrirModalDerivada('REINCIDENCIA')">
+            <span class="mat-icon">replay</span> Reportar Inconformidad / Reincidencia
+          </button>
+
+          <!-- FA03: Descargar Constancia PDF -->
+          <button class="btn btn-outline btn-block" (click)="descargarPdf(quejaSeleccionada.correlativo)">
+            <span class="mat-icon">picture_as_pdf</span> Descargar Constancia PDF
+          </button>
+        </div>
+
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PARA AGRAVAMIENTO Y REINCIDENCIA (FA05 Y FA06) -->
+<div class="modal-backdrop" *ngIf="mostrarModalDerivada" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+  <div class="card" style="width: 90%; max-width: 500px; background: #fff; padding: 1.5rem; borderRadius: 8px;">
+    <h3 style="margin-top: 0;">
+      {{ tipoDerivacion === 'AGRAVAMIENTO' ? 'Reportar Agravamiento' : 'Reportar Inconformidad / Reincidencia' }}
+    </h3>
+    <p style="font-size: 0.9rem; color: #666;">
+      Vinculado al expediente: <strong>{{ quejaSeleccionada?.correlativo }}</strong>
+    </p>
+
+    <div *ngIf="errorModal" class="alert alert-danger" style="margin-bottom: 1rem; color: red; font-size: 0.85rem;">
+      {{ errorModal }}
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Descripción del Reporte (20-500 caracteres):</label>
+      <textarea
+        class="form-control"
+        rows="4"
+        style="width: 100%;"
+        [(ngModel)]="descripcionDerivada"
+        placeholder="Describa a detalle lo sucedido..."></textarea>
+    </div>
+
+    <div class="mb-3" style="margin-top: 1rem;">
+      <label class="form-label" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Adjuntar Evidencias (1 a 3 imágenes JPG/PNG):</label>
+      <input type="file" accept="image/png, image/jpeg" multiple (change)="onSeleccionarFotos($event)">
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1.5rem;">
+      <button class="btn btn-outline" (click)="cerrarModalDerivada()" [disabled]="enviandoDerivada">Cancelar</button>
+      <button class="btn btn-primary" (click)="enviarReporteDerivado()" [disabled]="enviandoDerivada">
+        {{ enviandoDerivada ? 'Enviando...' : 'Enviar Reporte' }}
+      </button>
     </div>
   </div>
 </div>

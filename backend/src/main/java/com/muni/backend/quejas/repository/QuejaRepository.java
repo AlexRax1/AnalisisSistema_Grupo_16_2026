@@ -7,12 +7,15 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface QuejaRepository extends JpaRepository<Queja, Integer> {
 
     Optional<Queja> findByCorrelativo(String correlativo);
+
+    List<Queja> findByCiudadano_UsuarioIdOrderByQuejaIdDesc(Integer usuarioId);
 
     @Query(value = """
         SELECT COUNT(*)

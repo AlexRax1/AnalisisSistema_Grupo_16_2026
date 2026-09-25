@@ -38,7 +38,6 @@ public class SecurityConfig {
                         .requestMatchers("/auth/**", "/usuarios/registro-ciudadano").permitAll()
                         .requestMatchers("/subidas/evidencias/**").permitAll()
                         .requestMatchers("/quejas/**").authenticated()
-                        // Cualquier otra petición requiere autenticación vía JWT
                         .anyRequest().authenticated()
                 )
                 // Registramos el filtro JWT antes del filtro de usuario/contraseña estándar
