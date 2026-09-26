@@ -1,5 +1,6 @@
 package com.muni.backend.usuarios.controller;
 
+import com.muni.backend.usuarios.dto.PerfilUsuarioDTO;
 import com.muni.backend.usuarios.dto.UsuarioRegistroDTO;
 import com.muni.backend.usuarios.dto.UsuarioResumenDTO;
 import com.muni.backend.usuarios.model.Usuario;
@@ -8,6 +9,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+import com.muni.backend.usuarios.dto.ActualizarPerfilDTO;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -65,6 +69,26 @@ public class UsuarioController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Error al obtener especialistas: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/perfil")
+    public ResponseEntity<PerfilUsuarioDTO> obtenerPerfil(Authentication authentication) {
+        String correoUsuario = authentication.getName();
+        PerfilUsuarioDTO perfil = usuarioService.obtenerPerfilCiudadano(correoUsuario);
+        return ResponseEntity.ok(perfil);
+    }
+
+    @PutMapping("/perfil")
+    public ResponseEntity<?> actualizarPerfil(@RequestBody ActualizarPerfilDTO dto, Authentication authentication) {
+        try {
+            String correoUsuario = authentication.getName();
+            usuarioService.actualizarPerfilCiudadano(correoUsuario, dto);
+            return ResponseEntity.ok(Map.of("mensaje", "Sus datos han sido actualizados con éxito."));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", "Error interno al actualizar el perfil: " + e.getMessage()));
         }
     }
 }
