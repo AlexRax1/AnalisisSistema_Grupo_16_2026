@@ -82,3 +82,78 @@ export const ESTADO_COLORS: Record<string, string> = {
   CERRADA: 'badge-success',
   RECHAZADA: 'badge-danger',
 };
+
+// --- DTOs para Gestión Municipal (Pull Model) ---
+
+export type FaseAdministrativa =
+  | 'ASIGNAR_INSPECTOR'
+  | 'AUTORIZAR_REPARACION'
+  | 'CIERRE_ADMINISTRATIVO'
+  | 'FASE_1_INSPECCION'
+  | 'FASE_2_REPARACION'
+  | 'FASE_3_CIERRE'
+  | string;
+
+export interface GestionTareaDTO {
+  quejaId: number | string;
+  correlativo: string;
+  estadoActual?: string;
+  faseAdministrativa?: FaseAdministrativa;
+  faseRequerida?: string;
+  prioridadConfirmada?: string;
+  prioridad?: 'ALTA' | 'MEDIA' | 'BAJA' | 'URGENTE' | string;
+  categoriaId?: number;
+  subcategoriaId?: number;
+  categoria?: string;
+  subcategoria?: string;
+  zona: number;
+  direccionExacta: string;
+  puntoReferencia?: string;
+  descripcion: string;
+  latitud?: number;
+  longitud?: number;
+  fechaRegistro?: string | Date;
+  ciudadanoNombre?: string;
+  dpiCiudadano?: string;
+  telefonoCiudadano?: string;
+  correoCiudadano?: string;
+  mensaje?: string;
+  fotos?: string[];
+  evidencias?: (EvidenciaDTO | string)[];
+}
+
+export interface UsuarioCatDTO {
+  usuarioId?: number;
+  id?: number | string;
+  nombreCompleto?: string;
+  nombre?: string;
+  dpi?: string;
+  email?: string;
+  correo?: string;
+  especialidad?: string;
+  zonaAsignada?: number;
+}
+
+export interface AsignarInspectorReq {
+  quejaId: number | string;
+  inspectorId: number | string;
+}
+
+export interface AutorizarReparacionReq {
+  quejaId: number | string;
+  dependenciaId: number | string;
+  especialistaId: number | string;
+}
+
+export interface CierreAdministrativoReq {
+  quejaId: number | string;
+  descripcionCierre: string;
+}
+
+export interface RechazarDevolverReq {
+  quejaId: number | string;
+  motivoRechazo: string;
+  descripcionDetallada: string;
+  esRechazoDefinitivo: boolean;
+}
+

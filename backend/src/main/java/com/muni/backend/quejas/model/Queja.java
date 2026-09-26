@@ -62,4 +62,33 @@ public class Queja {
 
     @Column(name = "fecha_modificacion")
     private LocalDateTime fechaModificacion;
+
+    @Column(name = "tipo_registro", length = 20)
+    private String tipoRegistro = "PRINCIPAL";
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "queja_origen_id")
+    private Queja quejaOrigen;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "funcionario_id")
+    private Usuario funcionario;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "inspector_id")
+    private Usuario inspector;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "especialista_id")
+    private Usuario especialista;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "dependencia_asignada_id")
+    private Dependencia dependenciaAsignada;
+
+    @Column(name = "motivo_rechazo", columnDefinition = "TEXT")
+    private String motivoRechazo;
+
+    @Column(name = "fecha_cierre")
+    private LocalDateTime fechaCierre;
 }

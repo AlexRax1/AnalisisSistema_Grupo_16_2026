@@ -6,12 +6,15 @@ import com.muni.backend.security.repository.CredencialRepository;
 import com.muni.backend.security.repository.RolUserRepository;
 import com.muni.backend.security.service.AuthService;
 import com.muni.backend.usuarios.dto.UsuarioRegistroDTO;
+import com.muni.backend.usuarios.dto.UsuarioResumenDTO;
 import com.muni.backend.usuarios.model.Usuario;
 import com.muni.backend.usuarios.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -88,5 +91,16 @@ public class UsuarioService {
 
     public Usuario buscarPorDpi(String dpi) {
         return usuarioRepository.findByDpi(dpi).orElse(null);
+    }
+
+    public List<UsuarioResumenDTO> listarPorRol(String nombreRol) {
+        List<Usuario> usuarios = usuarioRepository.findByRolActivo(nombreRol);
+        return usuarios.stream().map(u -> new UsuarioResumenDTO(
+                u.getUsuarioId(),
+                u.getNombres(),
+                u.getApellidos(),
+                u.getCorreo(),
+                u.getDependencia() != null ? u.getDependencia().getNombreDependencia() : null
+        )).collect(Collectors.toList());
     }
 }

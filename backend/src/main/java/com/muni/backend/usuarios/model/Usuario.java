@@ -1,6 +1,7 @@
 package com.muni.backend.usuarios.model;
 
 import com.muni.backend.security.model.Credencial;
+import com.muni.backend.quejas.model.Dependencia;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -41,6 +42,10 @@ public class Usuario {
 
     @Column(name = "estado", length = 20)
     private String estado = "ACTIVO";
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "dependencia_id")
+    private Dependencia dependencia;
 
     @Column(name = "fecha_creacion")
     private LocalDateTime fechaCreacion = LocalDateTime.now();
