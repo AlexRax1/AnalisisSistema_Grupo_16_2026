@@ -33,7 +33,8 @@ export class DashboardLayoutComponent implements OnInit {
       badgeClass: 'badge-primary',
       items: [
         { label: 'Mis Quejas', icon: 'list_alt', route: '/ciudadano/mis-quejas' },
-        { label: 'Nueva Queja', icon: 'add_circle', route: '/ciudadano/nueva-queja' }
+        { label: 'Nueva Queja', icon: 'add_circle', route: '/ciudadano/nueva-queja' },
+        { label: 'Mi Perfil', route: '/ciudadano/perfil', icon: 'person' }
       ]
     },
     funcionario: {

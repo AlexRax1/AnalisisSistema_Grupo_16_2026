@@ -11,6 +11,7 @@ import { BandejaGestionComponent } from './modules/gestion-municipal/pages/bande
 import { InspeccionCuadrillaComponent } from './modules/operaciones-campo/pages/inspeccion-cuadrilla/inspeccion-cuadrilla';
 import { AdminUsuariosComponent } from './modules/admin/pages/admin-usuarios/admin-usuarios';
 import { AdminReportesComponent } from './modules/admin/pages/admin-reportes/admin-reportes';
+import { MiPerfilComponent } from './modules/admin/pages/mi-perfil/mi-perfil.component';
 
 export const routes: Routes = [
   // Portal público de bienvenida
@@ -77,6 +78,11 @@ export const routes: Routes = [
       { path: 'reportes', component: AdminReportesComponent },
       { path: '', redirectTo: 'usuarios', pathMatch: 'full' }
     ]
+  },
+
+  {
+    path: 'ciudadano/perfil',
+    component: MiPerfilComponent,
   },
 
   // Fallback
