@@ -157,3 +157,37 @@ export interface RechazarDevolverReq {
   esRechazoDefinitivo: boolean;
 }
 
+// --- DTOs para Inspector de Campo (Pull Model & Inspección In Situ) ---
+
+export interface QuejaInspectorBandejaDTO {
+  quejaId: number;
+  correlativo: string;
+  categoria: string;
+  subcategoria: string;
+  direccionExacta: string;
+  puntoReferencia?: string;
+  latitud?: number;
+  longitud?: number;
+  prioridadConfirmada?: 'URGENTE' | 'ALTA' | 'MEDIA' | 'BAJA' | string;
+  fechaRegistro?: string;
+  tipoRegistro?: 'PRINCIPAL' | 'AGRAVAMIENTO' | 'REINCIDENCIA' | string;
+  quejaOrigenId?: number | null;
+  fotosCiudadano?: string[];
+}
+
+export interface RegistroInspeccionDTO {
+  problemaVerificado: boolean;
+  gravedad?: 'LEVE' | 'MODERADA' | 'GRAVE' | 'CRITICA' | string;
+  diagnostico: string;
+  recursosSugeridos?: string;
+  instruccionesCuadrilla?: string;
+  fotos: string[];
+}
+
+export interface MensajeResponse {
+  mensaje: string;
+  correlativo?: string;
+  nuevoEstado?: string;
+}
+
+

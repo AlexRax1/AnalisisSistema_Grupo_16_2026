@@ -70,4 +70,23 @@ public interface QuejaRepository extends JpaRepository<Queja, Integer> {
             q.fechaRegistro ASC
         """)
     List<Queja> buscarSiguienteTarea(@Param("funcionarioId") Integer funcionarioId, Pageable pageable);
+    /**
+     * Tareas activas del inspector: quejas en estado EN INSPECCIÓN asignadas a él,
+     * ordenadas por prioridad (URGENTE primero) y luego por fecha de registro.
+     */
+    @Query("""
+        SELECT q FROM Queja q
+        WHERE q.inspector.usuarioId = :inspectorId
+          AND q.estadoActual = 'EN INSPECCIÓN'
+        ORDER BY
+            CASE q.prioridadConfirmada
+                WHEN 'URGENTE' THEN 1
+                WHEN 'ALTA' THEN 2
+                WHEN 'MEDIA' THEN 3
+                WHEN 'BAJA' THEN 4
+                ELSE 5
+            END ASC,
+            q.fechaRegistro ASC
+        """)
+    List<Queja> findTareasActivasInspector(@Param("inspectorId") Integer inspectorId);
 }

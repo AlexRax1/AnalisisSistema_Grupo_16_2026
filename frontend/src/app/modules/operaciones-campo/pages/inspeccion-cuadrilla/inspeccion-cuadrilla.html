@@ -1,145 +1,402 @@
 <div class="campo-page animate-fade-in">
-  <div class="page-header">
-    <div>
-      <h1 class="page-title">Módulo de Operaciones de Campo</h1>
-      <p class="page-subtitle">Inspecciones técnicas y órdenes de trabajo de cuadrilla</p>
+
+  <!-- ══ Notification Toast Banner ══ -->
+  <div
+    class="toast-banner"
+    *ngIf="toast.visible"
+    [ngClass]="'toast-' + toast.tipo"
+  >
+    <span class="mat-icon toast-icon">
+      {{
+        toast.tipo === 'success'
+          ? 'check_circle'
+          : toast.tipo === 'warning'
+            ? 'warning'
+            : toast.tipo === 'error'
+              ? 'error'
+              : 'info'
+      }}
+    </span>
+    <span class="toast-message">{{ toast.mensaje }}</span>
+    <button class="toast-close" (click)="cerrarToast()">&times;</button>
+  </div>
+
+  <!-- ══ Modal Lightbox para Ampliar Fotografías ══ -->
+  <div class="modal-backdrop" *ngIf="imagenAmpliadaUrl" (click)="cerrarImagenModal()">
+    <div class="modal-content-img" (click)="$event.stopPropagation()">
+      <button class="modal-close-btn" (click)="cerrarImagenModal()">&times;</button>
+      <img [src]="imagenAmpliadaUrl" alt="Fotografía ampliada" class="img-expanded">
     </div>
   </div>
 
-  <!-- Selector de Perfil -->
-  <div class="role-tabs">
-    <button class="role-tab" [class.active-inspector]="rolCampo === 'INSPECTOR'"
-            (click)="cambiarRol('INSPECTOR')">
-      <span class="mat-icon">search</span>
-      Inspector de Campo
-    </button>
-    <button class="role-tab" [class.active-cuadrilla]="rolCampo === 'CUADRILLA'"
-            (click)="cambiarRol('CUADRILLA')">
-      <span class="mat-icon">build</span>
-      Cuadrilla Técnica
-    </button>
-  </div>
+  <!-- ══ Modal de Confirmación Previo al Envío ══ -->
+  <div class="modal-backdrop" *ngIf="mostrarModalConfirmar">
+    <div class="modal-card animate-scale-up" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <span class="mat-icon icon-confirm">help_outline</span>
+        <h3>¿Confirmar Envío de Informe Técnico?</h3>
+      </div>
+      <div class="modal-body">
+        <p>Está a punto de enviar el peritaje técnico para el expediente <strong>{{ quejaSeleccionada?.correlativo }}</strong>.</p>
 
-  <div class="campo-layout">
-    <!-- Lista de Asignaciones -->
-    <div class="asignaciones-list">
-      <h3 class="list-title">
-        <span class="mat-icon" style="font-size: 18px;">assignment</span>
-        {{ rolCampo === 'INSPECTOR' ? 'Quejas por Inspeccionar' : 'Órdenes de Trabajo' }}
-      </h3>
-
-      <div *ngIf="rolCampo === 'INSPECTOR'">
-        <div *ngFor="let q of quejasEnInspeccion"
-             class="asignacion-card card"
-             [class.selected]="quejaSeleccionada?.id === q.id"
-             (click)="seleccionar(q)">
-          <div class="card-body" style="padding: 0.875rem;">
-            <div class="asignacion-header">
-              <span class="asignacion-correlativo">{{ q.correlativo }}</span>
-              <span class="badge badge-warning">En Inspección</span>
-            </div>
-            <p class="asignacion-detail">Zona {{ q.zona }} — {{ q.titulo }}</p>
-          </div>
+        <div class="confirm-summary-box">
+          <div><strong>Dictamen:</strong> {{ problemaVerificado ? 'Problema Verificado en Sitio' : 'Falsa Alarma / Improcedente' }}</div>
+          <div *ngIf="problemaVerificado"><strong>Gravedad:</strong> {{ gravedad }}</div>
+          <div><strong>Evidencias:</strong> {{ fotosSubidas.length }} fotografía(s) adjunta(s)</div>
         </div>
-        <p *ngIf="quejasEnInspeccion.length === 0" class="empty-msg">
-          <span class="mat-icon" style="font-size: 32px; color: var(--slate-300);">check_circle</span><br>
-          No hay inspecciones pendientes.
-        </p>
+
+        <p class="text-sm-gray">Una vez enviado, el expediente cambiará automáticamente de estado y se notificará al departamento responsable.</p>
       </div>
 
-      <div *ngIf="rolCampo === 'CUADRILLA'">
-        <div *ngFor="let q of quejasReparadas"
-             class="asignacion-card card"
-             [class.selected]="quejaSeleccionada?.id === q.id"
-             (click)="seleccionar(q)">
-          <div class="card-body" style="padding: 0.875rem;">
-            <div class="asignacion-header">
-              <span class="asignacion-correlativo">{{ q.correlativo }}</span>
-              <span class="badge badge-info">{{ q.estado }}</span>
-            </div>
-            <p class="asignacion-detail">{{ q.direccion }}</p>
-          </div>
+      <div class="modal-footer-btns">
+        <button type="button" class="btn btn-secondary" (click)="cancelarConfirmacion()" [disabled]="enviandoInforme">
+          Cancelar y Revisar
+        </button>
+        <button type="button" class="btn btn-primary" (click)="procesarEnvioInforme()" [disabled]="enviandoInforme">
+          <span class="spinner-small" *ngIf="enviandoInforme"></span>
+          {{ enviandoInforme ? 'Procesando...' : 'Sí, Enviar Informe' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ Modal de Confirmación de Éxito (Respuesta Backend) ══ -->
+  <div class="modal-backdrop" *ngIf="modalExito.visible">
+    <div class="modal-card modal-success-card animate-scale-up" (click)="$event.stopPropagation()">
+      <div class="modal-header text-center">
+        <div class="success-icon-circle">
+          <span class="mat-icon">check_circle</span>
         </div>
-        <p *ngIf="quejasReparadas.length === 0" class="empty-msg">
-          <span class="mat-icon" style="font-size: 32px; color: var(--slate-300);">engineering</span><br>
-          No hay órdenes de trabajo activas.
-        </p>
+        <h3 class="success-title">¡Informe Registrado Exitosamente!</h3>
+      </div>
+
+      <div class="modal-body text-center">
+        <p class="success-msg">{{ modalExito.mensaje }}</p>
+
+        <div class="success-details-pill">
+          <span class="pill-item">
+            <span class="pill-label">Correlativo:</span>
+            <strong>{{ modalExito.correlativo }}</strong>
+          </span>
+          <span class="pill-item">
+            <span class="pill-label">Nuevo Estado:</span>
+            <span class="badge badge-info">{{ modalExito.nuevoEstado }}</span>
+          </span>
+        </div>
+      </div>
+
+      <div class="modal-footer-btns center-footer">
+        <button type="button" class="btn btn-success btn-lg w-full" (click)="cerrarModalExitoYVolver()">
+          <span class="mat-icon">check</span>
+          Aceptar y Volver a la Bandeja
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!-- VISTA 1: BANDEJA DE ASIGNACIONES (LISTA GENERAL)               -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <div *ngIf="!quejaSeleccionada">
+    <!-- Encabezado de Página -->
+    <div class="page-header flex-header">
+      <div>
+        <h1 class="page-title">Inspector de Campo</h1>
+        <p class="page-subtitle">Bandeja de inspecciones técnicas pendientes en sitio</p>
+      </div>
+      <div class="counter-box">
+        <span class="mat-icon">assignment_turned_in</span>
+        <span>Asignaciones pendientes: <strong>{{ asignaciones.length }}</strong></span>
       </div>
     </div>
 
-    <!-- Formulario de Acción -->
-    <div class="card accion-panel" *ngIf="quejaSeleccionada">
-      <div class="card-header">
-        <h3 class="accion-title">Detalle: {{ quejaSeleccionada.correlativo }}</h3>
+    <!-- Estado de Carga -->
+    <div *ngIf="cargandoAsignaciones" class="loading-box card">
+      <span class="spinner"></span>
+      <p>Cargando asignaciones de campo del servidor...</p>
+    </div>
+
+    <!-- Grilla de Tarjetas de Queja -->
+    <div *ngIf="!cargandoAsignaciones" class="bandeja-grid">
+      <div *ngFor="let q of asignaciones" class="asignacion-card card-hover">
+        <div class="card-body">
+          <div class="asignacion-header">
+            <span class="asignacion-correlativo">{{ q.correlativo }}</span>
+            <span class="badge" [ngClass]="getBadgePrioridadClass(q.prioridadConfirmada)">
+              {{ q.prioridadConfirmada || 'MEDIA' }}
+            </span>
+          </div>
+
+          <div class="asignacion-category">
+            <strong>{{ q.categoria }}</strong>
+            <span *ngIf="q.subcategoria"> &bull; {{ q.subcategoria }}</span>
+          </div>
+
+          <p class="asignacion-detail">
+            <span class="mat-icon icon-inline">place</span>
+            {{ q.direccionExacta }}
+          </p>
+
+          <!-- Badge de Alerta (Reincidencia / Agravamiento) -->
+          <div *ngIf="q.tipoRegistro === 'AGRAVAMIENTO' || q.tipoRegistro === 'REINCIDENCIA'" class="alerta-badge-container">
+            <span class="badge badge-alerta">
+              <span class="mat-icon" style="font-size: 12px;">warning</span>
+              {{ q.tipoRegistro === 'REINCIDENCIA' ? 'Reincidencia' : 'Agravamiento' }}
+            </span>
+          </div>
+
+          <div class="card-footer-action">
+            <button class="btn btn-primary btn-atender" (click)="abrirQueja(q)">
+              <span class="mat-icon">rate_review</span>
+              Atender Inspección
+            </button>
+          </div>
+        </div>
       </div>
+
+      <!-- Banner Estado Vacío -->
+      <div *ngIf="asignaciones.length === 0" class="empty-banner card">
+        <span class="mat-icon empty-icon">check_circle_outline</span>
+        <h4>No cuentas con inspecciones asignadas en este momento</h4>
+        <p>Todas las órdenes asignadas a tu perfil de inspector han sido completadas o no hay solicitudes pendientes.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!-- VISTA 2: DETALLE Y FORMULARIO DE INSPECCIÓN DE UNA QUEJA       -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <div *ngIf="quejaSeleccionada" class="inspeccion-focus-container animate-fade-in">
+
+    <!-- Barra de Navegación / Salir de la Queja Actual -->
+    <div class="top-nav-bar">
+      <button class="btn-back" (click)="salirDeQueja()">
+        <span class="mat-icon">arrow_back</span>
+        Volver a la Bandeja / Salir
+      </button>
+
+      <span class="queja-current-badge">
+        Inspeccionando: <strong>{{ quejaSeleccionada.correlativo }}</strong>
+      </span>
+    </div>
+
+    <!-- Panel de Detalle Formulario -->
+    <div class="card focus-card">
+      <div class="card-header flex-header">
+        <div>
+          <h2 class="focus-title">{{ quejaSeleccionada.correlativo }}</h2>
+          <span class="sub-categoria-header">{{ quejaSeleccionada.categoria }} &mdash; {{ quejaSeleccionada.subcategoria }}</span>
+        </div>
+        <span class="badge" [ngClass]="getBadgePrioridadClass(quejaSeleccionada.prioridadConfirmada)">
+          Prioridad {{ quejaSeleccionada.prioridadConfirmada || 'MEDIA' }}
+        </span>
+      </div>
+
       <div class="card-body">
-        <div class="detalle-grid">
-          <p><strong>Dirección:</strong> {{ quejaSeleccionada.direccion }}</p>
-          <p><strong>Descripción:</strong> {{ quejaSeleccionada.descripcion }}</p>
-        </div>
 
-        <!-- Formulario INSPECTOR -->
-        <div *ngIf="rolCampo === 'INSPECTOR'" class="formulario-seccion">
-          <h4 class="formulario-titulo" style="color: var(--primary-500);">
-            <span class="mat-icon" style="font-size: 18px;">fact_check</span>
-            Dictamen Técnico Inicial
+        <!-- ══ SECCIÓN 1: Contexto del Incidente (Solo Lectura) ══ -->
+        <div class="contexto-seccion">
+          <h4 class="seccion-subtitle">
+            <span class="mat-icon">info</span>
+            Contexto del Incidente
           </h4>
 
-          <div class="form-group">
-            <label class="form-label">¿Procedente para reparación?</label>
-            <select class="form-select" [(ngModel)]="esProcedente">
-              <option [ngValue]="true">SÍ — Aprobada para Cuadrilla</option>
-              <option [ngValue]="false">NO — Improcedente / Rechazar</option>
-            </select>
+          <div class="contexto-grid">
+            <div class="info-block">
+              <span class="info-label">Dirección Exacta:</span>
+              <span class="info-val">{{ quejaSeleccionada.direccionExacta }}</span>
+            </div>
+
+            <div class="info-block" *ngIf="quejaSeleccionada.puntoReferencia">
+              <span class="info-label">Punto de Referencia:</span>
+              <span class="info-val">{{ quejaSeleccionada.puntoReferencia }}</span>
+            </div>
+
+            <!-- Botón de Geolocalización Google Maps -->
+            <div class="info-block" *ngIf="quejaSeleccionada.latitud && quejaSeleccionada.longitud">
+              <span class="info-label">Geolocalización:</span>
+              <a [href]="getGoogleMapsUrl(quejaSeleccionada.latitud, quejaSeleccionada.longitud)"
+                 target="_blank"
+                 rel="noopener"
+                 class="btn-mapa">
+                <span class="mat-icon">map</span>
+                Abrir en Mapa ({{ quejaSeleccionada.latitud }}, {{ quejaSeleccionada.longitud }})
+              </a>
+            </div>
           </div>
 
-          <div *ngIf="esProcedente" class="form-group">
-            <label class="form-label">Cuadrilla Especializada</label>
-            <select class="form-select" [(ngModel)]="cuadrillaAsignada">
-              <option *ngFor="let c of cuadrillas" [value]="c">{{ c }}</option>
-            </select>
+          <!-- Galería de Fotos del Ciudadano -->
+          <div class="fotos-ciudadano-seccion">
+            <span class="info-label">Evidencias del Ciudadano:</span>
+            <div *ngIf="quejaSeleccionada.fotosCiudadano && quejaSeleccionada.fotosCiudadano.length > 0" class="gallery-grid">
+              <div *ngFor="let foto of quejaSeleccionada.fotosCiudadano"
+                   class="gallery-item"
+                   (click)="abrirImagenModal(foto)">
+                <img [src]="getUrlImagen(foto)" alt="Foto Ciudadano" class="gallery-thumb">
+                <div class="gallery-overlay">
+                  <span class="mat-icon">zoom_in</span>
+                </div>
+              </div>
+            </div>
+            <p *ngIf="!quejaSeleccionada.fotosCiudadano || quejaSeleccionada.fotosCiudadano.length === 0" class="no-fotos-msg">
+              El ciudadano no adjuntó imágenes al registrar la queja.
+            </p>
           </div>
-
-          <div class="form-group">
-            <label class="form-label">Dictamen / Observaciones</label>
-            <textarea class="form-textarea" [(ngModel)]="dictamenInspector" rows="3"
-                      placeholder="Evaluación física del problema..."></textarea>
-          </div>
-
-          <button class="btn btn-primary btn-block" (click)="guardarDictamenInspector()">
-            <span class="mat-icon">gavel</span>
-            Registrar Dictamen
-          </button>
         </div>
 
-        <!-- Formulario CUADRILLA -->
-        <div *ngIf="rolCampo === 'CUADRILLA'" class="formulario-seccion">
-          <h4 class="formulario-titulo" style="color: var(--success-600);">
-            <span class="mat-icon" style="font-size: 18px;">construction</span>
-            Cierre de Trabajo en Sitio
+        <hr class="divider">
+
+        <!-- ══ SECCIÓN 2: Formulario de Inspección In Situ ══ -->
+        <div class="formulario-seccion">
+          <h4 class="seccion-subtitle highlight-title">
+            <span class="mat-icon">assignment</span>
+            Informe de Inspección In Situ
           </h4>
 
-          <div class="form-group">
-            <label class="form-label">Fotografía Post-Reparación</label>
-            <input type="file" class="form-input" (change)="simularFotoDespues($event)" accept="image/*">
+          <!-- Interruptor / Switch Principal -->
+          <div class="switch-card">
+            <div class="switch-info">
+              <strong class="switch-label">¿Se constató el problema en el lugar?</strong>
+              <p class="switch-desc">
+                {{ problemaVerificado
+                  ? 'Confirmación técnica del daño reportado en la vía pública.'
+                  : 'Falsa alarma o problema no encontrado en la dirección indicada.' }}
+              </p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox"
+                     [checked]="problemaVerificado"
+                     (change)="onSwitchProblemaVerificado($any($event.target).checked)">
+              <span class="slider round"></span>
+            </label>
           </div>
 
-          <div *ngIf="fotoDespuesSimulada" style="margin-bottom: 1rem;">
-            <img [src]="fotoDespuesSimulada" alt="Después" class="foto-preview">
+          <!-- ── BLOQUE CONDICIONAL A: PROBLEMA VERIFICADO ── -->
+          <div *ngIf="problemaVerificado" class="condicional-block">
+            <!-- Nivel de Gravedad -->
+            <div class="form-group">
+              <label class="form-label required">Nivel de Gravedad en Sitio</label>
+              <select class="form-select" [(ngModel)]="gravedad">
+                <option value="" disabled>-- Seleccione el Nivel de Gravedad --</option>
+                <option value="LEVE">LEVE &mdash; Daño menor o estético</option>
+                <option value="MODERADA">MODERADA &mdash; Requiere reparación estándar de cuadrilla</option>
+                <option value="GRAVE">GRAVE &mdash; Falla considerable que altera servicio o tránsito</option>
+                <option value="CRITICA">CRÍTICA &mdash; Riesgo inminente para la seguridad de vecinos</option>
+              </select>
+            </div>
+
+            <!-- Diagnóstico Técnico -->
+            <div class="form-group">
+              <div class="flex-label">
+                <label class="form-label required">Diagnóstico Técnico</label>
+                <span class="char-count" [class.char-valid]="diagnostico.trim().length >= 20">
+                  {{ diagnostico.trim().length }} / 20 mín.
+                </span>
+              </div>
+              <textarea class="form-textarea"
+                        [(ngModel)]="diagnostico"
+                        rows="3"
+                        placeholder="Describa el daño técnico encontrado in situ..."></textarea>
+            </div>
+
+            <!-- Recursos Sugeridos -->
+            <div class="form-group">
+              <label class="form-label">Recursos Sugeridos (Opcional)</label>
+              <input type="text"
+                     class="form-input"
+                     [(ngModel)]="recursosSugeridos"
+                     placeholder="Ej. Fotocelda 100W, grúa telescópica, 2 sacos de mezcla fría...">
+            </div>
+
+            <!-- Instrucciones para Cuadrilla -->
+            <div class="form-group">
+              <label class="form-label">Instrucciones para Cuadrilla (Opcional)</label>
+              <textarea class="form-textarea"
+                        [(ngModel)]="instruccionesCuadrilla"
+                        rows="2"
+                        placeholder="Instrucciones técnicas de seguridad, acceso o señalización preventiva..."></textarea>
+            </div>
           </div>
 
-          <div class="form-group">
-            <label class="form-label">Informe del Trabajo Realizado</label>
-            <textarea class="form-textarea" [(ngModel)]="informeTecnico" rows="3"
-                      placeholder="Materiales y acciones realizadas..."></textarea>
+          <!-- ── BLOQUE CONDICIONAL B: FALSA ALARMA / NO VERIFICADO ── -->
+          <div *ngIf="!problemaVerificado" class="condicional-block descarte-block">
+            <div class="alert-banner-warning">
+              <span class="mat-icon">report_problem</span>
+              <div>
+                <strong>Inspección Descartada / Falsa Alarma</strong>
+                <p>Al marcar no verificado, se registrará el expediente como descarte en sitio.</p>
+              </div>
+            </div>
+
+            <!-- Justificación de Descarte -->
+            <div class="form-group">
+              <div class="flex-label">
+                <label class="form-label required">Justificación de Descarte</label>
+                <span class="char-count" [class.char-valid]="diagnostico.trim().length >= 20">
+                  {{ diagnostico.trim().length }} / 20 mín.
+                </span>
+              </div>
+              <textarea class="form-textarea"
+                        [(ngModel)]="diagnostico"
+                        rows="3"
+                        placeholder="Explique por qué no procede o por qué no se encontró daño en el lugar..."></textarea>
+            </div>
           </div>
 
-          <button class="btn btn-success btn-block" (click)="finalizarTrabajoCuadrilla()">
-            <span class="mat-icon">check_circle</span>
-            Completar Reparación
-          </button>
+          <!-- ── CARGA DE EVIDENCIAS DE CAMPO (FOTOGRAFÍAS) ── -->
+          <div class="form-group foto-upload-group">
+            <label class="form-label required">Fotografías de Evidencia en Campo (1 a 3 imágenes)</label>
+
+            <!-- Helper Text dinámico -->
+            <p class="field-help">
+              <span class="mat-icon icon-inline">help_outline</span>
+              {{ problemaVerificado
+                ? 'Adjunte de 1 a 3 fotografías de evidencia tomadas en sitio.'
+                : 'Adjunte foto panorámica del lugar despejado.' }}
+            </p>
+
+            <!-- Previews Grid -->
+            <div class="evidencias-upload-grid">
+              <div *ngFor="let item of fotosSubidas; let i = index" class="upload-thumb-card">
+                <img [src]="item.previewUrl" alt="Foto evidencia" class="upload-thumb-img">
+                <button type="button" class="btn-remove-foto" (click)="eliminarFoto(i)" title="Eliminar fotografía">
+                  &times;
+                </button>
+              </div>
+
+              <!-- Button para agregar foto -->
+              <label *ngIf="fotosSubidas.length < 3" class="upload-add-btn">
+                <input type="file"
+                       accept="image/png, image/jpeg, image/jpg, image/webp"
+                       multiple
+                       (change)="onArchivosSeleccionados($event)"
+                       style="display: none;">
+                <span class="mat-icon">add_a_photo</span>
+                <span class="add-txt">Adjuntar Foto</span>
+                <span class="add-sub">({{ fotosSubidas.length }}/3)</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- ── ACCIONES DEL FORMULARIO ── -->
+          <div class="form-actions-row">
+            <button type="button" class="btn btn-secondary btn-lg" (click)="salirDeQueja()">
+              <span class="mat-icon">arrow_back</span>
+              Cancelar y Salir
+            </button>
+
+            <button type="button"
+                    class="btn btn-primary btn-lg flex-1"
+                    [disabled]="!esFormularioValido()"
+                    (click)="solicitarConfirmacionEnvio()">
+              <span class="spinner-small" *ngIf="enviandoInforme"></span>
+              <span class="mat-icon" *ngIf="!enviandoInforme">send</span>
+              {{ enviandoInforme ? 'Enviando Informe...' : 'Enviar Informe Técnico' }}
+            </button>
+          </div>
         </div>
       </div>
     </div>
   </div>
+
 </div>

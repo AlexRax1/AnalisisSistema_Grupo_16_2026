@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface InformeQuejaRepository extends JpaRepository<InformeQueja, Integer> {
+    boolean existsByQueja_QuejaIdAndTipoInforme(Integer quejaId, String tipoInforme);
 }

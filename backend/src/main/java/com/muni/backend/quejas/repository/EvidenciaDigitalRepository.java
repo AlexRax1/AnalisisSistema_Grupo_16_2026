@@ -11,4 +11,6 @@ import java.util.List;
 public interface EvidenciaDigitalRepository extends JpaRepository<EvidenciaDigital, Integer> {
     List<EvidenciaDigital> findByQueja_QuejaId(Integer quejaId);
     List<EvidenciaDigital> findByQueja(Queja queja);
+    List<EvidenciaDigital> findByQueja_QuejaIdAndEtapa(Integer quejaId, String etapa);
+    List<EvidenciaDigital> findByInforme_InformeId(Integer informeId);
 }
