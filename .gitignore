@@ -4,9 +4,11 @@
 
 .env
 .env.*
+env
+env.*
+*.env
 *.bak
 *.bak.*
-
 
 # ==========================================
 # Angular & Frontend
@@ -114,3 +116,15 @@ spring-boot-starter.log
 .DS_Store
 Thumbs.db
 Desktop.ini
+
+
+
+**/subidas/
+**/uploads/
+
+# office / libreofice /onlyofice
+.~lock.*#
+**/.~lock.*#
+
+~$*
+**/~$*

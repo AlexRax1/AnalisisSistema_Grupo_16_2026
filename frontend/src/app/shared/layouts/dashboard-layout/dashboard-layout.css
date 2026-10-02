@@ -211,6 +211,39 @@
   justify-content: center;
 }
 
+/* ── Role Switcher (Demo) ────────────────── */
+.role-switcher {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--slate-100);
+  border: 1px solid var(--slate-300);
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+
+.role-switcher:hover {
+  border-color: var(--primary-400);
+  background: #ffffff;
+}
+
+.role-switcher-icon {
+  font-size: 18px !important;
+  color: var(--primary-600);
+}
+
+.role-switcher-select {
+  background: transparent;
+  border: none;
+  font-size: var(--font-xs);
+  font-weight: 600;
+  color: var(--slate-700);
+  cursor: pointer;
+  outline: none;
+  padding-right: 0.25rem;
+}
+
 /* ── Page Content ─────────────────────────── */
 .page-content {
   flex: 1;

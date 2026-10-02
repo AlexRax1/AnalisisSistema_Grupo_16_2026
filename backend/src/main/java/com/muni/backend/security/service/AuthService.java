@@ -38,13 +38,13 @@ public class AuthService {
         return new AuthResponse(token);
     }
 
+
+    //para otros roles(funcionario....)
     @Transactional
     public RegisterResponse register(RegisterRequest request) {
         if (credencialRepository.findByUsername(request.getUsername()).isPresent()) {
             throw excitingIllegalArgument("El username ya existe");
         }
-
-        // Por defecto rol Ciudadano/Base (ID 2 o según parametrización)
         RolUser rolUsuario = rolUserRepository.findById(2)
                 .orElseThrow(() -> new IllegalArgumentException("Rol base no encontrado"));
 

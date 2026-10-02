@@ -52,6 +52,18 @@
         <h2 class="topbar-title" *ngIf="currentConfig">{{ currentConfig.titulo }}</h2>
       </div>
       <div class="topbar-right">
+        <!-- Switch de Rol Demo -->
+        <div class="role-switcher">
+          <span class="mat-icon role-switcher-icon">swap_horiz</span>
+          <select class="role-switcher-select" [value]="segmentoActual" (change)="cambiarRolDemo($event)" title="Cambiar Vista de Rol (Demo)">
+            <option value="ciudadano">Ciudadano</option>
+            <option value="funcionario">Funcionario Municipal</option>
+            <option value="inspector">Inspector de Campo</option>
+            <option value="especialista">Especialista Técnico</option>
+            <option value="admin">Administrador</option>
+          </select>
+        </div>
+
         <span class="badge" [ngClass]="currentConfig!.badgeClass || 'badge-neutral'" *ngIf="currentConfig">
           {{ rolActual }}
         </span>

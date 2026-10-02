@@ -2,22 +2,25 @@ package com.muni.backend.usuarios.controller;
 
 import com.muni.backend.usuarios.dto.PerfilUsuarioDTO;
 import com.muni.backend.usuarios.dto.UsuarioRegistroDTO;
+import com.muni.backend.usuarios.dto.UsuarioResumenDTO;
 import com.muni.backend.usuarios.model.Usuario;
 import com.muni.backend.usuarios.service.UsuarioService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import com.muni.backend.usuarios.dto.ActualizarPerfilDTO;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/usuarios")
+@RequestMapping({"/api/usuarios", "/usuarios"})
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:4200")
+@CrossOrigin(origins = "*")
 public class UsuarioController {
 
     private final UsuarioService usuarioService;
@@ -43,6 +46,30 @@ public class UsuarioController {
             return ResponseEntity.ok(usuario);
         }
         return ResponseEntity.notFound().build();
+    }
+
+    @GetMapping("/inspectores")
+    @PreAuthorize("hasAuthority('FUNCIONARIO_MUNICIPAL')")
+    public ResponseEntity<?> listarInspectores() {
+        try {
+            List<UsuarioResumenDTO> inspectores = usuarioService.listarPorRol("INSPECTOR_CAMPO");
+            return ResponseEntity.ok(inspectores);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error al obtener inspectores: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/especialistas")
+    @PreAuthorize("hasAuthority('FUNCIONARIO_MUNICIPAL')")
+    public ResponseEntity<?> listarEspecialistas() {
+        try {
+            List<UsuarioResumenDTO> especialistas = usuarioService.listarPorRol("ESPECIALISTA_TECNICO");
+            return ResponseEntity.ok(especialistas);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error al obtener especialistas: " + e.getMessage()));
+        }
     }
 
     @GetMapping("/perfil")
