@@ -12,6 +12,8 @@ import { InspeccionCuadrillaComponent } from './modules/operaciones-campo/pages/
 import { AdminUsuariosComponent } from './modules/admin/pages/admin-usuarios/admin-usuarios';
 import { AdminReportesComponent } from './modules/admin/pages/admin-reportes/admin-reportes';
 import { MiPerfilComponent } from './modules/admin/pages/mi-perfil/mi-perfil.component';
+import { CatalogoQuejasAdminComponent } from './modules/admin/catalogo-quejas/catalogo-quejas.component';
+import { GestionPersonalComponent } from './modules/admin/gestion-personal/gestion-personal.component';
 
 export const routes: Routes = [
   // Portal público de bienvenida
@@ -83,6 +85,17 @@ export const routes: Routes = [
   {
     path: 'ciudadano/perfil',
     component: MiPerfilComponent,
+  },
+
+  {
+    path: 'admin/catalogo-quejas',
+    component: CatalogoQuejasAdminComponent,
+    // canActivate: [RoleGuard] // Opcional: Proteger con el guard del Funcionario/Administrador
+  },
+
+  {
+    path: 'admin/gestion-personal',
+    component: GestionPersonalComponent
   },
 
   // Fallback

@@ -20,7 +20,7 @@ interface RolConfig {
   standalone: true,
   imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
   templateUrl: './dashboard-layout.html',
-  styleUrl: './dashboard-layout.css'
+  styleUrl: './dashboard-layout.css',
 })
 export class DashboardLayoutComponent implements OnInit {
   sidebarCollapsed = false;
@@ -34,38 +34,33 @@ export class DashboardLayoutComponent implements OnInit {
       items: [
         { label: 'Mis Quejas', icon: 'list_alt', route: '/ciudadano/mis-quejas' },
         { label: 'Nueva Queja', icon: 'add_circle', route: '/ciudadano/nueva-queja' },
-        { label: 'Mi Perfil', route: '/ciudadano/perfil', icon: 'person' }
-      ]
+        { label: 'Mi Perfil', route: '/ciudadano/perfil', icon: 'person' },
+      ],
     },
     funcionario: {
       titulo: 'Gestión Municipal',
       badgeClass: 'badge-warning',
-      items: [
-        { label: 'Bandeja General', icon: 'inbox', route: '/funcionario/bandeja' }
-      ]
+      items: [{ label: 'Bandeja General', icon: 'inbox', route: '/funcionario/bandeja' }],
     },
     inspector: {
       titulo: 'Inspector de Campo',
       badgeClass: 'badge-info',
-      items: [
-        { label: 'Inspecciones', icon: 'search', route: '/inspector/inspecciones' }
-      ]
+      items: [{ label: 'Inspecciones', icon: 'search', route: '/inspector/inspecciones' }],
     },
     especialista: {
       titulo: 'Especialista Técnico',
       badgeClass: 'badge-success',
-      items: [
-        { label: 'Órdenes de Trabajo', icon: 'build', route: '/especialista/ordenes' }
-      ]
+      items: [{ label: 'Órdenes de Trabajo', icon: 'build', route: '/especialista/ordenes' }],
     },
     admin: {
       titulo: 'Administrador',
       badgeClass: 'badge-danger',
       items: [
-        { label: 'Usuarios', icon: 'people', route: '/admin/usuarios' },
-        { label: 'Reportes', icon: 'bar_chart', route: '/admin/reportes' }
-      ]
-    }
+        { label: 'Gestión de Personal', icon: 'people', route: '/admin/usuarios' },
+        { label: 'Catálogo de Quejas', icon: 'assessment', route: '/admin/catalogo-quejas' },
+        { label: 'Reportes', icon: 'bar_chart', route: '/admin/reportes' },
+      ],
+    },
   };
 
   currentConfig: RolConfig | null = null;
@@ -75,9 +70,9 @@ export class DashboardLayoutComponent implements OnInit {
 
   ngOnInit() {
     this.detectarRol();
-    this.router.events.pipe(
-      filter(e => e instanceof NavigationEnd)
-    ).subscribe(() => this.detectarRol());
+    this.router.events
+      .pipe(filter((e) => e instanceof NavigationEnd))
+      .subscribe(() => this.detectarRol());
   }
 
   private detectarRol() {
@@ -98,13 +93,13 @@ export class DashboardLayoutComponent implements OnInit {
   cambiarRolDemo(event: Event) {
     const target = event.target as HTMLSelectElement;
     const nuevoSegmento = target.value;
-    
+
     const mapaRoles: Record<string, string> = {
       ciudadano: 'CIUDADANO',
       funcionario: 'FUNCIONARIO',
       inspector: 'INSPECTOR',
       especialista: 'ESPECIALISTA',
-      admin: 'ADMINISTRADOR'
+      admin: 'ADMINISTRADOR',
     };
 
     if (mapaRoles[nuevoSegmento]) {

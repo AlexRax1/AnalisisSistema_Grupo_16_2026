@@ -9,7 +9,7 @@ import {
   ValidationErrors,
 } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { AuthService } from '../../../../modules/auth/auth.service';
+import { AuthService } from '../../auth.service';
 
 @Component({
   selector: 'app-registro',
@@ -105,20 +105,23 @@ export class RegistroComponent implements OnInit {
       error: (err: any) => {
         let mensajeBackend = '';
 
+        // Capturar cuerpo de respuesta de Spring Boot
         if (typeof err.error === 'string') {
           mensajeBackend = err.error;
         } else if (err.error?.mensaje || err.error?.message) {
           mensajeBackend = err.error.mensaje || err.error.message;
-        } else if (err.error?.errors && Array.isArray(err.error.errors)) {
-          mensajeBackend = err.error.errors.map((e: any) => e.defaultMessage || e).join(', ');
+        } else if (err.message) {
+          mensajeBackend = err.message;
         }
 
         const msgLower = mensajeBackend.toLowerCase();
 
         if (msgLower.includes('dpi')) {
           this.errorMsg = 'El número de DPI ingresado ya se encuentra registrado en el sistema.';
+          this.registroForm.get('dpi')?.setErrors({ duplicado: true });
         } else if (msgLower.includes('correo') || msgLower.includes('email')) {
           this.errorMsg = 'El correo electrónico ingresado ya está asociado a otra cuenta.';
+          this.registroForm.get('correo')?.setErrors({ duplicado: true });
         } else {
           this.errorMsg = mensajeBackend || 'Ocurrió un error al registrar la cuenta.';
         }

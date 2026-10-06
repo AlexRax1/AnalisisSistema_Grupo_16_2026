@@ -1,0 +1,89 @@
+/* Layout Principal */
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Tarjetas de Filtros y Tabla */
+.card {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background-color: #ffffff;
+}
+
+.card-body {
+  padding: 1.25rem;
+}
+
+/* Controles de Formulario */
+.form-label {
+  color: #334155;
+  margin-bottom: 0.25rem;
+}
+
+.form-control, .form-select {
+  border-color: #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+/* Tabla de Catálogo */
+.table {
+  font-size: 0.9rem;
+}
+
+.table thead th {
+  background-color: #f8fafc;
+  color: #475569;
+  font-weight: 600;
+  border-bottom: 2px solid #e2e8f0;
+  padding: 0.75rem 1rem;
+}
+
+.table tbody td {
+  padding: 0.85rem 1rem;
+  color: #1e293b;
+}
+
+.table-hover tbody tr:hover {
+  background-color: #f1f5f9;
+}
+
+/* Badges y Etiquetas de Estado */
+.badge {
+  font-weight: 600;
+  padding: 0.35em 0.65em;
+  font-size: 0.75rem;
+  border-radius: 4px;
+}
+
+/* Paginación */
+.pagination .page-link {
+  color: #2563eb;
+  border-color: #cbd5e1;
+  font-size: 0.85rem;
+}
+
+.pagination .page-item.disabled .page-link {
+  color: #94a3b8;
+  background-color: #f8fafc;
+}
+
+.pagination .page-item:not(.disabled) .page-link:hover {
+  background-color: #e2e8f0;
+}
