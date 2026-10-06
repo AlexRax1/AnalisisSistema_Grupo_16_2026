@@ -1,9 +1,18 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, NgZone, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { ESTADO_COLORS, QuejaDetalleDTO } from '../../../../core/models/queja.model';
 import { QuejaService } from '../../../../core/services/queja.service';
+import { QuejaDetalleDTO } from '../../../../core/models/queja.model';
+
+const ESTADO_COLORS: { [key: string]: string } = {
+  REGISTRADA: 'badge-info',
+  'EN INSPECCIÓN': 'badge-warning',
+  'EN REPARACIÓN TÉCNICA': 'badge-primary',
+  'EN VALIDACIÓN DE REPARACIÓN': 'badge-purple',
+  'SOLUCIONADA / CERRADA': 'badge-success',
+  RECHAZADA: 'badge-danger',
+};
 
 @Component({
   selector: 'app-mis-quejas',
@@ -17,7 +26,8 @@ export class MisQuejasComponent implements OnInit {
   quejas: QuejaDetalleDTO[] = [];
   quejaSeleccionada?: QuejaDetalleDTO;
 
-  cargando: boolean = true;
+  // Ponemos cargando en false por defecto para permitir la renderización inmediata
+  cargando: boolean = false;
   busquedaCorrelativo: string = '';
   estadoSeleccionado: string = 'TODAS';
   mensajeBusquedaVacia: boolean = false;
@@ -40,36 +50,47 @@ export class MisQuejasComponent implements OnInit {
     'RECHAZADA',
   ];
 
-  constructor(private quejaService: QuejaService) {}
+  constructor(
+    private quejaService: QuejaService,
+    private ngZone: NgZone,
+  ) {}
 
   ngOnInit(): void {
     this.cargarQuejas();
   }
 
   cargarQuejas(): void {
-    this.cargando = true;
     this.quejaService.obtenerMisQuejas().subscribe({
       next: (data) => {
-        this.quejasOriginales = data;
-        this.quejas = data;
-        if (data.length > 0) {
-          this.quejaSeleccionada = data[0];
-        }
-        this.cargando = false;
+        // Envolvemos en NgZone para obligar a Angular a refrescar el DOM al instante
+        this.ngZone.run(() => {
+          this.quejasOriginales = data || [];
+          this.quejas = [...this.quejasOriginales];
+
+          if (this.quejas.length > 0) {
+            this.quejaSeleccionada = this.quejas[0];
+          } else {
+            this.quejaSeleccionada = undefined;
+          }
+          this.cargando = false;
+        });
       },
       error: (err) => {
         console.error('Error al cargar quejas:', err);
-        this.cargando = false;
+        this.ngZone.run(() => {
+          this.cargando = false;
+        });
       },
     });
   }
 
   aplicarFiltros(): void {
     this.mensajeBusquedaVacia = false;
+    const termino = this.busquedaCorrelativo.trim().toLowerCase();
+
     this.quejas = this.quejasOriginales.filter((q) => {
       const coincideCorrelativo =
-        !this.busquedaCorrelativo ||
-        q.correlativo.toLowerCase().includes(this.busquedaCorrelativo.trim().toLowerCase());
+        !termino || (q.correlativo && q.correlativo.toLowerCase().includes(termino));
 
       const coincideEstado =
         this.estadoSeleccionado === 'TODAS' || q.estadoActual === this.estadoSeleccionado;
@@ -77,7 +98,7 @@ export class MisQuejasComponent implements OnInit {
       return coincideCorrelativo && coincideEstado;
     });
 
-    if (this.quejas.length === 0 && this.busquedaCorrelativo.trim() !== '') {
+    if (this.quejas.length === 0 && termino !== '') {
       this.mensajeBusquedaVacia = true;
     }
 
@@ -175,15 +196,20 @@ export class MisQuejasComponent implements OnInit {
 
     this.quejaService.registrarQuejaDerivada(payload, this.fotosDerivada).subscribe({
       next: (res) => {
-        alert(res.mensaje);
-        this.enviandoDerivada = false;
-        this.cerrarModalDerivada();
-        this.cargarQuejas(); // Refrescar el historial
+        this.ngZone.run(() => {
+          alert(res.mensaje);
+          this.enviandoDerivada = false;
+          this.cerrarModalDerivada();
+          this.cargarQuejas(); // Refrescar el historial
+        });
       },
       error: (err) => {
-        this.errorModal = err.error || 'Ocurrió un error al enviar el reporte.';
-        this.enviandoDerivada = false;
+        this.ngZone.run(() => {
+          this.errorModal = err.error || 'Ocurrió un error al enviar el reporte.';
+          this.enviandoDerivada = false;
+        });
       },
     });
   }
 }
+

@@ -1,0 +1,107 @@
+<div class="container-fluid py-4 animate-fade-in">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="h3 fw-bold mb-1">Gestión de Personal y Roles</h2>
+      <p class="text-muted mb-0">Administración del ciclo de vida y dependencias de usuarios internos</p>
+    </div>
+    <button class="btn btn-primary" (click)="abrirModalNuevo()">
+      <i class="bi bi-person-plus-fill"></i> Nuevo Empleado
+    </button>
+  </div>
+
+  <!-- Tabla General de Empleados -->
+  <div class="card shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+        <tr>
+          <th>DPI</th>
+          <th>Nombre Completo</th>
+          <th>Correo Institucional</th>
+          <th>Teléfono</th>
+          <th>Rol Asignado</th>
+          <th>Dependencia</th>
+          <th>Estado</th>
+          <th class="text-end">Acciones</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr *ngFor="let emp of empleados">
+          <td class="fw-bold">{{ emp.dpi }}</td>
+          <td>{{ emp.nombres }} {{ emp.apellidos }}</td>
+          <td><code>{{ emp.correoInstitucional }}</code></td>
+          <td>{{ emp.telefono }}</td>
+          <td><span class="badge bg-info text-dark">{{ emp.rol }}</span></td>
+          <td>{{ emp.dependencia }}</td>
+          <td>
+              <span class="badge" [ngClass]="emp.activo ? 'bg-success' : 'bg-danger'">
+                {{ emp.activo ? 'Activo' : 'Inactivo' }}
+              </span>
+          </td>
+          <td class="text-end">
+            <button class="btn btn-sm btn-outline-primary me-2" (click)="abrirModalEditar(emp)">
+              Editar
+            </button>
+            <button class="btn btn-sm" [ngClass]="emp.activo ? 'btn-outline-danger' : 'btn-outline-success'" (click)="alternarEstado(emp)">
+              {{ emp.activo ? 'Desactivar' : 'Activar' }}
+            </button>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Formulario Empleado -->
+<div class="modal-backdrop" *ngIf="mostrarModal" style="position: fixed; top:0; left:0; width:100vw; height:100vh; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+  <div class="card shadow-lg" style="width: 90%; max-width: 600px; background: #fff; padding: 1.5rem; border-radius: 8px;">
+    <h3 class="h5 fw-bold mb-3">{{ modoEdicion ? 'Editar Empleado' : 'Registrar Nuevo Empleado' }}</h3>
+
+    <div *ngIf="errorModal" class="alert alert-danger p-2 small mb-3">
+      {{ errorModal }}
+    </div>
+
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label fw-bold small">DPI *</label>
+        <input type="text" class="form-control" [(ngModel)]="formEmpleado.dpi" [disabled]="modoEdicion" maxlength="13" />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-bold small">Teléfono Institucional *</label>
+        <input type="text" class="form-control" [(ngModel)]="formEmpleado.telefono" maxlength="8" />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-bold small">Nombres *</label>
+        <input type="text" class="form-control" [(ngModel)]="formEmpleado.nombres" [disabled]="modoEdicion" />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-bold small">Apellidos *</label>
+        <input type="text" class="form-control" [(ngModel)]="formEmpleado.apellidos" [disabled]="modoEdicion" />
+      </div>
+      <div class="col-12">
+        <label class="form-label fw-bold small">Correo Institucional (*&#64;muni.gob.gt) *</label>
+        <input type="email" class="form-control" [(ngModel)]="formEmpleado.correoInstitucional" [disabled]="modoEdicion" placeholder="usuario@muni.gob.gt" />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-bold small">Rol del Sistema *</label>
+        <select class="form-select" [(ngModel)]="formEmpleado.rol">
+          <option *ngFor="let r of rolesDisponibles" [value]="r">{{ r }}</option>
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-bold small">Dependencia Municipal *</label>
+        <select class="form-select" [(ngModel)]="formEmpleado.dependencia">
+          <option *ngFor="let d of dependenciasDisponibles" [value]="d">{{ d }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-end gap-2 mt-4">
+      <button class="btn btn-outline-secondary" (click)="cerrarModal()" [disabled]="guardando">Cancelar</button>
+      <button class="btn btn-primary" (click)="guardarEmpleado()" [disabled]="guardando">
+        {{ guardando ? 'Guardando...' : 'Guardar Empleado' }}
+      </button>
+    </div>
+  </div>
+</div>

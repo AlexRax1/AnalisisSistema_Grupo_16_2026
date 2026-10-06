@@ -1,0 +1,122 @@
+<div class="container-fluid py-4 animate-fade-in">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="h3 fw-bold mb-1">Catálogo e Historial de Quejas</h2>
+      <p class="text-muted mb-0">Bandeja general de monitoreo y auditoría municipal</p>
+    </div>
+    <!-- Botones de Exportación (FA03) -->
+    <div class="d-flex gap-2">
+      <button class="btn btn-success" (click)="exportarExcel()">
+        <i class="bi bi-file-earmark-excel"></i> Exportar a Excel
+      </button>
+      <button class="btn btn-danger" (click)="exportarPdf()">
+        <i class="bi bi-file-earmark-pdf"></i> Generar PDF
+      </button>
+    </div>
+  </div>
+
+  <!-- Panel de Filtros Avanzados (RN07, RN14, RN28) -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-3">
+          <label class="form-label fw-bold small">Fecha Desde:</label>
+          <input type="date" class="form-control" [(ngModel)]="filtros.fechaDesde" />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label fw-bold small">Fecha Hasta:</label>
+          <input type="date" class="form-control" [(ngModel)]="filtros.fechaHasta" />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label fw-bold small">Categoría:</label>
+          <select class="form-select" [(ngModel)]="filtros.categoria">
+            <option *ngFor="let cat of categoriasDisponibles" [value]="cat">{{ cat }}</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label fw-bold small">Estado:</label>
+          <select class="form-select" [(ngModel)]="filtros.estado">
+            <option *ngFor="let est of estadosDisponibles" [value]="est">{{ est }}</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label fw-bold small">Prioridad Demanda:</label>
+          <select class="form-select" [(ngModel)]="filtros.prioridad">
+            <option *ngFor="let prio of prioridadesDisponibles" [value]="prio">{{ prio }}</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-bold small">Buscador (Correlativo o DPI):</label>
+          <input type="text" class="form-control" placeholder="Ej: QUE-2026-000001 o 2410123450101" [(ngModel)]="filtros.busqueda" />
+        </div>
+        <div class="col-md-3 d-flex align-items-end gap-2">
+          <button class="btn btn-primary w-100" (click)="paginaActual = 0; buscar()">
+            <i class="bi bi-search"></i> Buscar
+          </button>
+          <button class="btn btn-outline-secondary w-100" (click)="limpiarFiltros()">
+            Limpiar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Alerta Sin Resultados (FA01) -->
+  <div *ngIf="mensajeSinResultados" class="alert alert-warning text-center">
+    No se encontraron registros que coincidan con los criterios de búsqueda ingresados.
+  </div>
+
+  <!-- Tabla Paginada Consolidada -->
+  <div class="card shadow-sm" *ngIf="!cargando && registros.length > 0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+        <tr>
+          <th>Correlativo</th>
+          <th>Fecha</th>
+          <th>Ciudadano (DPI)</th>
+          <th>Categoría</th>
+          <th>Dirección</th>
+          <th>Prioridad</th>
+          <th>Inspector</th>
+          <th>Estado</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr *ngFor="let q of registros">
+          <td class="fw-bold text-primary">{{ q.correlativo }}</td>
+          <td>{{ q.fechaRegistro | date:'dd/MM/yyyy' }}</td>
+          <td>
+            <div>{{ q.nombreCiudadano }}</div>
+            <small class="text-muted">{{ q.dpiCiudadano }}</small>
+          </td>
+          <td>{{ q.categoria }}</td>
+          <td>Zona {{ q.zona }} - {{ q.direccionExacta }}</td>
+          <td>
+            <span [ngClass]="obtenerClasePrioridad(q.prioridadDemanda)">{{ q.prioridadDemanda }}</span>
+          </td>
+          <td>{{ q.inspectorAsignado || 'Sin Asignar' }}</td>
+          <td>
+            <span class="badge bg-primary">{{ q.estadoActual }}</span>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginador Paginado (20 por página) -->
+    <div class="card-footer d-flex justify-content-between align-items-center py-3">
+      <span class="text-muted small">
+        Mostrando {{ registros.length }} de {{ totalElementos }} registros (Página {{ paginaActual + 1 }} de {{ totalPaginas }})
+      </span>
+      <ul class="pagination pagination-sm mb-0">
+        <li class="page-item" [class.disabled]="paginaActual === 0">
+          <button class="page-page-link page-link" (click)="cambiarPagina(paginaActual - 1)">Anterior</button>
+        </li>
+        <li class="page-item" [class.disabled]="paginaActual + 1 >= totalPaginas">
+          <button class="page-link" (click)="cambiarPagina(paginaActual + 1)">Siguiente</button>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
