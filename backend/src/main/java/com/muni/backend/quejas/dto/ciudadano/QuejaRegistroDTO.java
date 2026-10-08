@@ -1,4 +1,4 @@
-package com.muni.backend.quejas.dto;
+package com.muni.backend.quejas.dto.ciudadano;
 
 import lombok.Data;
 import java.math.BigDecimal;

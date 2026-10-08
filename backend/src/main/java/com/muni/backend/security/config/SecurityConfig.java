@@ -59,7 +59,12 @@ public class SecurityConfig {
                         // Rutas públicas de autenticación
                         .requestMatchers("/auth/**", "/api/auth/**", "/usuarios/registro-ciudadano", "/api/usuarios/registro-ciudadano").permitAll()
                         .requestMatchers("/subidas/evidencias/**").permitAll()
-                        .requestMatchers("/quejas/**", "/api/quejas/**", "/api/gestion-municipal/**", "/usuarios/**", "/api/usuarios/**").authenticated()
+                        .requestMatchers(
+                                "/quejas/**", "/api/quejas/**",
+                                "/api/funcionario/**", "/api/inspector/**", "/api/especialista/**",
+                                "/api/gestion-municipal/**",
+                                "/usuarios/**", "/api/usuarios/**"
+                        ).authenticated()
                         .anyRequest().authenticated()
                 )
                 // Registramos el filtro JWT antes del filtro de usuario/contraseña estándar

@@ -1,9 +1,12 @@
 package com.muni.backend.quejas.service;
 
-import com.muni.backend.quejas.dto.*;
+import com.muni.backend.quejas.dto.ciudadano.*;
+import com.muni.backend.quejas.dto.shared.*;
 import com.muni.backend.quejas.model.EvidenciaDigital;
+import com.muni.backend.quejas.model.HistorialEstadoQueja;
 import com.muni.backend.quejas.model.Queja;
 import com.muni.backend.quejas.repository.EvidenciaDigitalRepository;
+import com.muni.backend.quejas.repository.HistorialEstadoQuejaRepository;
 import com.muni.backend.quejas.repository.QuejaRepository;
 import com.muni.backend.shared.service.FileStorageService;
 import com.muni.backend.usuarios.model.Usuario;
@@ -24,7 +27,9 @@ public class QuejaService {
     private final QuejaRepository quejaRepository;
     private final EvidenciaDigitalRepository evidenciaRepository;
     private final UsuarioRepository usuarioRepository;
+    private final HistorialEstadoQuejaRepository historialRepository;
     private final FileStorageService fileStorageService;
+    private final AsignacionAutomaticaService asignacionAutomaticaService;
 
     @Transactional
     public QuejaRegistroResponse registrarQueja(QuejaRegistroDTO dto, List<MultipartFile> fotos, String correoCiudadano) {
@@ -90,12 +95,27 @@ public class QuejaService {
         queja.setPrioridadSugerida(prioridadCalculada);
         queja.setPrioridadConfirmada(prioridadCalculada);
 
+        // Asignación automática al funcionario con menor carga activa
+        asignacionAutomaticaService.asignarFuncionarioAutomatico().ifPresent(queja::setFuncionario);
+
         Queja guardada = quejaRepository.save(queja);
 
         // 4. Asignación del Correlativo Oficial
         String correlativo = String.format("QUE-%d-%06d", Year.now().getValue(), guardada.getQuejaId());
         guardada.setCorrelativo(correlativo);
         quejaRepository.save(guardada);
+
+        // Registro de trazabilidad inicial en historial
+        HistorialEstadoQueja historial = new HistorialEstadoQueja();
+        historial.setQueja(guardada);
+        historial.setEstadoAnterior(null);
+        historial.setEstadoNuevo("REGISTRADA");
+        historial.setCambiadoPor(ciudadano);
+        historial.setComentario(guardada.getFuncionario() != null
+                ? "Queja registrada. Asignada automáticamente al funcionario: "
+                    + guardada.getFuncionario().getNombres() + " " + guardada.getFuncionario().getApellidos()
+                : "Queja registrada.");
+        historialRepository.save(historial);
 
         // 5. Guardado de Evidencias Digitales
         for (MultipartFile foto : fotos) {
@@ -224,12 +244,27 @@ public class QuejaService {
         nuevaQueja.setPrioridadSugerida(prioridad);
         nuevaQueja.setPrioridadConfirmada(prioridad);
 
+        // Asignación automática al funcionario con menor carga activa
+        asignacionAutomaticaService.asignarFuncionarioAutomatico().ifPresent(nuevaQueja::setFuncionario);
+
         Queja guardada = quejaRepository.save(nuevaQueja);
 
         // 4. Asignación de Correlativo Oficial
         String correlativoOficial = String.format("QUE-%d-%06d", Year.now().getValue(), guardada.getQuejaId());
         guardada.setCorrelativo(correlativoOficial);
         quejaRepository.save(guardada);
+
+        // Registro de trazabilidad inicial en historial
+        HistorialEstadoQueja historial = new HistorialEstadoQueja();
+        historial.setQueja(guardada);
+        historial.setEstadoAnterior(null);
+        historial.setEstadoNuevo("REGISTRADA");
+        historial.setCambiadoPor(ciudadano);
+        historial.setComentario(guardada.getFuncionario() != null
+                ? "Reporte de " + dto.getTipoDerivacion() + " registrado. Asignado automáticamente al funcionario: "
+                    + guardada.getFuncionario().getNombres() + " " + guardada.getFuncionario().getApellidos()
+                : "Reporte de " + dto.getTipoDerivacion() + " registrado.");
+        historialRepository.save(historial);
 
         // 5. Guardado de Evidencias Digitales
         for (MultipartFile foto : fotos) {

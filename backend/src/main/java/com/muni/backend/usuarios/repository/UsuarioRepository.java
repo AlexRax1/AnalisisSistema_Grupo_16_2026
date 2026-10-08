@@ -36,4 +36,77 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
      * Busca un usuario por su credencial user_id.
      */
     Optional<Usuario> findByCredencial_UserId(Integer userId);
+
+    /**
+     * Busca los IDs de funcionarios municipales activos ordenados por menor cantidad de quejas activas.
+     */
+    @Query("""
+        SELECT u.usuarioId FROM Usuario u
+        JOIN u.credencial c
+        JOIN c.rolUser r
+        LEFT JOIN com.muni.backend.quejas.model.Queja q
+            ON q.funcionario = u AND q.estadoActual NOT IN ('SOLUCIONADA / CERRADA', 'RECHAZADA')
+        WHERE r.nombreRol = 'FUNCIONARIO_MUNICIPAL'
+          AND u.estado = 'ACTIVO'
+          AND c.estado = 'ACTIVO'
+        GROUP BY u.usuarioId
+        ORDER BY COUNT(q) ASC, u.usuarioId ASC
+        """)
+    List<Integer> buscarIdFuncionarioMenorCarga(org.springframework.data.domain.Pageable pageable);
+
+    /**
+     * Busca los IDs de inspectores de campo activos ordenados por menor cantidad de quejas en inspección.
+     */
+    @Query("""
+        SELECT u.usuarioId FROM Usuario u
+        JOIN u.credencial c
+        JOIN c.rolUser r
+        LEFT JOIN com.muni.backend.quejas.model.Queja q
+            ON q.inspector = u AND q.estadoActual = 'EN INSPECCIÓN'
+        WHERE r.nombreRol = 'INSPECTOR_CAMPO'
+          AND u.estado = 'ACTIVO'
+          AND c.estado = 'ACTIVO'
+        GROUP BY u.usuarioId
+        ORDER BY COUNT(q) ASC, u.usuarioId ASC
+        """)
+    List<Integer> buscarIdInspectorMenorCarga(org.springframework.data.domain.Pageable pageable);
+
+    /*
+       Busca los IDs de especialistas técnicos activos de una dependencia específica,
+       ordenados por menor cantidad de quejas en reparación técnica.
+     */
+    @Query("""
+        SELECT u.usuarioId FROM Usuario u
+        JOIN u.credencial c
+        JOIN c.rolUser r
+        LEFT JOIN com.muni.backend.quejas.model.Queja q
+            ON q.especialista = u AND q.estadoActual = 'EN REPARACIÓN TÉCNICA'
+        WHERE r.nombreRol = 'ESPECIALISTA_TECNICO'
+          AND u.estado = 'ACTIVO'
+          AND c.estado = 'ACTIVO'
+          AND u.dependencia.dependenciaId = :dependenciaId
+        GROUP BY u.usuarioId
+        ORDER BY COUNT(q) ASC, u.usuarioId ASC
+        """)
+    List<Integer> buscarIdEspecialistaDependenciaMenorCarga(
+            @Param("dependenciaId") Integer dependenciaId,
+            org.springframework.data.domain.Pageable pageable);
+
+    /**
+     * Busca los IDs de especialistas técnicos activos a nivel global,
+     * ordenados por menor cantidad de quejas en reparación técnica.
+     */
+    @Query("""
+        SELECT u.usuarioId FROM Usuario u
+        JOIN u.credencial c
+        JOIN c.rolUser r
+        LEFT JOIN com.muni.backend.quejas.model.Queja q
+            ON q.especialista = u AND q.estadoActual = 'EN REPARACIÓN TÉCNICA'
+        WHERE r.nombreRol = 'ESPECIALISTA_TECNICO'
+          AND u.estado = 'ACTIVO'
+          AND c.estado = 'ACTIVO'
+        GROUP BY u.usuarioId
+        ORDER BY COUNT(q) ASC, u.usuarioId ASC
+        """)
+    List<Integer> buscarIdEspecialistaGlobalMenorCarga(org.springframework.data.domain.Pageable pageable);
 }

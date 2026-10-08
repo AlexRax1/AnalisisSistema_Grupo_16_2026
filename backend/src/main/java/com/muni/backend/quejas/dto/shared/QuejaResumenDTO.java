@@ -1,20 +1,24 @@
-package com.muni.backend.quejas.dto;
+package com.muni.backend.quejas.dto.shared;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import java.math.BigDecimal;
+
+import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class QuejaPuntoMapaDTO {
+public class QuejaResumenDTO {
     private Integer quejaId;
     private String correlativo;
+    private String tipoRegistro;
     private String categoria;
+    private String subcategoria;
     private Integer zona;
-    private BigDecimal latitud;
-    private BigDecimal longitud;
+    private String direccionExacta;
     private String estadoActual;
     private String prioridadConfirmada;
+    private LocalDateTime fechaRegistro;
+    private String ciudadanoNombre;
 }

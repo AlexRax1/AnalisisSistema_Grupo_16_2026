@@ -1,4 +1,4 @@
-package com.muni.backend.quejas.dto;
+package com.muni.backend.quejas.dto.shared;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

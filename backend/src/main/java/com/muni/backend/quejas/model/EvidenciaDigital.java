@@ -20,6 +20,10 @@ public class EvidenciaDigital {
     @JoinColumn(name = "queja_id", nullable = false)
     private Queja queja;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "informe_id")
+    private InformeQueja informe;
+
     @Column(name = "etapa", length = 40)
     private String etapa = "REPORTE_CIUDADANO";
 

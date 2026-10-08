@@ -4,7 +4,7 @@ import com.lowagie.text.*;
 import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
-import com.muni.backend.quejas.dto.QuejaDetalleDTO;
+import com.muni.backend.quejas.dto.ciudadano.QuejaDetalleDTO;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;

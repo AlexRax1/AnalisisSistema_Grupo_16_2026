@@ -22,6 +22,58 @@ public interface QuejaRepository extends JpaRepository<Queja, Integer> {
 
     List<Queja> findByCiudadano_UsuarioIdOrderByQuejaIdDesc(Integer usuarioId);
 
+    List<Queja> findByInspector_UsuarioIdAndEstadoActual(Integer inspectorId, String estadoActual);
+
+    List<Queja> findByEspecialista_UsuarioIdAndEstadoActual(Integer especialistaId, String estadoActual);
+
+    @Query("""
+        SELECT q FROM Queja q
+        WHERE q.funcionario.usuarioId = :funcionarioId
+          AND q.estadoActual NOT IN ('SOLUCIONADA / CERRADA', 'RECHAZADA')
+        ORDER BY
+            CASE q.prioridadConfirmada
+                WHEN 'URGENTE' THEN 1
+                WHEN 'ALTA' THEN 2
+                WHEN 'MEDIA' THEN 3
+                WHEN 'BAJA' THEN 4
+                ELSE 5
+            END ASC,
+            q.fechaRegistro ASC
+        """)
+    List<Queja> findMisQuejasFuncionario(@Param("funcionarioId") Integer funcionarioId);
+
+    @Query("""
+        SELECT q FROM Queja q
+        WHERE q.inspector.usuarioId = :inspectorId
+          AND q.estadoActual = 'EN INSPECCIÓN'
+        ORDER BY
+            CASE q.prioridadConfirmada
+                WHEN 'URGENTE' THEN 1
+                WHEN 'ALTA' THEN 2
+                WHEN 'MEDIA' THEN 3
+                WHEN 'BAJA' THEN 4
+                ELSE 5
+            END ASC,
+            q.fechaRegistro ASC
+        """)
+    List<Queja> findMisQuejasInspector(@Param("inspectorId") Integer inspectorId);
+
+    @Query("""
+        SELECT q FROM Queja q
+        WHERE q.especialista.usuarioId = :especialistaId
+          AND q.estadoActual = 'EN REPARACIÓN TÉCNICA'
+        ORDER BY
+            CASE q.prioridadConfirmada
+                WHEN 'URGENTE' THEN 1
+                WHEN 'ALTA' THEN 2
+                WHEN 'MEDIA' THEN 3
+                WHEN 'BAJA' THEN 4
+                ELSE 5
+            END ASC,
+            q.fechaRegistro ASC
+        """)
+    List<Queja> findMisQuejasEspecialista(@Param("especialistaId") Integer especialistaId);
+
     @Query(value = """
         SELECT COUNT(*)
         FROM quejas

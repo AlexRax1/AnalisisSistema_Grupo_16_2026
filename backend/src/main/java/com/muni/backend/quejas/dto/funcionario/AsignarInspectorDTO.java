@@ -1,4 +1,4 @@
-package com.muni.backend.quejas.dto;
+package com.muni.backend.quejas.dto.funcionario;
 
 import lombok.Data;
 
