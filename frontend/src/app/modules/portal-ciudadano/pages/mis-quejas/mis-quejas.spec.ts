@@ -1,5 +1,4 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-
 import { MisQuejas } from './mis-quejas';
 
 describe('MisQuejas', () => {

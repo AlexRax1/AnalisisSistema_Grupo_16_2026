@@ -22,6 +22,7 @@ const ESTADO_COLORS: { [key: string]: string } = {
   styleUrl: './mis-quejas.css',
 })
 export class MisQuejasComponent implements OnInit {
+  backendUrl: string = 'http://localhost:8080';
   quejasOriginales: QuejaDetalleDTO[] = [];
   quejas: QuejaDetalleDTO[] = [];
   quejaSeleccionada?: QuejaDetalleDTO;

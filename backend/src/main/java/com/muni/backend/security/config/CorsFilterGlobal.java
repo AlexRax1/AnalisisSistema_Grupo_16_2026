@@ -20,6 +20,15 @@ public class CorsFilterGlobal implements Filter {
         HttpServletResponse response = (HttpServletResponse) res;
         HttpServletRequest request = (HttpServletRequest) req;
 
+        String origin = request.getHeader("Origin");
+
+        if (origin != null && !origin.isEmpty()) {
+            response.setHeader("Access-Control-Allow-Origin", origin);
+            response.setHeader("Access-Control-Allow-Credentials", "true");
+        } else {
+            response.setHeader("Access-Control-Allow-Origin", "*");
+        }
+
         response.setHeader("Access-Control-Allow-Origin", "http://localhost:4200");
         response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
         response.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Requested-With, Accept, Origin, Access-Control-Request-Method, Access-Control-Request-Headers");

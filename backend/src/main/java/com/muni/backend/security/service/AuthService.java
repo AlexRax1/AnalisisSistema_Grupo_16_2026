@@ -59,8 +59,8 @@ public class AuthService {
 
     @Transactional
     public void resetPassword(ResetPasswordRequest request) {
-        Credencial usuario = credencialRepository.findById(request.getUserId())
-                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado"));
+        Credencial usuario = credencialRepository.findByUsername(request.getCorreo())
+                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con el correo: " + request.getCorreo()));
 
         usuario.setPassword(passwordEncoder.encode(request.getNewPassword()));
         credencialRepository.save(usuario);

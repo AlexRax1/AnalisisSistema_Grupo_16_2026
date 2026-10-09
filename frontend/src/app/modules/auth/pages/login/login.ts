@@ -9,7 +9,7 @@ import {
   ValidationErrors,
 } from '@angular/forms';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
-import { AuthService, Usuario } from '../../../../modules/auth/auth.service';
+import { AuthService, Usuario } from '../../auth.service';
 
 @Component({
   selector: 'app-login',
@@ -143,24 +143,40 @@ export class LoginComponent implements OnInit {
     this.errorMsg = '';
   }
 
-  // Paso 1: Presionar "Enviar Código" pasa automáticamente a pedir el código
+  // Paso 1: Solicitar el código y enviarlo por correo
   onEnviarCodigo(): void {
     const correoControl = this.recuperarForm.get('correoRecuperacion');
 
-    if (correoControl?.invalid) {
+    if (correoControl?.invalid || !correoControl?.value) {
       this.errorMsg = 'Debe ingresar los campos obligatorios.';
       return;
     }
 
     this.errorMsg = '';
-    this.pasoRecuperacion = 'INGRESAR_CODIGO';
+    const correo = correoControl.value;
 
-    this.recuperarForm.get('codigo')?.setValidators([Validators.required]);
-    this.recuperarForm.get('codigo')?.updateValueAndValidity();
+    // Consumir API para enviar código real al correo ingresado
+    this.authService.solicitarCodigoRecuperacion(correo).subscribe({
+      next: () => {
+        this.pasoRecuperacion = 'INGRESAR_CODIGO';
+        this.recuperarForm.get('codigo')?.setValidators([Validators.required]);
+        this.recuperarForm.get('codigo')?.updateValueAndValidity();
+      },
+      error: (err: any) => {
+        // Captura el mensaje si el correo no está registrado (FA05)
+        this.errorMsg =
+          typeof err.error === 'string'
+            ? err.error
+            : err.error?.mensaje ||
+              err.error?.message ||
+              'El correo ingresado no se encuentra registrado.';
+      },
+    });
   }
 
-  // Paso 2: Validar que el código ingresado sea estrictamente 1234
+  // Paso 2: Validar el código de verificación recibido por correo
   onValidarCodigo(): void {
+    const correo = this.recuperarForm.get('correoRecuperacion')?.value;
     const codigoInput = this.recuperarForm.get('codigo')?.value;
 
     if (!codigoInput) {
@@ -168,27 +184,38 @@ export class LoginComponent implements OnInit {
       return;
     }
 
-    // Validar código quemado '1234'
-    if (codigoInput.trim() !== '1234') {
-      this.errorMsg = 'El código ingresado es inválido o ha expirado.';
-      return;
-    }
-
     this.errorMsg = '';
-    this.pasoRecuperacion = 'NUEVA_CONTRASEÑA';
 
-    this.recuperarForm
-      .get('nuevaPassword')
-      ?.setValidators([
-        Validators.required,
-        Validators.pattern('^(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&.#_-])[A-Za-z\\d@$!%*?&.#_-]{6,}$'),
-      ]);
-    this.recuperarForm.get('confirmarPassword')?.setValidators([Validators.required]);
-    this.recuperarForm.get('nuevaPassword')?.updateValueAndValidity();
-    this.recuperarForm.get('confirmarPassword')?.updateValueAndValidity();
+    // Consumir API para validar el código generado dinámicamente en backend
+    this.authService.validarCodigo(correo, codigoInput.trim()).subscribe({
+      next: () => {
+        this.pasoRecuperacion = 'NUEVA_CONTRASEÑA';
+
+        this.recuperarForm
+          .get('nuevaPassword')
+          ?.setValidators([
+            Validators.required,
+            Validators.pattern(
+              '^(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&.#_-])[A-Za-z\\d@$!%*?&.#_-]{6,}$',
+            ),
+          ]);
+        this.recuperarForm.get('confirmarPassword')?.setValidators([Validators.required]);
+        this.recuperarForm.get('nuevaPassword')?.updateValueAndValidity();
+        this.recuperarForm.get('confirmarPassword')?.updateValueAndValidity();
+      },
+      error: (err: any) => {
+        // Manejo de código inválido o expirado (FA06)
+        this.errorMsg =
+          typeof err.error === 'string'
+            ? err.error
+            : err.error?.mensaje ||
+              err.error?.message ||
+              'El código ingresado es inválido o ha expirado.';
+      },
+    });
   }
 
-  // Paso 3: Consumir PUT /auth/reset-password enviando userId: 1
+  // Paso 3: Consumir endpoint enviando el correo real del usuario
   onRestablecerPassword(): void {
     const nuevaPassControl = this.recuperarForm.get('nuevaPassword');
 
@@ -208,10 +235,11 @@ export class LoginComponent implements OnInit {
       return;
     }
 
-    const userIdQuemado = 1;
+    const correo = this.recuperarForm.get('correoRecuperacion')?.value;
     const newPassword = nuevaPassControl?.value;
 
-    this.authService.restablecerPassword(userIdQuemado, newPassword).subscribe({
+    // En lugar del ID quemado 1, enviamos el correo y la nueva contraseña
+    this.authService.restablecerPassword(correo, newPassword).subscribe({
       next: () => {
         this.successMsg = 'Su contraseña ha sido actualizada con éxito.';
         setTimeout(() => {

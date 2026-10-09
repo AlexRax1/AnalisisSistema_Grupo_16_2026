@@ -7,6 +7,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -33,7 +34,7 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-
+    
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
@@ -58,7 +59,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         // Rutas públicas de autenticación
                         .requestMatchers("/auth/**", "/api/auth/**", "/usuarios/registro-ciudadano", "/api/usuarios/registro-ciudadano").permitAll()
-                        .requestMatchers("/subidas/evidencias/**").permitAll()
+                        .requestMatchers("/subidas/**", "/subidas/evidencias/**").permitAll()
                         .requestMatchers("/quejas/**", "/api/quejas/**", "/api/gestion-municipal/**", "/usuarios/**", "/api/usuarios/**").authenticated()
                         .anyRequest().authenticated()
                 )

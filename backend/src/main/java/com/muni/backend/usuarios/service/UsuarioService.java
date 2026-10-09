@@ -1,9 +1,6 @@
 package com.muni.backend.usuarios.service;
 
 import com.muni.backend.security.model.Credencial;
-import com.muni.backend.security.model.RolUser;
-import com.muni.backend.security.repository.CredencialRepository;
-import com.muni.backend.security.repository.RolUserRepository;
 import com.muni.backend.security.service.AuthService;
 import com.muni.backend.usuarios.dto.ActualizarPerfilDTO;
 import com.muni.backend.usuarios.dto.PerfilUsuarioDTO;
@@ -193,5 +190,18 @@ public class UsuarioService {
                 u.getCorreo(),
                 u.getDependencia() != null ? u.getDependencia().getNombreDependencia() : null
         )).collect(Collectors.toList());
+    }
+
+    public boolean existePorCorreo(String correo) {
+        return usuarioRepository.existsByCorreo(correo);
+    }
+
+    public void guardarCodigoVerificacion(String correo, String codigo) {
+        // Lógica para guardar el código en el usuario o en caché/BD
+    }
+
+    public boolean validarCodigo(String correo, String codigo) {
+        // Lógica para validar que coincida y no haya expirado
+        return true;
     }
 }

@@ -55,12 +55,14 @@ export class AuthService {
   }
 
   // PUT: http://localhost:8080/auth/reset-password
-  restablecerPassword(userId: number, newPassword: string): Observable<string> {
-    const body: ResetPasswordReq = {
-      userId: userId,
+  restablecerPassword(correo: string, newPassword: string): Observable<string> {
+    const body = {
+      correo: correo,
       newPassword: newPassword,
     };
 
-    return this.http.put(`${this.BASE_URL}/auth/reset-password`, body, { responseType: 'text' });
+    return this.http.put(`${this.BASE_URL}/auth/recuperar/reset-password`, body, {
+      responseType: 'text',
+    });
   }
 }
