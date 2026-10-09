@@ -29,7 +29,7 @@ public interface QuejaRepository extends JpaRepository<Queja, Integer> {
     @Query("""
         SELECT q FROM Queja q
         WHERE q.funcionario.usuarioId = :funcionarioId
-          AND q.estadoActual NOT IN ('SOLUCIONADA / CERRADA', 'RECHAZADA')
+          AND q.estadoActual IN ('REGISTRADA', 'EN VALIDACIÓN DE REPARACIÓN', 'PENDIENTE DE CIERRE')
         ORDER BY
             CASE q.prioridadConfirmada
                 WHEN 'URGENTE' THEN 1

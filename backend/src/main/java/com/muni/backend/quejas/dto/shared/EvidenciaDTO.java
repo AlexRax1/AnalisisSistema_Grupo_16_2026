@@ -10,6 +10,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class EvidenciaDTO {
     private Integer evidenciaId;
+    private Integer informeId;
+    private String etapa;
     private String urlArchivo;
     private String nombreArchivo;
     private String formato;

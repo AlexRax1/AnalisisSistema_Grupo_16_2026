@@ -232,6 +232,8 @@ public class QuejaEstadoService {
             dto.setEvidencias(evidencias.stream().map(e -> {
                 EvidenciaDTO evDto = new EvidenciaDTO();
                 evDto.setEvidenciaId(e.getEvidenciaId());
+                evDto.setInformeId(e.getInforme() != null ? e.getInforme().getInformeId() : null);
+                evDto.setEtapa(e.getEtapa());
                 evDto.setUrlArchivo(e.getUrlArchivo());
                 evDto.setNombreArchivo(e.getNombreArchivo());
                 evDto.setFormato(e.getFormato());

@@ -1,0 +1,161 @@
+<div class="inspector-container">
+  <!-- ══ Notification Toast Banner ══ -->
+  <div
+    class="toast-banner"
+    *ngIf="toast.visible"
+    [ngClass]="'toast-' + toast.tipo"
+  >
+    <span class="mat-icon toast-icon">
+      {{
+        toast.tipo === 'success'
+          ? 'check_circle'
+          : toast.tipo === 'warning'
+            ? 'warning'
+            : toast.tipo === 'error'
+              ? 'error'
+              : 'info'
+      }}
+    </span>
+    <span class="toast-message">{{ toast.mensaje }}</span>
+    <button class="toast-close" (click)="cerrarToast()">&times;</button>
+  </div>
+
+  <!-- ══ Header Principal ══ -->
+  <div class="page-top-header">
+    <div>
+      <h1 class="page-main-title">
+        <span class="mat-icon header-icon">search</span>
+        Bandeja de Inspecciones en Campo
+      </h1>
+      <p class="page-main-subtitle">
+        Expedientes asignados automáticamente para peritaje técnico en sitio. Seleccione una queja para evaluar el problema y emitir su informe con pruebas fotográficas.
+      </p>
+    </div>
+    <div class="header-action-tools">
+      <button class="btn btn-outline btn-refresh" (click)="cargarBandejaTareas()" [disabled]="cargandoBandeja" title="Recargar bandeja">
+        <span class="mat-icon" [class.rotating]="cargandoBandeja">sync</span>
+        {{ cargandoBandeja ? 'Actualizando...' : 'Actualizar Inspecciones' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ Master-Detail Layout ══ -->
+  <div class="bandeja-master-detail-layout">
+
+    <!-- ── COLUMNA IZQUIERDA: BANDEJA DE QUEJAS EN INSPECCIÓN ── -->
+    <aside class="inbox-column">
+      <div class="inbox-card">
+        <div class="inbox-header">
+          <div class="inbox-header-title">
+            <span class="mat-icon inbox-title-icon">assignment</span>
+            <h3>Por Inspeccionar</h3>
+          </div>
+          <span class="inbox-counter-badge">{{ quejasFiltradas.length }}</span>
+        </div>
+
+        <!-- Buscador y Filtros -->
+        <div class="inbox-search-box">
+          <div class="search-input-wrapper">
+            <span class="mat-icon search-icon">search</span>
+            <input
+              type="text"
+              class="search-input"
+              placeholder="Buscar por correlativo, zona..."
+              [(ngModel)]="filtroTexto"
+              (ngModelChange)="onFiltroTextoChange()"
+            />
+            <button *ngIf="filtroTexto" class="clear-search-btn" (click)="filtroTexto = ''; onFiltroTextoChange()">
+              &times;
+            </button>
+          </div>
+
+          <div class="priority-filter-chips">
+            <button
+              class="priority-chip"
+              [class.active]="filtroPrioridad === 'TODAS'"
+              (click)="cambiarFiltroPrioridad('TODAS')"
+            >
+              Todas
+            </button>
+            <button
+              class="priority-chip chip-urgente"
+              [class.active]="filtroPrioridad === 'URGENTE'"
+              (click)="cambiarFiltroPrioridad('URGENTE')"
+            >
+              Urgente
+            </button>
+            <button
+              class="priority-chip chip-alta"
+              [class.active]="filtroPrioridad === 'ALTA'"
+              (click)="cambiarFiltroPrioridad('ALTA')"
+            >
+              Alta
+            </button>
+            <button
+              class="priority-chip chip-media"
+              [class.active]="filtroPrioridad === 'MEDIA'"
+              (click)="cambiarFiltroPrioridad('MEDIA')"
+            >
+              Media
+            </button>
+          </div>
+        </div>
+
+        <!-- Lista de Inspecciones Asignadas -->
+        <div class="inbox-list" *ngIf="!cargandoBandeja && quejasFiltradas.length > 0">
+          <div
+            *ngFor="let q of quejasFiltradas"
+            class="inbox-task-item"
+            
+            (click)="verDetalle(q.quejaId)"
+          >
+            <div class="task-item-top">
+              <span class="task-correlativo">{{ q.correlativo }}</span>
+              <span class="badge" [ngClass]="getBadgePrioridad(q.prioridadConfirmada)">
+                {{ q.prioridadConfirmada || 'MEDIA' }}
+              </span>
+            </div>
+
+            <div class="task-category-text">
+              <span class="mat-icon mini-icon">label</span>
+              {{ q.categoria }}
+            </div>
+
+            <div class="task-citizen-info">
+              <span class="mat-icon mini-icon">person</span>
+              {{ q.ciudadanoNombre || 'Ciudadano' }}
+            </div>
+
+            <div class="task-location-snippet">
+              <span class="mat-icon mini-icon">location_on</span>
+              {{ q.direccionExacta }}
+            </div>
+
+            <div class="task-item-footer">
+              <span class="badge badge-warning">
+                {{ q.estadoActual }}
+              </span>
+              <span class="task-date">{{ formatearFecha(q.fechaRegistro) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cargando -->
+        <div class="inbox-loading" *ngIf="cargandoBandeja">
+          <div class="spinner-blue"></div>
+          <p>Cargando inspecciones asignadas...</p>
+        </div>
+
+        <!-- Vacío -->
+        <div class="inbox-empty" *ngIf="!cargandoBandeja && quejasFiltradas.length === 0">
+          <span class="mat-icon empty-box-icon">fact_check</span>
+          <p class="empty-title-text">No hay inspecciones asignadas</p>
+          <p class="empty-subtext">Todas las quejas en tu sector han sido peritadas.</p>
+        </div>
+      </div>
+    </aside>
+
+
+  </div>
+
+</div>

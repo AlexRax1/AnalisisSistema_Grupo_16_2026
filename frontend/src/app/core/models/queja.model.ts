@@ -83,7 +83,139 @@ export const ESTADO_COLORS: Record<string, string> = {
   RECHAZADA: 'badge-danger',
 };
 
-// --- DTOs para Gestión Municipal (Pull Model) ---
+// --- DTOs según Especificación de API para Frontend: Módulo de Gestión de Quejas ---
+
+export interface QuejaResumenDTO {
+  quejaId: number;
+  correlativo: string;
+  tipoRegistro: string;
+  categoria: string;
+  subcategoria: string;
+  zona: number;
+  direccionExacta: string;
+  estadoActual: string;
+  prioridadConfirmada: string;
+  fechaRegistro: string;
+  ciudadanoNombre: string;
+}
+
+export interface EvidenciaDetalleDTO {
+  evidenciaId?: number;
+  urlArchivo: string;
+  nombreArchivo?: string;
+  formato?: string;
+  fechaSubida?: string;
+}
+
+export interface InformeDTO {
+  informeId?: number;
+  tipoInforme: 'INSPECCION_INICIAL' | 'REPARACION_FINAL' | string;
+  autorNombre: string;
+  autorRol: 'INSPECTOR_CAMPO' | 'ESPECIALISTA_TECNICO' | string;
+  problemaVerificado?: boolean | null;
+  gravedad?: 'LEVE' | 'MODERADA' | 'GRAVE' | 'CRITICA' | string;
+  recursosSugeridos?: string | null;
+  instruccionesCuadrilla?: string | null;
+  materialesUtilizados?: string | null;
+  horasTrabajadas?: number | null;
+  fechaFinTrabajo?: string | null;
+  dictamenCalidad?: string | null;
+  descripcion: string;
+  fechaRegistro: string;
+  evidencias?: (EvidenciaDetalleDTO | string)[];
+  fotos?: string[];
+}
+
+export interface HistorialCambioDTO {
+  historialId?: number;
+  estadoAnterior: string | null;
+  estadoNuevo: string;
+  cambiadoPorNombre: string;
+  comentario: string;
+  fechaCambio: string;
+}
+
+export interface QuejaDetalleCompletoDTO {
+  quejaId: number;
+  correlativo: string;
+  tipoRegistro: string;
+  correlativoOrigen?: string | null;
+  ciudadanoId?: number;
+  ciudadanoNombre: string;
+  ciudadanoDpi?: string;
+  ciudadanoTelefono?: string;
+  ciudadanoCorreo?: string;
+  categoriaId?: number;
+  categoria: string;
+  subcategoriaId?: number;
+  subcategoria: string;
+  zona: number;
+  direccionExacta: string;
+  puntoReferencia?: string;
+  latitud?: number;
+  longitud?: number;
+  descripcion: string;
+  estadoActual: string;
+  prioridadSugerida?: string;
+  prioridadConfirmada: string;
+  funcionarioId?: number | null;
+  funcionarioNombre?: string | null;
+  inspectorId?: number | null;
+  inspectorNombre?: string | null;
+  especialistaId?: number | null;
+  especialistaNombre?: string | null;
+  dependenciaId?: number | null;
+  dependenciaNombre?: string | null;
+  fechaRegistro: string;
+  fechaModificacion?: string | null;
+  fechaCierre?: string | null;
+  motivoRechazo?: string | null;
+  evidencias: EvidenciaDetalleDTO[];
+  informes: InformeDTO[];
+  historial: HistorialCambioDTO[];
+  accionesDisponibles: string[];
+}
+
+export interface DependenciaMunicipalDTO {
+  dependenciaId: number;
+  nombreDependencia: string;
+  codigoDependencia: string;
+}
+
+export interface AsignarInspectorActionReq {
+  instrucciones?: string;
+}
+
+export interface AutorizarReparacionActionReq {
+  dependenciaId: number;
+  instrucciones?: string;
+}
+
+export interface CierreAdministrativoActionReq {
+  descripcionCierre: string;
+}
+
+export interface RechazarDevolverActionReq {
+  esRechazoDefinitivo: boolean;
+  motivoRechazo: string;
+  descripcionDetallada: string;
+}
+
+export interface RegistrarInformeInspeccionReq {
+  problemaVerificado: boolean;
+  gravedad: 'LEVE' | 'MODERADA' | 'GRAVE' | 'CRITICA';
+  descripcion: string;
+  recursosSugeridos?: string;
+}
+
+export interface RegistrarInformeReparacionReq {
+  descripcion: string;
+  materialesUtilizados: string;
+  horasTrabajadas: number;
+  instruccionesCuadrilla?: string;
+}
+
+// --- DTOs legacy para compatibilidad ---
 
 export type FaseAdministrativa =
   | 'ASIGNAR_INSPECTOR'
@@ -156,4 +288,5 @@ export interface RechazarDevolverReq {
   descripcionDetallada: string;
   esRechazoDefinitivo: boolean;
 }
+
 

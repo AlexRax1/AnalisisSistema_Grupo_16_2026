@@ -1,0 +1,156 @@
+<div class="especialista-container">
+  <!-- ══ Notification Toast Banner ══ -->
+  <div
+    class="toast-banner"
+    *ngIf="toast.visible"
+    [ngClass]="'toast-' + toast.tipo"
+  >
+    <span class="mat-icon toast-icon">
+      {{
+        toast.tipo === 'success'
+          ? 'check_circle'
+          : toast.tipo === 'warning'
+            ? 'warning'
+            : toast.tipo === 'error'
+              ? 'error'
+              : 'info'
+      }}
+    </span>
+    <span class="toast-message">{{ toast.mensaje }}</span>
+    <button class="toast-close" (click)="cerrarToast()">&times;</button>
+  </div>
+
+  <!-- ══ Header Principal ══ -->
+  <div class="page-top-header">
+    <div>
+      <h1 class="page-main-title">
+        <span class="mat-icon header-icon">build</span>
+        Bandeja de Órdenes de Reparación Técnica
+      </h1>
+      <p class="page-main-subtitle">
+        Expedientes asignados automáticamente para ejecución y reparación por cuadrilla.
+      </p>
+    </div>
+    <div class="header-action-tools">
+      <button class="btn btn-outline btn-refresh" (click)="cargarBandejaTareas()" [disabled]="cargandoBandeja" title="Recargar bandeja">
+        <span class="mat-icon" [class.rotating]="cargandoBandeja">sync</span>
+        {{ cargandoBandeja ? 'Actualizando...' : 'Actualizar Órdenes' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ Master List Layout ══ -->
+  <div class="bandeja-master-layout">
+    <!-- ── LISTA DE ÓRDENES EN REPARACIÓN ── -->
+    <aside class="inbox-column">
+      <div class="inbox-card">
+        <div class="inbox-header">
+          <div class="inbox-header-title">
+            <span class="mat-icon inbox-title-icon">engineering</span>
+            <h3>Órdenes Asignadas</h3>
+          </div>
+          <span class="inbox-counter-badge">{{ quejasFiltradas.length }}</span>
+        </div>
+
+        <!-- Buscador y Filtros -->
+        <div class="inbox-search-box">
+          <div class="search-input-wrapper">
+            <span class="mat-icon search-icon">search</span>
+            <input
+              type="text"
+              class="search-input"
+              placeholder="Buscar por correlativo, zona..."
+              [(ngModel)]="filtroTexto"
+              (ngModelChange)="onFiltroTextoChange()"
+            />
+            <button *ngIf="filtroTexto" class="clear-search-btn" (click)="filtroTexto = ''; onFiltroTextoChange()">
+              &times;
+            </button>
+          </div>
+
+          <div class="priority-filter-chips">
+            <button
+              class="priority-chip"
+              [class.active]="filtroPrioridad === 'TODAS'"
+              (click)="cambiarFiltroPrioridad('TODAS')"
+            >
+              Todas
+            </button>
+            <button
+              class="priority-chip chip-urgente"
+              [class.active]="filtroPrioridad === 'URGENTE'"
+              (click)="cambiarFiltroPrioridad('URGENTE')"
+            >
+              Urgente
+            </button>
+            <button
+              class="priority-chip chip-alta"
+              [class.active]="filtroPrioridad === 'ALTA'"
+              (click)="cambiarFiltroPrioridad('ALTA')"
+            >
+              Alta
+            </button>
+            <button
+              class="priority-chip chip-media"
+              [class.active]="filtroPrioridad === 'MEDIA'"
+              (click)="cambiarFiltroPrioridad('MEDIA')"
+            >
+              Media
+            </button>
+          </div>
+        </div>
+
+        <!-- Lista de Órdenes Asignadas -->
+        <div class="inbox-list" *ngIf="!cargandoBandeja && quejasFiltradas.length > 0">
+          <div
+            *ngFor="let q of quejasFiltradas"
+            class="inbox-task-item"
+            (click)="verDetalle(q.quejaId)"
+          >
+            <div class="task-item-top">
+              <span class="task-correlativo">{{ q.correlativo }}</span>
+              <span class="badge" [ngClass]="getBadgePrioridad(q.prioridadConfirmada)">
+                {{ q.prioridadConfirmada || 'MEDIA' }}
+              </span>
+            </div>
+
+            <div class="task-category-text">
+              <span class="mat-icon mini-icon">label</span>
+              {{ q.categoria }}
+            </div>
+
+            <div class="task-citizen-info">
+              <span class="mat-icon mini-icon">person</span>
+              {{ q.ciudadanoNombre || 'Ciudadano' }}
+            </div>
+
+            <div class="task-location-snippet">
+              <span class="mat-icon mini-icon">location_on</span>
+              {{ q.direccionExacta }}
+            </div>
+
+            <div class="task-item-footer">
+              <span class="badge badge-info">
+                {{ q.estadoActual }}
+              </span>
+              <span class="task-date">{{ formatearFecha(q.fechaRegistro) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cargando -->
+        <div class="inbox-loading" *ngIf="cargandoBandeja">
+          <div class="spinner-blue"></div>
+          <p>Cargando órdenes técnicas...</p>
+        </div>
+
+        <!-- Vacío -->
+        <div class="inbox-empty" *ngIf="!cargandoBandeja && quejasFiltradas.length === 0">
+          <span class="mat-icon empty-box-icon">build_circle</span>
+          <p class="empty-title-text">No hay órdenes de reparación</p>
+          <p class="empty-subtext">No tienes quejas asignadas pendientes de intervención.</p>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>

@@ -8,6 +8,11 @@ import { RegistroComponent } from './modules/auth/pages/registro/registro';
 import { MisQuejasComponent } from './modules/portal-ciudadano/pages/mis-quejas/mis-quejas';
 import { CrearQuejaComponent } from './modules/portal-ciudadano/pages/crear-queja/crear-queja';
 import { BandejaGestionComponent } from './modules/gestion-municipal/pages/bandeja-gestion/bandeja-gestion';
+import { DetalleQuejaGestionComponent } from './modules/gestion-municipal/pages/detalle-queja-gestion/detalle-queja-gestion';
+import { BandejaInspectorComponent } from './modules/operaciones-campo/pages/bandeja-inspector/bandeja-inspector';
+import { DetalleQuejaInspectorComponent } from './modules/operaciones-campo/pages/detalle-queja-inspector/detalle-queja-inspector';
+import { BandejaEspecialistaComponent } from './modules/operaciones-campo/pages/bandeja-especialista/bandeja-especialista';
+import { DetalleQuejaEspecialistaComponent } from './modules/operaciones-campo/pages/detalle-queja-especialista/detalle-queja-especialista';
 import { InspeccionCuadrillaComponent } from './modules/operaciones-campo/pages/inspeccion-cuadrilla/inspeccion-cuadrilla';
 import { AdminUsuariosComponent } from './modules/admin/pages/admin-usuarios/admin-usuarios';
 import { AdminReportesComponent } from './modules/admin/pages/admin-reportes/admin-reportes';
@@ -47,6 +52,7 @@ export const routes: Routes = [
     component: DashboardLayoutComponent,
     children: [
       { path: 'bandeja', component: BandejaGestionComponent },
+      { path: 'detalle-gestion/:id', component: DetalleQuejaGestionComponent },
       { path: '', redirectTo: 'bandeja', pathMatch: 'full' }
     ]
   },
@@ -56,7 +62,8 @@ export const routes: Routes = [
     path: 'inspector',
     component: DashboardLayoutComponent,
     children: [
-      { path: 'inspecciones', component: InspeccionCuadrillaComponent },
+      { path: 'inspecciones', component: BandejaInspectorComponent },
+      { path: 'detalle-inspector/:id', component: DetalleQuejaInspectorComponent },
       { path: '', redirectTo: 'inspecciones', pathMatch: 'full' }
     ]
   },
@@ -66,7 +73,8 @@ export const routes: Routes = [
     path: 'especialista',
     component: DashboardLayoutComponent,
     children: [
-      { path: 'ordenes', component: InspeccionCuadrillaComponent },
+      { path: 'ordenes', component: BandejaEspecialistaComponent },
+      { path: 'detalle-especialista/:id', component: DetalleQuejaEspecialistaComponent },
       { path: '', redirectTo: 'ordenes', pathMatch: 'full' }
     ]
   },

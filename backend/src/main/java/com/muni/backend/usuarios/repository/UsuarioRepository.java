@@ -45,7 +45,7 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
         JOIN u.credencial c
         JOIN c.rolUser r
         LEFT JOIN com.muni.backend.quejas.model.Queja q
-            ON q.funcionario = u AND q.estadoActual NOT IN ('SOLUCIONADA / CERRADA', 'RECHAZADA')
+            ON q.funcionario = u AND q.estadoActual IN ('REGISTRADA', 'EN VALIDACIÓN DE REPARACIÓN', 'PENDIENTE DE CIERRE')
         WHERE r.nombreRol = 'FUNCIONARIO_MUNICIPAL'
           AND u.estado = 'ACTIVO'
           AND c.estado = 'ACTIVO'

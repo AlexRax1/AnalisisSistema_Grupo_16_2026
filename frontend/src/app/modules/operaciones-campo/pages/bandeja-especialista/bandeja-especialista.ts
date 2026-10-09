@@ -1,25 +1,30 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
 import { finalize } from 'rxjs/operators';
-import { GestionMunicipalService } from '../../../../core/services/gestion-municipal.service';
-import { QuejaResumenDTO, ESTADO_COLORS } from '../../../../core/models/queja.model';
+import { Router } from '@angular/router';
+import { EspecialistaService } from '../../../../core/services/especialista.service';
+import {
+  QuejaResumenDTO,
+  ESTADO_COLORS,
+} from '../../../../core/models/queja.model';
 
 @Component({
-  selector: 'app-bandeja-gestion',
+  selector: 'app-bandeja-especialista',
   standalone: true,
   imports: [CommonModule, FormsModule],
-  templateUrl: './bandeja-gestion.html',
-  styleUrl: './bandeja-gestion.css',
+  templateUrl: './bandeja-especialista.html',
+  styleUrl: './bandeja-especialista.css',
 })
-export class BandejaGestionComponent implements OnInit {
+export class BandejaEspecialistaComponent implements OnInit {
+  // ── Bandeja de Órdenes Asignadas ──
   quejasAsignadas: QuejaResumenDTO[] = [];
   quejasFiltradas: QuejaResumenDTO[] = [];
   cargandoBandeja: boolean = false;
   filtroTexto: string = '';
   filtroPrioridad: string = 'TODAS';
 
+  // ── Toast Notifications ──
   toast: {
     visible: boolean;
     mensaje: string;
@@ -32,7 +37,7 @@ export class BandejaGestionComponent implements OnInit {
   private toastTimeout: any = null;
 
   constructor(
-    private gestionService: GestionMunicipalService,
+    private especialistaService: EspecialistaService,
     private cdr: ChangeDetectorRef,
     private router: Router
   ) {}
@@ -41,11 +46,12 @@ export class BandejaGestionComponent implements OnInit {
     this.cargarBandejaTareas();
   }
 
+  // ── Carga Automática de Órdenes de Reparación ──
   cargarBandejaTareas(): void {
     this.cargandoBandeja = true;
     this.cdr.detectChanges();
 
-    this.gestionService
+    this.especialistaService
       .obtenerMisQuejas()
       .pipe(
         finalize(() => {
@@ -60,19 +66,20 @@ export class BandejaGestionComponent implements OnInit {
           this.cdr.detectChanges();
         },
         error: (err) => {
-          console.warn('Error al cargar mis quejas desde el backend. Cargando datos de muestra...', err);
-          this.quejasAsignadas = this.getMockQuejasResumen();
+          console.warn('Error al cargar quejas del especialista. Usando datos demostrativos...', err);
+          this.quejasAsignadas = this.getMockEspecialistaQuejas();
           this.aplicarFiltros();
-          this.mostrarToast('No se pudo conectar al servidor. Mostrando datos locales.', 'info');
+          this.mostrarToast('Modo demostrativo: Mostrando órdenes técnicas asignadas.', 'info');
           this.cdr.detectChanges();
         },
       });
   }
 
-  seleccionarQueja(quejaId: number): void {
-    this.router.navigate(['/funcionario/detalle-gestion', quejaId]);
+  verDetalle(quejaId: number): void {
+    this.router.navigate(['/especialista/detalle-especialista', quejaId]);
   }
 
+  // ── Filtros de Búsqueda ──
   aplicarFiltros(): void {
     const texto = (this.filtroTexto || '').toLowerCase().trim();
     const prioridad = this.filtroPrioridad.toUpperCase();
@@ -83,7 +90,6 @@ export class BandejaGestionComponent implements OnInit {
         q.correlativo.toLowerCase().includes(texto) ||
         (q.ciudadanoNombre && q.ciudadanoNombre.toLowerCase().includes(texto)) ||
         (q.categoria && q.categoria.toLowerCase().includes(texto)) ||
-        (q.subcategoria && q.subcategoria.toLowerCase().includes(texto)) ||
         (q.direccionExacta && q.direccionExacta.toLowerCase().includes(texto));
 
       const coincidePrioridad =
@@ -102,6 +108,7 @@ export class BandejaGestionComponent implements OnInit {
     this.aplicarFiltros();
   }
 
+  // ── Toast ──
   mostrarToast(mensaje: string, tipo: 'success' | 'warning' | 'error' | 'info' = 'info'): void {
     if (this.toastTimeout) clearTimeout(this.toastTimeout);
     this.toast = { visible: true, mensaje, tipo };
@@ -117,6 +124,7 @@ export class BandejaGestionComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
+  // ── Formateo ──
   formatearFecha(fecha?: string | Date | null): string {
     if (!fecha) return 'Sin fecha';
     try {
@@ -156,7 +164,8 @@ export class BandejaGestionComponent implements OnInit {
     return ESTADO_COLORS[estado] || 'badge-neutral';
   }
 
-  private getMockQuejasResumen(): QuejaResumenDTO[] {
+  // ── Mocks Demostrativos ──
+  private getMockEspecialistaQuejas(): QuejaResumenDTO[] {
     return [
       {
         quejaId: 14,
@@ -166,36 +175,23 @@ export class BandejaGestionComponent implements OnInit {
         subcategoria: 'Luminaria apagada / quemada',
         zona: 3,
         direccionExacta: '4ta Calle 8-12 Zona 3',
-        estadoActual: 'EN VALIDACIÓN DE REPARACIÓN',
+        estadoActual: 'EN REPARACIÓN TÉCNICA',
         prioridadConfirmada: 'URGENTE',
         fechaRegistro: '2026-10-07T14:22:10',
         ciudadanoNombre: 'Juan Pérez',
       },
       {
-        quejaId: 15,
-        correlativo: 'QUE-2026-000015',
+        quejaId: 18,
+        correlativo: 'QUE-2026-000018',
         tipoRegistro: 'PRINCIPAL',
-        categoria: 'Bacheo y Vialidad',
-        subcategoria: 'Hoyo profundo en vía principal',
-        zona: 1,
-        direccionExacta: '3ra Avenida 5-20 Zona 1',
-        estadoActual: 'REGISTRADA',
+        categoria: 'Bacheo y Pavimentación',
+        subcategoria: 'Hundimiento de asfalto',
+        zona: 4,
+        direccionExacta: 'Callejón Las Flores lote 14',
+        estadoActual: 'EN REPARACIÓN TÉCNICA',
         prioridadConfirmada: 'ALTA',
-        fechaRegistro: '2026-10-07T16:00:00',
-        ciudadanoNombre: 'María López',
-      },
-      {
-        quejaId: 16,
-        correlativo: 'QUE-2026-000016',
-        tipoRegistro: 'PRINCIPAL',
-        categoria: 'Fontanería y Drenajes',
-        subcategoria: 'Fuga de agua potable',
-        zona: 2,
-        direccionExacta: 'Calle Real hacia aldea Montúfar',
-        estadoActual: 'PENDIENTE DE CIERRE',
-        prioridadConfirmada: 'MEDIA',
-        fechaRegistro: '2026-10-06T10:15:00',
-        ciudadanoNombre: 'Carlos Hernández',
+        fechaRegistro: '2026-10-06T09:30:00',
+        ciudadanoNombre: 'Rodrigo Fuentes',
       },
     ];
   }

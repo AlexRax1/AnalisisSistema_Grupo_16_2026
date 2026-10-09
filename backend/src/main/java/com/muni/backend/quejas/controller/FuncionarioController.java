@@ -60,6 +60,8 @@ public class FuncionarioController {
             String username = authentication.getName();
             QuejaDetalleCompletoDTO detalle = funcionarioService.obtenerDetalleQueja(quejaId, username);
             return ResponseEntity.ok(detalle);
+
+
         } catch (QuejaNoEncontradaException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
         } catch (AccesoDenegadoException e) {
@@ -101,6 +103,9 @@ public class FuncionarioController {
             String username = authentication.getName();
             MensajeResponse response = funcionarioService.asignarInspector(quejaId, dto, username);
             return ResponseEntity.ok(response);
+
+
+
         } catch (QuejaNoEncontradaException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
         } catch (EstadoInvalidoException e) {
@@ -125,6 +130,10 @@ public class FuncionarioController {
             String username = authentication.getName();
             MensajeResponse response = funcionarioService.autorizarReparacion(quejaId, dto, username);
             return ResponseEntity.ok(response);
+
+
+
+
         } catch (QuejaNoEncontradaException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
         } catch (EstadoInvalidoException e) {
@@ -149,6 +158,9 @@ public class FuncionarioController {
             String username = authentication.getName();
             MensajeResponse response = funcionarioService.cierreAdministrativo(quejaId, dto, username);
             return ResponseEntity.ok(response);
+
+
+
         } catch (QuejaNoEncontradaException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
         } catch (EstadoInvalidoException e) {
@@ -173,6 +185,11 @@ public class FuncionarioController {
             String username = authentication.getName();
             MensajeResponse response = funcionarioService.rechazarODevolver(quejaId, dto, username);
             return ResponseEntity.ok(response);
+
+
+
+
+
         } catch (QuejaNoEncontradaException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
         } catch (EstadoInvalidoException e) {

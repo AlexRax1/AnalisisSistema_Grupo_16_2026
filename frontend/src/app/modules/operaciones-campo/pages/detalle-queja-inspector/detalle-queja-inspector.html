@@ -1,0 +1,360 @@
+<div class="inspector-container">
+  <!-- ══ Notification Toast Banner ══ -->
+  <div
+    class="toast-banner"
+    *ngIf="toast.visible"
+    [ngClass]="'toast-' + toast.tipo"
+  >
+    <span class="mat-icon toast-icon">
+      {{
+        toast.tipo === 'success'
+          ? 'check_circle'
+          : toast.tipo === 'warning'
+            ? 'warning'
+            : toast.tipo === 'error'
+              ? 'error'
+              : 'info'
+      }}
+    </span>
+    <span class="toast-message">{{ toast.mensaje }}</span>
+    <button class="toast-close" (click)="cerrarToast()">&times;</button>
+  </div>
+
+  <div class="page-top-header" style="margin-bottom: 1rem;">
+    <div>
+      <h1 class="page-main-title">
+        <span class="mat-icon header-icon">assignment</span>
+        Detalle de Inspección Técnica
+      </h1>
+      <p class="page-main-subtitle">Revisión de campo y registro de peritaje</p>
+    </div>
+    <div>
+      <button class="btn btn-secondary" (click)="regresar()" style="display: flex; align-items: center; gap: 0.5rem; font-weight: 600; padding: 0.5rem 1rem; border: 1px solid #cbd5e1; border-radius: 0.5rem; background: #f8fafc; cursor: pointer;">
+        <span class="mat-icon">arrow_back</span> Regresar
+      </button>
+    </div>
+  </div>
+
+  <div class="bandeja-master-detail-layout" style="grid-template-columns: 1fr;">
+<main class="detail-column">
+      <!-- Loading Detalle -->
+      <div class="detail-loading-card" *ngIf="cargandoDetalle">
+        <div class="spinner-blue large-spinner"></div>
+        <p>Cargando detalle del incidente...</p>
+      </div>
+
+      <!-- Nada seleccionado -->
+      <div class="no-selection-card" *ngIf="!cargandoDetalle && !quejaSeleccionada">
+        <span class="mat-icon no-selection-icon">touch_app</span>
+        <h3>Seleccione una inspección</h3>
+        <p>Haga clic en una queja asignada de la bandeja para ver la ubicación geográfica, los antecedentes y redactar el peritaje técnico.</p>
+      </div>
+
+      <!-- Detalle Seleccionado -->
+      <div class="detail-content-wrapper" *ngIf="!cargandoDetalle && quejaSeleccionada">
+
+        <!-- Header del Expediente -->
+        <div class="expediente-header-card">
+          <div class="header-left-info">
+            <div class="expediente-chip">
+              <span class="mat-icon">confirmation_number</span>
+              <span class="expediente-num">{{ quejaSeleccionada.correlativo }}</span>
+            </div>
+
+            <span class="badge badge-warning">
+              {{ quejaSeleccionada.estadoActual }}
+            </span>
+
+            <span class="badge" [ngClass]="getBadgePrioridad(quejaSeleccionada.prioridadConfirmada)">
+              Prioridad {{ quejaSeleccionada.prioridadConfirmada }}
+            </span>
+
+            <span class="date-chip" *ngIf="quejaSeleccionada.fechaRegistro">
+              <span class="mat-icon">schedule</span>
+              {{ formatearFecha(quejaSeleccionada.fechaRegistro) }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Datos del Incidente y Ubicación en Campo -->
+        <div class="expediente-info-card">
+          <div class="card-section-title">
+            <span class="mat-icon section-title-icon">pin_drop</span>
+            <span>Ubicación y Datos del Incidente para Visita Técnica</span>
+          </div>
+
+          <div class="info-blocks-grid">
+            <!-- Ubicación -->
+            <div class="info-block location-block">
+              <label class="block-label">Dirección y Referencias en Sitio</label>
+              <div class="location-detail-card">
+                <div class="location-address-row">
+                  <span class="mat-icon address-icon">location_on</span>
+                  <div>
+                    <strong>{{ quejaSeleccionada.direccionExacta }}</strong>
+                    <div class="reference-note" *ngIf="quejaSeleccionada.puntoReferencia">
+                      <span class="mat-icon mini-icon">near_me</span>
+                      <strong>Punto de Referencia:</strong> {{ quejaSeleccionada.puntoReferencia }}
+                    </div>
+                  </div>
+                </div>
+
+                <div class="gps-coords-bar" *ngIf="quejaSeleccionada.latitud && quejaSeleccionada.longitud">
+                  <span class="gps-text">
+                    <span class="mat-icon mini-icon">my_location</span>
+                    Coordenadas GPS: {{ quejaSeleccionada.latitud }}, {{ quejaSeleccionada.longitud }}
+                  </span>
+                  <a
+                    [href]="getGoogleMapsUrl(quejaSeleccionada.latitud, quejaSeleccionada.longitud)"
+                    target="_blank"
+                    class="btn-maps-link"
+                  >
+                    <span class="mat-icon">directions</span>
+                    Cómo llegar (Google Maps)
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <!-- Reporte Ciudadano -->
+            <div class="info-block description-block">
+              <label class="block-label">Problema Reportado por el Ciudadano</label>
+              <div class="description-text-card">
+                <strong>{{ quejaSeleccionada.categoria }} <ng-container *ngIf="quejaSeleccionada.subcategoria">— {{ quejaSeleccionada.subcategoria }}</ng-container>:</strong>
+                <p style="margin-top: 0.35rem; margin-bottom: 0;">{{ quejaSeleccionada.descripcion }}</p>
+              </div>
+            </div>
+
+            <!-- Evidencias Fotográficas Iniciales del Ciudadano -->
+            <div class="info-block evidence-block" *ngIf="quejaSeleccionada.evidencias && quejaSeleccionada.evidencias.length > 0">
+              <label class="block-label">Fotografías Iniciales del Reporte ({{ quejaSeleccionada.evidencias.length }})</label>
+              <div class="evidence-grid">
+                <div
+                  *ngFor="let ev of quejaSeleccionada.evidencias"
+                  class="evidence-thumbnail-card"
+                  (click)="abrirVisorImagen(getUrlEvidencia(ev))"
+                >
+                  <img
+                    [src]="getUrlEvidencia(ev)"
+                    alt="Evidencia ciudadana"
+                    class="evidence-thumb-img"
+                    onerror="this.src='https://images.unsplash.com/photo-1584467735871-8e85353a8413?w=300'"
+                  />
+                  <div class="thumb-hover-overlay">
+                    <span class="mat-icon">zoom_in</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ FORMULARIO DE ACCIÓN: REGISTRAR INFORME DE INSPECCIÓN ══ -->
+        <div class="expediente-actions-card inspector-action-card">
+          <div class="card-section-title">
+            <span class="mat-icon section-title-icon color-blue">fact_check</span>
+            <span>Dictamen y Registro de Informe de Inspección</span>
+          </div>
+          <p class="section-subtitle">
+            Complete el peritaje técnico del incidente. Adjunte obligatoriamente las fotografías tomadas en sitio como evidencia probatoria.
+          </p>
+
+          <!-- Banner de Errores de Validación -->
+          <div class="alert alert-error" *ngIf="errorFormulario" style="margin-bottom: 1.25rem;">
+            <span class="mat-icon">error</span>
+            <span>{{ errorFormulario }}</span>
+          </div>
+
+          <!-- Campo 1: Verificación del Problema -->
+          <div class="form-group">
+            <label class="form-label required">¿Problema Verificado en el Sitio?</label>
+            <div class="radio-toggle-group">
+              <label class="radio-toggle-option" [class.selected]="problemaVerificado === true">
+                <input type="radio" name="verificadoRadio" [value]="true" [(ngModel)]="problemaVerificado" />
+                <span class="mat-icon check-icon">check_circle</span>
+                <div>
+                  <strong>SÍ, PROBLEMA VERIFICADO</strong>
+                  <span>Se constató la existencia del daño o anomalía reportada.</span>
+                </div>
+              </label>
+
+              <label class="radio-toggle-option option-negative" [class.selected]="problemaVerificado === false">
+                <input type="radio" name="verificadoRadio" [value]="false" [(ngModel)]="problemaVerificado" />
+                <span class="mat-icon cross-icon">cancel</span>
+                <div>
+                  <strong>NO SE CONSTATA PROBLEMA</strong>
+                  <span>El lugar se encuentra en orden o la queja es improcedente.</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Campos solo visibles si el problema fue verificado -->
+          <ng-container *ngIf="problemaVerificado">
+            <!-- Campo 2: Nivel de Gravedad -->
+            <div class="form-group margin-top-md">
+              <label class="form-label required">Nivel de Gravedad Técnica</label>
+              <div class="severity-buttons-group">
+                <button
+                  type="button"
+                  class="btn-severity sev-leve"
+                  [class.active]="gravedad === 'LEVE'"
+                  (click)="gravedad = 'LEVE'"
+                >
+                  LEVE
+                </button>
+                <button
+                  type="button"
+                  class="btn-severity sev-moderada"
+                  [class.active]="gravedad === 'MODERADA'"
+                  (click)="gravedad = 'MODERADA'"
+                >
+                  MODERADA
+                </button>
+                <button
+                  type="button"
+                  class="btn-severity sev-grave"
+                  [class.active]="gravedad === 'GRAVE'"
+                  (click)="gravedad = 'GRAVE'"
+                >
+                  GRAVE
+                </button>
+                <button
+                  type="button"
+                  class="btn-severity sev-critica"
+                  [class.active]="gravedad === 'CRITICA'"
+                  (click)="gravedad = 'CRITICA'"
+                >
+                  CRÍTICA
+                </button>
+              </div>
+            </div>
+
+            <!-- Campo 3: Recursos / Equipos Sugeridos -->
+            <div class="form-group margin-top-md">
+              <label class="form-label">Recursos, Herramientas o Cuadrilla Sugerida (Opcional)</label>
+              <input
+                type="text"
+                class="form-input"
+                placeholder="Ej. Luminaria LED 100W, camión grúa telescópica, 2 operarios..."
+                [(ngModel)]="recursosSugeridos"
+              />
+            </div>
+          </ng-container>
+
+          <!-- Campo 4: Descripción Técnica -->
+          <div class="form-group margin-top-md">
+            <label class="form-label required">Descripción del Informe Técnico (mínimo 20 caracteres)</label>
+            <textarea
+              class="form-textarea"
+              rows="4"
+              placeholder="Describa el diagnóstico técnico detallado encontrado en el sitio..."
+              [(ngModel)]="descripcionInforme"
+            ></textarea>
+            <div class="char-counter" [class.valid-counter]="descripcionInforme.length >= 20">
+              Caracteres: {{ descripcionInforme.length }} / mínimo 20
+            </div>
+          </div>
+
+          <!-- Campo 5: Subida de Fotografías de Pruebas (OBLIGATORIAS) -->
+          <div class="form-group margin-top-lg photo-upload-section">
+            <div class="upload-section-header">
+              <label class="form-label required" style="margin-bottom: 0;">
+                Fotografías de Prueba del Peritaje (OBLIGATORIAS)
+              </label>
+              <span class="upload-counter-tag" [class.valid-tag]="fotos.length > 0">
+                {{ fotos.length }} / 3 fotografías adjuntas (Mínimo 1 obligatoria)
+              </span>
+            </div>
+            <p class="upload-help-text">
+              Adjunte las fotos tomadas en campo que evidencien el daño o la inspección. Formatos: JPG, JPEG, PNG, WEBP (máx. 5MB cada una).
+            </p>
+
+            <!-- Dropzone / Input Selector -->
+            <div class="file-dropzone-box" *ngIf="fotos.length < 3">
+              <input
+                type="file"
+                id="inspector-photos-input"
+                class="file-hidden-input"
+                accept="image/jpeg,image/png,image/webp"
+                multiple
+                (change)="onFotosSeleccionadas($event)"
+              />
+              <label for="inspector-photos-input" class="file-dropzone-label">
+                <span class="mat-icon dropzone-icon">add_a_photo</span>
+                <span class="dropzone-main-text">Haga clic o arrastre aquí para subir fotografías de prueba</span>
+                <span class="dropzone-sub-text">JPG, JPEG o PNG hasta 5 MB por archivo</span>
+              </label>
+            </div>
+
+            <!-- Galería de Miniaturas de Fotos Adjuntas -->
+            <div class="attached-photos-grid" *ngIf="fotos.length > 0">
+              <div *ngFor="let f of fotos; let i = index" class="attached-photo-item">
+                <img [src]="f.previewUrl" alt="Foto peritaje" class="attached-img-preview" />
+                <button
+                  type="button"
+                  class="remove-photo-btn"
+                  (click)="eliminarFoto(i)"
+                  title="Eliminar foto"
+                >
+                  <span class="mat-icon">close</span>
+                </button>
+                <div class="photo-badge-label">Prueba #{{ i + 1 }}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Botón de Envío -->
+          <div class="action-submit-footer margin-top-xl">
+            <button
+              class="btn btn-primary btn-block btn-lg"
+              (click)="enviarInformeInspeccion()"
+              [disabled]="cargandoEnvio || descripcionInforme.length < 20 || fotos.length === 0"
+            >
+              <span class="mat-icon" *ngIf="!cargandoEnvio">send</span>
+              <span class="spinner" *ngIf="cargandoEnvio"></span>
+              Registrar y Enviar Informe de Inspección
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+<!-- ══ MODAL VISOR DE FOTO ══ -->
+  <div class="modal-backdrop" *ngIf="imagenPrevisualizar" (click)="cerrarVisorImagen()">
+    <div class="image-modal-card" (click)="$event.stopPropagation()">
+      <div class="image-modal-header">
+        <span>Vista Previa de Evidencia</span>
+        <button class="modal-close-btn" (click)="cerrarVisorImagen()">&times;</button>
+      </div>
+      <div class="image-modal-body">
+        <img [src]="imagenPrevisualizar" alt="Evidencia" class="full-preview-img" />
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL DE ÉXITO ══ -->
+  <div class="modal-backdrop" *ngIf="mostrarModalExito">
+    <div class="modal-card success-modal-card">
+      <div class="success-modal-header">
+        <div class="success-icon-circle">
+          <span class="mat-icon">check_circle</span>
+        </div>
+        <h3 class="success-modal-title">¡Inspección Registrada con Éxito!</h3>
+      </div>
+
+      <div class="modal-body text-center">
+        <p class="success-modal-message">{{ mensajeExito }}</p>
+      </div>
+
+      <div class="modal-footer flex-center">
+        <button class="btn btn-primary" (click)="cerrarModalExito()">
+          Entendido, Continuar
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>

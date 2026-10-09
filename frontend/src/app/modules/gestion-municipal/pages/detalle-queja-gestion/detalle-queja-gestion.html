@@ -1,0 +1,650 @@
+<div class="gestion-container">
+  <!-- ══ Notification Toast Banner ══ -->
+  <div
+    class="toast-banner"
+    *ngIf="toast.visible"
+    [ngClass]="'toast-' + toast.tipo"
+  >
+    <span class="mat-icon toast-icon">
+      {{
+        toast.tipo === 'success'
+          ? 'check_circle'
+          : toast.tipo === 'warning'
+            ? 'warning'
+            : toast.tipo === 'error'
+              ? 'error'
+              : 'info'
+      }}
+    </span>
+    <span class="toast-message">{{ toast.mensaje }}</span>
+    <button class="toast-close" (click)="cerrarToast()">&times;</button>
+  </div>
+
+  <!-- Botón Regresar -->
+  <div class="header-action-tools" style="margin-bottom: 1rem;">
+    <button class="btn btn-outline" (click)="regresar()">
+      <span class="mat-icon">arrow_back</span>
+      Regresar a la Bandeja
+    </button>
+  </div>
+
+  <main class="detail-column">
+    <!-- Loading del Detalle -->
+    <div class="detail-loading-card" *ngIf="cargandoDetalle">
+      <div class="spinner-blue large-spinner"></div>
+      <p>Cargando detalle del expediente...</p>
+    </div>
+
+    <!-- Ninguna Tarea Seleccionada (Fallback) -->
+    <div class="no-selection-card" *ngIf="!cargandoDetalle && !quejaSeleccionada">
+      <span class="mat-icon no-selection-icon">error_outline</span>
+      <h3>No se pudo cargar el expediente</h3>
+      <p>Verifique que el ID de la queja sea válido o regrese a la bandeja.</p>
+    </div>
+
+    <!-- Expediente Activo / Seleccionado -->
+    <div class="detail-content-wrapper" *ngIf="!cargandoDetalle && quejaSeleccionada">
+      
+      <!-- Header del Expediente -->
+      <div class="expediente-header-card">
+        <div class="header-left-info">
+          <div class="expediente-chip">
+            <span class="mat-icon">confirmation_number</span>
+            <span class="expediente-num">{{ quejaSeleccionada.correlativo }}</span>
+          </div>
+
+          <span class="badge" [ngClass]="getBadgeEstado(quejaSeleccionada.estadoActual)">
+            {{ quejaSeleccionada.estadoActual }}
+          </span>
+
+          <span class="badge" [ngClass]="getBadgePrioridad(quejaSeleccionada.prioridadConfirmada)">
+            Prioridad {{ quejaSeleccionada.prioridadConfirmada }}
+          </span>
+
+          <span class="badge badge-neutral" *ngIf="quejaSeleccionada.tipoRegistro">
+            {{ quejaSeleccionada.tipoRegistro }}
+          </span>
+
+          <span class="date-chip" *ngIf="quejaSeleccionada.fechaRegistro">
+            <span class="mat-icon">schedule</span>
+            {{ formatearFecha(quejaSeleccionada.fechaRegistro) }}
+          </span>
+        </div>
+
+        <!-- Botones de Acción Inmediata (Rechazar/Devolver) -->
+        <div class="header-right-actions">
+          <button
+            class="btn btn-danger-outline"
+            *ngIf="tieneAccion('DEVOLVER') || tieneAccion('RECHAZAR')"
+            (click)="abrirModalRechazo()"
+            title="Devolver a etapa previa o rechazar de manera definitiva"
+          >
+            <span class="mat-icon">reply</span>
+            Rechazar / Devolver
+          </button>
+        </div>
+      </div>
+
+      <!-- ══ SECCIÓN 1: SISTEMA DE ETAPAS DEL FLUJO MUNICIPAL ══ -->
+      <div class="stages-timeline-card">
+        <div class="stages-card-header">
+          <span class="mat-icon stages-header-icon">timeline</span>
+          <span class="stages-header-title">Etapas del Proceso de Atención Municipal</span>
+        </div>
+
+        <div class="stages-stepper">
+          <!-- Etapa 1: Inspección -->
+          <div class="stepper-step" [class.completed]="esEtapa1Completada()" [class.active]="getPuntoEtapa() === 1">
+            <div class="stepper-circle">
+              <span class="mat-icon" *ngIf="esEtapa1Completada()">check</span>
+              <span *ngIf="!esEtapa1Completada()">1</span>
+            </div>
+            <div class="stepper-meta">
+              <strong class="stepper-name">Etapa 1: Inspección de Campo</strong>
+              <span class="stepper-desc">Peritaje técnico en sitio por inspector</span>
+            </div>
+          </div>
+
+          <div class="stepper-connector" [class.completed]="esEtapa1Completada()"></div>
+
+          <!-- Etapa 2: Reparación Técnica -->
+          <div class="stepper-step" [class.completed]="esEtapa2Completada()" [class.active]="getPuntoEtapa() === 2">
+            <div class="stepper-circle">
+              <span class="mat-icon" *ngIf="esEtapa2Completada()">check</span>
+              <span *ngIf="!esEtapa2Completada()">2</span>
+            </div>
+            <div class="stepper-meta">
+              <strong class="stepper-name">Etapa 2: Reparación Técnica</strong>
+              <span class="stepper-desc">Ejecución de obra física por especialista</span>
+            </div>
+          </div>
+
+          <div class="stepper-connector" [class.completed]="esEtapa2Completada()"></div>
+
+          <!-- Etapa 3: Cierre Administrativo -->
+          <div class="stepper-step" [class.completed]="esEtapa3Completada()" [class.active]="getPuntoEtapa() === 3">
+            <div class="stepper-circle">
+              <span class="mat-icon" *ngIf="esEtapa3Completada()">check</span>
+              <span *ngIf="!esEtapa3Completada()">3</span>
+            </div>
+            <div class="stepper-meta">
+              <strong class="stepper-name">Etapa 3: Cierre Administrativo</strong>
+              <span class="stepper-desc">Validación final y resolución municipal</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ SECCIÓN 2: HISTORIAL DE ESTADOS ACUMULADOS ══ -->
+      <div class="historial-estados-card">
+        <div class="card-section-title" style="display: flex; justify-content: space-between; align-items: center;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="mat-icon section-title-icon">history</span>
+            <span>Historial y Trazabilidad ({{ quejaSeleccionada.historial.length || 0 }} registros)</span>
+          </div>
+          <button
+            type="button"
+            class="btn btn-outline btn-sm"
+            style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; padding: 0.35rem 0.75rem; cursor: pointer; border-radius: 6px;"
+            (click)="toggleHistorial()"
+            *ngIf="quejaSeleccionada.historial && quejaSeleccionada.historial.length > 1"
+          >
+            <span class="mat-icon mini-icon" style="font-size: 18px;">{{ historialExpandido ? 'unfold_less' : 'unfold_more' }}</span>
+            {{ historialExpandido ? 'Comprimir historial' : 'Ver historial completo (' + quejaSeleccionada.historial.length + ')' }}
+          </button>
+        </div>
+        <p class="section-subtitle" *ngIf="!historialExpandido && quejaSeleccionada.historial && quejaSeleccionada.historial.length > 1">
+          Mostrando el estado más reciente. Presione "Ver historial completo" para extender los pasos previos.
+        </p>
+        <p class="section-subtitle" *ngIf="historialExpandido || !quejaSeleccionada.historial || quejaSeleccionada.historial.length <= 1">
+          Registro cronológico de todas las etapas transitadas por este expediente.
+        </p>
+
+        <div class="historial-timeline-list" *ngIf="quejaSeleccionada.historial && quejaSeleccionada.historial.length > 0">
+          <div
+            *ngFor="let item of historialVisible; let last = last; let i = index"
+            class="historial-event-item"
+            [class.is-current-event]="last"
+          >
+            <div class="event-marker-column">
+              <div class="event-marker-dot" [class.active-dot]="last">
+                <span class="mat-icon dot-icon">{{ last ? 'radio_button_checked' : 'check_circle' }}</span>
+              </div>
+              <div class="event-marker-line" *ngIf="!last"></div>
+            </div>
+
+            <div class="event-details-card">
+              <div class="event-top-row">
+                <div class="event-transition">
+                  <span class="state-chip state-old" *ngIf="item.estadoAnterior">
+                    {{ item.estadoAnterior }}
+                  </span>
+                  <span class="mat-icon arrow-icon" *ngIf="item.estadoAnterior">arrow_forward</span>
+                  <span class="state-chip state-new" [ngClass]="getBadgeEstado(item.estadoNuevo)">
+                    {{ item.estadoNuevo }}
+                  </span>
+                </div>
+                <span class="event-date">
+                  <span class="mat-icon mini-icon">schedule</span>
+                  {{ formatearFecha(item.fechaCambio) }}
+                </span>
+              </div>
+
+              <div class="event-actor-row">
+                <span class="mat-icon mini-icon">person</span>
+                <strong>Responsable:</strong> {{ item.cambiadoPorNombre }}
+              </div>
+
+              <div class="event-comment-box" *ngIf="item.comentario">
+                <span class="mat-icon mini-icon">chat</span>
+                <span>{{ item.comentario }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="historial-empty" *ngIf="!quejaSeleccionada.historial || quejaSeleccionada.historial.length === 0">
+          <p>No hay eventos registrados en la bitácora aún.</p>
+        </div>
+      </div>
+
+      <!-- ══ SECCIÓN 3: DETALLE GENERAL Y REPORTE CIUDADANO (ANTES DE INFORMES) ══ -->
+      <div class="expediente-info-card">
+        <div class="card-section-title">
+          <span class="mat-icon section-title-icon">article</span>
+          <span>Detalle General y Reporte Ciudadano</span>
+        </div>
+
+        <div class="info-blocks-grid">
+          <!-- Ciudadano (Solo Teléfono y Correo, sin DPI) -->
+          <div class="info-block citizen-block">
+            <label class="block-label">Ciudadano Reportante</label>
+            <div class="citizen-detail-card">
+              <div class="citizen-avatar">
+                <span class="mat-icon">person</span>
+              </div>
+              <div class="citizen-info-text">
+                <strong class="citizen-name">{{ quejaSeleccionada.ciudadanoNombre }}</strong>
+                <div class="citizen-meta-tags">
+                  <span *ngIf="quejaSeleccionada.ciudadanoTelefono"><strong>Teléfono:</strong> {{ quejaSeleccionada.ciudadanoTelefono }}</span>
+                  <span *ngIf="quejaSeleccionada.ciudadanoCorreo"><strong>Correo:</strong> {{ quejaSeleccionada.ciudadanoCorreo }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Clasificación -->
+          <div class="info-block">
+            <label class="block-label">Clasificación Municipal</label>
+            <div class="categories-tag-group">
+              <span class="badge badge-primary font-md">
+                <span class="mat-icon mini-icon">folder</span>
+                {{ quejaSeleccionada.categoria }}
+              </span>
+              <span class="badge badge-info font-md" *ngIf="quejaSeleccionada.subcategoria">
+                <span class="mat-icon mini-icon">subdirectory_arrow_right</span>
+                {{ quejaSeleccionada.subcategoria }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Ubicación (Sin Zona) -->
+          <div class="info-block location-block">
+            <label class="block-label">Ubicación y Coordenadas</label>
+            <div class="location-detail-card">
+              <div class="location-address-row">
+                <span class="mat-icon address-icon">location_on</span>
+                <div>
+                  <strong>{{ quejaSeleccionada.direccionExacta }}</strong>
+                  <div class="reference-note" *ngIf="quejaSeleccionada.puntoReferencia">
+                    <span class="mat-icon mini-icon">near_me</span>
+                    <strong>Referencia:</strong> {{ quejaSeleccionada.puntoReferencia }}
+                  </div>
+                </div>
+              </div>
+
+              <div class="gps-coords-bar" *ngIf="quejaSeleccionada.latitud && quejaSeleccionada.longitud">
+                <span class="gps-text">
+                  <span class="mat-icon mini-icon">my_location</span>
+                  Lat: {{ quejaSeleccionada.latitud }} | Long: {{ quejaSeleccionada.longitud }}
+                </span>
+                <a
+                  [href]="getGoogleMapsUrl(quejaSeleccionada.latitud, quejaSeleccionada.longitud)"
+                  target="_blank"
+                  class="btn-maps-link"
+                >
+                  <span class="mat-icon">open_in_new</span>
+                  Abrir en Google Maps
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Descripción -->
+          <div class="info-block description-block">
+            <label class="block-label">Descripción del Problema</label>
+            <div class="description-text-card">
+              {{ quejaSeleccionada.descripcion }}
+            </div>
+          </div>
+
+          <!-- Evidencias Fotográficas -->
+          <div class="info-block evidence-block" *ngIf="quejaSeleccionada.evidencias && quejaSeleccionada.evidencias.length > 0">
+            <label class="block-label">Fotografías y Pruebas Adjuntas ({{ quejaSeleccionada.evidencias.length }})</label>
+            <div class="evidence-grid">
+              <div
+                *ngFor="let ev of quejaSeleccionada.evidencias"
+                class="evidence-thumbnail-card"
+                (click)="abrirVisorImagen(getUrlEvidencia(ev))"
+              >
+                <img
+                  [src]="getUrlEvidencia(ev)"
+                  alt="Evidencia"
+                  class="evidence-thumb-img"
+                  onerror="this.src='https://images.unsplash.com/photo-1584467735871-8e85353a8413?w=300'"
+                />
+                <div class="thumb-hover-overlay">
+                  <span class="mat-icon">zoom_in</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ SECCIÓN 4: INFORMES TÉCNICOS ACUMULADOS (DESPUÉS DEL DETALLE DE LA QUEJA) ══ -->
+      <div class="informes-acumulados-card" *ngIf="quejaSeleccionada.informes && quejaSeleccionada.informes.length > 0">
+        <div class="card-section-title" style="display: flex; justify-content: space-between; align-items: center;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="mat-icon section-title-icon">assignment_turned_in</span>
+            <span>Informes Técnicos ({{ quejaSeleccionada.informes.length }})</span>
+          </div>
+          <button
+            type="button"
+            class="btn btn-outline btn-sm"
+            style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; padding: 0.35rem 0.75rem; cursor: pointer; border-radius: 6px;"
+            (click)="toggleInformes()"
+            *ngIf="quejaSeleccionada.informes && quejaSeleccionada.informes.length > 1"
+          >
+            <span class="mat-icon mini-icon" style="font-size: 18px;">{{ informesExpandidos ? 'unfold_less' : 'unfold_more' }}</span>
+            {{ informesExpandidos ? 'Ver solo el más reciente' : 'Ver todos los informes (' + quejaSeleccionada.informes.length + ')' }}
+          </button>
+        </div>
+        <p class="section-subtitle" *ngIf="!informesExpandidos && quejaSeleccionada.informes && quejaSeleccionada.informes.length > 1">
+          Mostrando el informe técnico más reciente. Presione el botón superior para ver todos los informes acumulados.
+        </p>
+
+        <div class="informes-grid">
+          <div *ngFor="let inf of informesVisibles" class="informe-card">
+            <div class="informe-header">
+              <div>
+                <h4 class="informe-title">
+                  {{ inf.tipoInforme === 'INSPECCION_INICIAL' ? 'Informe de Inspección en Campo' : 'Informe Técnico de Reparación' }}
+                </h4>
+                <span class="informe-author">
+                  Por: <strong>{{ inf.autorNombre }}</strong> ({{ inf.autorRol }})
+                </span>
+              </div>
+              <span class="informe-date">{{ formatearFecha(inf.fechaRegistro) }}</span>
+            </div>
+
+            <div class="informe-body">
+              <!-- Badges de peritaje -->
+              <div class="informe-tags-row">
+                <span *ngIf="inf.problemaVerificado !== null && inf.problemaVerificado !== undefined"
+                      class="badge" [ngClass]="inf.problemaVerificado ? 'badge-success' : 'badge-danger'">
+                  Problema Verificado: {{ inf.problemaVerificado ? 'SÍ' : 'NO' }}
+                </span>
+
+                <span *ngIf="inf.gravedad" class="badge" [ngClass]="getBadgePrioridad(inf.gravedad)">
+                  Gravedad: {{ inf.gravedad }}
+                </span>
+
+                <span *ngIf="inf.horasTrabajadas" class="badge badge-info">
+                  Horas: {{ inf.horasTrabajadas }} hrs
+                </span>
+              </div>
+
+              <p class="informe-description">
+                <strong>Descripción:</strong> {{ inf.descripcion }}
+              </p>
+
+              <div class="informe-extra" *ngIf="inf.recursosSugeridos">
+                <strong>Recursos / Equipo Sugerido:</strong> {{ inf.recursosSugeridos }}
+              </div>
+
+              <div class="informe-extra" *ngIf="inf.materialesUtilizados">
+                <strong>Materiales Utilizados:</strong> {{ inf.materialesUtilizados }}
+              </div>
+
+              <div class="informe-extra" *ngIf="inf.instruccionesCuadrilla">
+                <strong>Instrucciones de Cuadrilla:</strong> {{ inf.instruccionesCuadrilla }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ SECCIÓN 5: PANEL DE ACCIONES DISPONIBLES SEGÚN ESTADO ══ -->
+      <div class="expediente-actions-card">
+        <div class="card-section-title">
+          <span class="mat-icon section-title-icon">settings</span>
+          <span>Acciones Disponibles para esta Queja</span>
+        </div>
+
+        <!-- Mensaje cuando ya no hay acciones pendientes -->
+        <div class="no-actions-banner" *ngIf="!quejaSeleccionada.accionesDisponibles || quejaSeleccionada.accionesDisponibles.length === 0">
+          <span class="mat-icon banner-icon">task_alt</span>
+          <div>
+            <strong>No hay acciones administrativas requeridas en este momento.</strong>
+            <p>El expediente se encuentra en seguimiento por el equipo técnico o ha sido concluido.</p>
+          </div>
+        </div>
+
+        <!-- ACCIÓN A: ASIGNAR INSPECTOR (Estado: REGISTRADA) -->
+        <div *ngIf="tieneAccion('ASIGNAR_INSPECTOR')" class="action-execution-box action-inspector-box">
+          <div class="action-box-header">
+            <div class="action-icon-circle bg-blue">
+              <span class="mat-icon">person_search</span>
+            </div>
+            <div>
+              <h4 class="action-title">Solicitar Inspección en Campo</h4>
+              <p class="action-subtitle">
+                El sistema asignará automáticamente al inspector correspondiente a esta zona. Opcionalmente puede incluir instrucciones técnicas.
+              </p>
+            </div>
+          </div>
+
+          <div class="form-group margin-top-md">
+            <label class="form-label">Instrucciones Especiales para el Inspector (Opcional)</label>
+            <textarea
+              class="form-textarea"
+              rows="3"
+              placeholder="Ej. Priorizar revisión de transformador o verificar poste con riesgo de caída..."
+              [(ngModel)]="instruccionesInspector"
+            ></textarea>
+          </div>
+
+          <div class="action-button-row">
+            <button
+              class="btn btn-primary btn-action-submit"
+              (click)="confirmarAsignarInspector()"
+              [disabled]="cargandoAccion"
+            >
+              <span class="mat-icon" *ngIf="!cargandoAccion">send</span>
+              <span class="spinner" *ngIf="cargandoAccion"></span>
+              Confirmar Asignación a Inspección
+            </button>
+          </div>
+        </div>
+
+        <!-- ACCIÓN B: AUTORIZAR REPARACIÓN (Estado: EN VALIDACIÓN DE REPARACIÓN) -->
+        <div *ngIf="tieneAccion('AUTORIZAR_REPARACION')" class="action-execution-box action-repair-box">
+          <div class="action-box-header">
+            <div class="action-icon-circle bg-amber">
+              <span class="mat-icon">construction</span>
+            </div>
+            <div>
+              <h4 class="action-title">Autorizar y Asignar Reparación Técnica</h4>
+              <p class="action-subtitle">
+                Seleccione la dependencia municipal responsable de la cuadrilla. El especialista técnico de esa dependencia se asignará automáticamente.
+              </p>
+            </div>
+          </div>
+
+          <div class="form-group margin-top-md">
+            <label class="form-label required">Dependencia Municipal Responsable</label>
+            <select
+              class="form-select"
+              [(ngModel)]="dependenciaSeleccionadaId"
+            >
+              <option [ngValue]="null" disabled>-- Seleccione una Dependencia del Catálogo --</option>
+              <option *ngFor="let dep of dependencias" [ngValue]="dep.dependenciaId">
+                {{ dep.nombreDependencia }} ({{ dep.codigoDependencia }})
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group margin-top-md">
+            <label class="form-label">Instrucciones para la Cuadrilla / Especialista (Opcional)</label>
+            <textarea
+              class="form-textarea"
+              rows="3"
+              placeholder="Ej. Reemplazar luminaria según recomendación del informe de inspección..."
+              [(ngModel)]="instruccionesReparacion"
+            ></textarea>
+          </div>
+
+          <div class="action-button-row">
+            <button
+              class="btn btn-success btn-action-submit"
+              (click)="confirmarAutorizarReparacion()"
+              [disabled]="cargandoAccion || !dependenciaSeleccionadaId"
+            >
+              <span class="mat-icon" *ngIf="!cargandoAccion">check_circle</span>
+              <span class="spinner" *ngIf="cargandoAccion"></span>
+              Autorizar Orden de Reparación
+            </button>
+          </div>
+        </div>
+
+        <!-- ACCIÓN C: CIERRE ADMINISTRATIVO (Estado: PENDIENTE DE CIERRE) -->
+        <div *ngIf="tieneAccion('CIERRE_ADMINISTRATIVO')" class="action-execution-box action-closure-box">
+          <div class="action-box-header">
+            <div class="action-icon-circle bg-green">
+              <span class="mat-icon">gavel</span>
+            </div>
+            <div>
+              <h4 class="action-title">Aprobar Cierre Administrativo</h4>
+              <p class="action-subtitle">
+                Valide los informes técnicos y redacte el dictamen formal de finalización (mínimo 20 caracteres).
+              </p>
+            </div>
+          </div>
+
+          <div class="form-group margin-top-md">
+            <label class="form-label required">Resolución Administrativa Final</label>
+            <textarea
+              class="form-textarea"
+              rows="4"
+              placeholder="Ej. Trabajo de cambio de luminaria verificado y conforme a satisfacción del vecindario..."
+              [(ngModel)]="descripcionCierre"
+            ></textarea>
+            <div class="char-counter" [class.valid-counter]="descripcionCierre.length >= 20">
+              Caracteres: {{ descripcionCierre.length }} / mínimo 20
+            </div>
+          </div>
+
+          <div class="action-button-row">
+            <button
+              class="btn btn-primary btn-action-submit"
+              (click)="confirmarCierreAdministrativo()"
+              [disabled]="cargandoAccion || descripcionCierre.length < 20"
+            >
+              <span class="mat-icon" *ngIf="!cargandoAccion">task_alt</span>
+              <span class="spinner" *ngIf="cargandoAccion"></span>
+              Aprobar y Cerrar Queja Formalmente
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- ══ MODAL DE RECHAZO / DEVOLUCIÓN ══ -->
+  <div class="modal-backdrop" *ngIf="mostrarModalRechazo">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">
+          <span class="mat-icon color-danger">report_problem</span> Rechazar o Devolver Expediente
+        </h3>
+        <button class="modal-close-btn" (click)="cerrarModalRechazo()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <p class="modal-intro">
+          Especifique la causal por la cual la queja <strong>{{ quejaSeleccionada?.correlativo }}</strong> requiere rechazo o devolución.
+        </p>
+
+        <!-- Selector de Motivo -->
+        <div class="form-group">
+          <label class="form-label required">Motivo Principal</label>
+          <select
+            class="form-select"
+            [(ngModel)]="motivoRechazo"
+          >
+            <option value="" disabled>-- Seleccione un Motivo --</option>
+            <option *ngFor="let m of motivosOpciones" [value]="m">{{ m }}</option>
+          </select>
+        </div>
+
+        <!-- Justificación Detallada -->
+        <div class="form-group margin-top-md">
+          <label class="form-label required">Descripción Detallada / Fundamentación</label>
+          <textarea
+            class="form-textarea"
+            rows="4"
+            placeholder="Detalle los fundamentos técnicos o legales de esta decisión..."
+            [(ngModel)]="descripcionDetalladaRechazo"
+          ></textarea>
+        </div>
+
+        <!-- Radio: Rechazo Definitivo vs Devolución -->
+        <div class="form-group margin-top-md">
+          <label class="form-label required">Tipo de Acción</label>
+          <div class="radio-group-vertical">
+            <label class="radio-card" [class.selected]="esRechazoDefinitivo" *ngIf="tieneAccion('RECHAZAR')">
+              <input
+                type="radio"
+                name="tipoAccionRechazo"
+                [value]="true"
+                [(ngModel)]="esRechazoDefinitivo"
+              />
+              <div class="radio-content">
+                <strong>Rechazo Definitivo</strong>
+                <span>Finaliza la queja como improcedente y notifica la desestimación.</span>
+              </div>
+            </label>
+
+            <label class="radio-card" [class.selected]="!esRechazoDefinitivo" *ngIf="tieneAccion('DEVOLVER')">
+              <input
+                type="radio"
+                name="tipoAccionRechazo"
+                [value]="false"
+                [(ngModel)]="esRechazoDefinitivo"
+              />
+              <div class="radio-content">
+                <strong>Devolución a Etapa Anterior</strong>
+                <span>Devuelve el expediente a la etapa previa para corrección o ampliación técnica.</span>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="cerrarModalRechazo()">Cancelar</button>
+        <button class="btn btn-danger" (click)="confirmarRechazoDevolucion()" [disabled]="cargandoAccion">
+          <span class="mat-icon">gavel</span>
+          Confirmar {{ esRechazoDefinitivo ? 'Rechazo Definitivo' : 'Devolución' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL DE VISOR DE FOTO ══ -->
+  <div class="modal-backdrop" *ngIf="imagenPrevisualizar" (click)="cerrarVisorImagen()">
+    <div class="image-modal-card" (click)="$event.stopPropagation()">
+      <div class="image-modal-header">
+        <span>Vista Previa de Evidencia</span>
+        <button class="modal-close-btn" (click)="cerrarVisorImagen()">&times;</button>
+      </div>
+      <div class="image-modal-body">
+        <img [src]="imagenPrevisualizar" alt="Evidencia ampliada" class="full-preview-img" />
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL DE FEEDBACK DE ÉXITO ══ -->
+  <div class="modal-backdrop" *ngIf="mostrarModalExito">
+    <div class="modal-card success-modal-card">
+      <div class="success-modal-header">
+        <div class="success-icon-circle">
+          <span class="mat-icon">check_circle</span>
+        </div>
+        <h3 class="success-modal-title">{{ tituloExito }}</h3>
+      </div>
+
+      <div class="modal-body text-center">
+        <p class="success-modal-message">{{ mensajeExito }}</p>
+      </div>
+
+      <div class="modal-footer flex-center">
+        <button class="btn btn-primary" (click)="cerrarModalExito()">
+          Entendido, Continuar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

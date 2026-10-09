@@ -61,6 +61,7 @@ public class QuejaService {
                 .orElseThrow(() -> new IllegalArgumentException("Ciudadano no encontrado."));
 
         // 2. Cálculo de Prioridad por Demanda (Radio de 300 metros)
+        /*
         int quejasSimilares = quejaRepository.contarQuejasCercanasActivas(
                 dto.getCategoriaId(),
                 dto.getZona(),
@@ -79,7 +80,7 @@ public class QuejaService {
         } else {
             prioridadCalculada = "BAJA";    // Primer reporte aislado
         }
-
+        */
         // 3. Guardado inicial de Queja
         Queja queja = new Queja();
         queja.setCorrelativo("TEMP-" + System.currentTimeMillis());
@@ -92,8 +93,8 @@ public class QuejaService {
         queja.setLatitud(dto.getLatitud());
         queja.setLongitud(dto.getLongitud());
         queja.setDescripcion(desc);
-        queja.setPrioridadSugerida(prioridadCalculada);
-        queja.setPrioridadConfirmada(prioridadCalculada);
+        queja.setPrioridadSugerida("MEDIA");
+        queja.setPrioridadConfirmada("MEDIA");
 
         // Asignación automática al funcionario con menor carga activa
         asignacionAutomaticaService.asignarFuncionarioAutomatico().ifPresent(queja::setFuncionario);
