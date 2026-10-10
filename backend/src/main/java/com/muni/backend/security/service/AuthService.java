@@ -59,10 +59,19 @@ public class AuthService {
 
     @Transactional
     public void resetPassword(ResetPasswordRequest request) {
-        Credencial usuario = credencialRepository.findById(request.getUserId())
-                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado"));
+        if (request.getCorreo() == null || request.getCorreo().isBlank()) {
+            throw new IllegalArgumentException("El correo es obligatorio.");
+        }
+        if (request.getNewPassword() == null || request.getNewPassword().isBlank()) {
+            throw new IllegalArgumentException("La nueva contraseña es obligatoria.");
+        }
+
+        Credencial usuario = credencialRepository.findByUsername(request.getCorreo().trim())
+                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con el correo: " + request.getCorreo()));
 
         usuario.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        usuario.setFechaModificacion(LocalDateTime.now());
+        usuario.setUsuarioModificacion(request.getCorreo());
         credencialRepository.save(usuario);
     }
 

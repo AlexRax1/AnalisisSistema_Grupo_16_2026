@@ -22,6 +22,7 @@ const ESTADO_COLORS: { [key: string]: string } = {
   styleUrl: './mis-quejas.css',
 })
 export class MisQuejasComponent implements OnInit {
+  backendUrl: string = 'http://localhost:8080';
   quejasOriginales: QuejaDetalleDTO[] = [];
   quejas: QuejaDetalleDTO[] = [];
   quejaSeleccionada?: QuejaDetalleDTO;
@@ -115,6 +116,15 @@ export class MisQuejasComponent implements OnInit {
 
   verDetalle(queja: QuejaDetalleDTO): void {
     this.quejaSeleccionada = queja;
+  }
+
+  getUrlEvidencia(ev: any): string {
+    if (!ev) return '';
+    const url = typeof ev === 'string' ? ev : ev.urlArchivo;
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    if (url.startsWith('/')) return `${this.backendUrl}${url}`;
+    return `${this.backendUrl}/${url}`;
   }
 
   obtenerClaseBadge(estado: string): string {

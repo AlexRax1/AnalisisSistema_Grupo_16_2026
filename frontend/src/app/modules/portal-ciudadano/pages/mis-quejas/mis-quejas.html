@@ -109,7 +109,11 @@
         <div *ngIf="quejaSeleccionada.evidencias && quejaSeleccionada.evidencias.length > 0" class="evidencias-seccion mt-3">
           <strong>Fotografías Adjuntas:</strong>
           <div class="d-flex flex-wrap gap-2 mt-2">
-            <a *ngFor="let ev of quejaSeleccionada.evidencias" [href]="ev.urlArchivo" target="_blank" class="btn btn-sm btn-outline-secondary">
+            <!-- ✅ Se antepone backendUrl a ev.urlArchivo mediante getUrlEvidencia -->
+            <a *ngFor="let ev of quejaSeleccionada.evidencias"
+               [href]="getUrlEvidencia(ev)"
+               target="_blank"
+               class="btn btn-sm btn-outline-secondary">
               <span class="mat-icon" style="vertical-align: middle;">image</span> {{ ev.nombreArchivo }}
             </a>
           </div>

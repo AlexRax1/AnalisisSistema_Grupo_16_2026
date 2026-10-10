@@ -33,7 +33,7 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-
+    
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
@@ -56,18 +56,18 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        // Rutas públicas de autenticación
+                        // Rutas publicas
                         .requestMatchers("/auth/**", "/api/auth/**", "/usuarios/registro-ciudadano", "/api/usuarios/registro-ciudadano").permitAll()
-                        .requestMatchers("/subidas/evidencias/**").permitAll()
+                        .requestMatchers("/subidas/**", "/subidas/evidencias/**").permitAll()
+                        // Rutas protegidas
                         .requestMatchers(
                                 "/quejas/**", "/api/quejas/**",
                                 "/api/funcionario/**", "/api/inspector/**", "/api/especialista/**",
-                                "/api/gestion-municipal/**",
                                 "/usuarios/**", "/api/usuarios/**"
                         ).authenticated()
                         .anyRequest().authenticated()
                 )
-                // Registramos el filtro JWT antes del filtro de usuario/contraseña estándar
+                // Filtro JWT
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

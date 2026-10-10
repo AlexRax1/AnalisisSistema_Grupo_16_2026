@@ -1,9 +1,6 @@
 package com.muni.backend.usuarios.service;
 
 import com.muni.backend.security.model.Credencial;
-import com.muni.backend.security.model.RolUser;
-import com.muni.backend.security.repository.CredencialRepository;
-import com.muni.backend.security.repository.RolUserRepository;
 import com.muni.backend.security.service.AuthService;
 import com.muni.backend.usuarios.dto.ActualizarPerfilDTO;
 import com.muni.backend.usuarios.dto.PerfilUsuarioDTO;
@@ -17,6 +14,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import java.time.LocalDateTime;
@@ -24,6 +23,22 @@ import java.time.LocalDateTime;
 @Service
 @RequiredArgsConstructor
 public class UsuarioService {
+
+    private final Map<String, CodigoVerificacion> codigosVerificacion = new ConcurrentHashMap<>();
+
+    private static class CodigoVerificacion {
+        private final String codigo;
+        private final LocalDateTime expiracion;
+
+        public CodigoVerificacion(String codigo, LocalDateTime expiracion) {
+            this.codigo = codigo;
+            this.expiracion = expiracion;
+        }
+
+        public boolean esValido(String codigoIngresado) {
+            return this.codigo.equals(codigoIngresado) && LocalDateTime.now().isBefore(this.expiracion);
+        }
+    }
 
     private final UsuarioRepository usuarioRepository;
     private final AuthService authService;
@@ -193,5 +208,42 @@ public class UsuarioService {
                 u.getCorreo(),
                 u.getDependencia() != null ? u.getDependencia().getNombreDependencia() : null
         )).collect(Collectors.toList());
+    }
+
+    // Verifica si un correo electronico esta registrado
+    public boolean existePorCorreo(String correo) {
+        return correo != null && usuarioRepository.existsByCorreo(correo.trim().toLowerCase());
+    }
+
+    // Almacena temporalmente el codigo de verificacion con expiracion de 15 minutos
+    public void guardarCodigoVerificacion(String correo, String codigo) {
+        if (correo != null && codigo != null) {
+            codigosVerificacion.put(correo.trim().toLowerCase(),
+                    new CodigoVerificacion(codigo.trim(), LocalDateTime.now().plusMinutes(15)));
+        }
+    }
+
+    // Valida que el codigo ingresado coincida y no haya expirado
+    public boolean validarCodigo(String correo, String codigo) {
+        if (correo == null || codigo == null) {
+            return false;
+        }
+        String clave = correo.trim().toLowerCase();
+        CodigoVerificacion cv = codigosVerificacion.get(clave);
+        if (cv == null) {
+            return false;
+        }
+        if (LocalDateTime.now().isAfter(cv.expiracion)) {
+            codigosVerificacion.remove(clave);
+            return false;
+        }
+        return cv.esValido(codigo.trim());
+    }
+
+    // Elimina el codigo de verificacion una vez utilizada la recuperacion
+    public void eliminarCodigoVerificacion(String correo) {
+        if (correo != null) {
+            codigosVerificacion.remove(correo.trim().toLowerCase());
+        }
     }
 }
