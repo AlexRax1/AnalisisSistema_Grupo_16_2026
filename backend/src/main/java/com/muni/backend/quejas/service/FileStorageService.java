@@ -10,14 +10,19 @@ import java.util.UUID;
 @Service
 public class FileStorageService {
 
-    private final Path uploadPath = Paths.get("./subidas/evidencias");
+    private final Path uploadPath;
 
     public FileStorageService() {
+        this.uploadPath = Paths.get("subidas/evidencias").toAbsolutePath().normalize();
         try {
             Files.createDirectories(uploadPath);
         } catch (IOException e) {
-            throw new RuntimeException("No se pudo crear la carpeta de evidencias en disco", e);
+            throw new RuntimeException("No se pudo crear la carpeta de evidencias en disco: " + uploadPath, e);
         }
+    }
+
+    public Path getUploadPath() {
+        return uploadPath;
     }
 
     public String guardarArchivo(MultipartFile file) {

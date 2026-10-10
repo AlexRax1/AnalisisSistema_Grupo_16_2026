@@ -267,6 +267,30 @@ public class QuejaEstadoService {
                 infDto.setDictamenCalidad(inf.getDictamenCalidad());
                 infDto.setDescripcion(inf.getDescripcion());
                 infDto.setFechaRegistro(inf.getFechaRegistro());
+
+                // Asociar evidencias específicas de este informe
+                if (evidencias != null) {
+                    List<EvidenciaDTO> evsInforme = evidencias.stream()
+                            .filter(e -> (e.getInforme() != null && e.getInforme().getInformeId().equals(inf.getInformeId()))
+                                      || (e.getInforme() == null && e.getEtapa() != null && e.getEtapa().equalsIgnoreCase(inf.getTipoInforme())))
+                            .map(e -> {
+                                EvidenciaDTO evDto = new EvidenciaDTO();
+                                evDto.setEvidenciaId(e.getEvidenciaId());
+                                evDto.setInformeId(inf.getInformeId());
+                                evDto.setEtapa(e.getEtapa());
+                                evDto.setUrlArchivo(e.getUrlArchivo());
+                                evDto.setNombreArchivo(e.getNombreArchivo());
+                                evDto.setFormato(e.getFormato());
+                                evDto.setFechaSubida(e.getFechaSubida());
+                                return evDto;
+                            }).collect(Collectors.toList());
+                    infDto.setEvidencias(evsInforme);
+                    infDto.setFotos(evsInforme.stream().map(EvidenciaDTO::getUrlArchivo).collect(Collectors.toList()));
+                } else {
+                    infDto.setEvidencias(List.of());
+                    infDto.setFotos(List.of());
+                }
+
                 return infDto;
             }).collect(Collectors.toList()));
         } else {

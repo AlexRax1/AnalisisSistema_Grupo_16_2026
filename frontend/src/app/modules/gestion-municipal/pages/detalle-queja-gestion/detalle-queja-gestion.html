@@ -289,11 +289,11 @@
           </div>
 
           <!-- Evidencias Fotográficas -->
-          <div class="info-block evidence-block" *ngIf="quejaSeleccionada.evidencias && quejaSeleccionada.evidencias.length > 0">
-            <label class="block-label">Fotografías y Pruebas Adjuntas ({{ quejaSeleccionada.evidencias.length }})</label>
+          <div class="info-block evidence-block" *ngIf="evidenciasCiudadano.length > 0">
+            <label class="block-label">Fotografías y Pruebas Iniciales del Ciudadano ({{ evidenciasCiudadano.length }})</label>
             <div class="evidence-grid">
               <div
-                *ngFor="let ev of quejaSeleccionada.evidencias"
+                *ngFor="let ev of evidenciasCiudadano"
                 class="evidence-thumbnail-card"
                 (click)="abrirVisorImagen(getUrlEvidencia(ev))"
               >
@@ -379,6 +379,32 @@
 
               <div class="informe-extra" *ngIf="inf.instruccionesCuadrilla">
                 <strong>Instrucciones de Cuadrilla:</strong> {{ inf.instruccionesCuadrilla }}
+              </div>
+
+              <!-- Fotografías y Pruebas del Peritaje / Reparación -->
+              <div class="informe-evidencias-section" *ngIf="getFotosDeInforme(inf).length > 0" style="margin-top: 1rem; padding-top: 0.85rem; border-top: 1px dashed var(--slate-200);">
+                <span style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.825rem; font-weight: 700; color: var(--slate-700); margin-bottom: 0.5rem;">
+                  <span class="mat-icon" style="font-size: 18px; color: var(--primary-600);">photo_library</span>
+                  Fotografías y Pruebas del Informe ({{ getFotosDeInforme(inf).length }}):
+                </span>
+                <div class="evidence-grid">
+                  <div
+                    *ngFor="let foto of getFotosDeInforme(inf)"
+                    class="evidence-thumbnail-card"
+                    (click)="abrirVisorImagen(getUrlEvidencia(foto))"
+                    title="Clic para ampliar fotografía"
+                  >
+                    <img
+                      [src]="getUrlEvidencia(foto)"
+                      alt="Fotografía informe técnico"
+                      class="evidence-thumb-img"
+                      onerror="this.src='https://images.unsplash.com/photo-1584467735871-8e85353a8413?w=300'"
+                    />
+                    <div class="thumb-hover-overlay">
+                      <span class="mat-icon">zoom_in</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

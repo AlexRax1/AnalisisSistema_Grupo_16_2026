@@ -139,6 +139,6 @@ export class MiPerfilComponent implements OnInit {
   }
 
   cancelar(): void {
-    this.router.navigate(['/ciudadano/dashboard']);
+    this.router.navigate(['/ciudadano/mis-quejas']);
   }
 }

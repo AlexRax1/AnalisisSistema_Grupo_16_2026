@@ -25,4 +25,6 @@ public class InformeDetalleDTO {
     private String dictamenCalidad;
     private String descripcion;
     private LocalDateTime fechaRegistro;
+    private java.util.List<EvidenciaDTO> evidencias;
+    private java.util.List<String> fotos;
 }

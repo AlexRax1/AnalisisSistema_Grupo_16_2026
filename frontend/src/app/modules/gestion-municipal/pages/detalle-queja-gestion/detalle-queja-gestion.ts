@@ -394,6 +394,42 @@ export class DetalleQuejaGestionComponent implements OnInit {
     return url;
   }
 
+  // ── Evidencias fotográficas asociadas al informe técnico ──
+  getFotosDeInforme(inf: InformeDTO): (EvidenciaDetalleDTO | string)[] {
+    if (!inf) return [];
+    if (inf.evidencias && inf.evidencias.length > 0) {
+      return inf.evidencias;
+    }
+    if (inf.fotos && inf.fotos.length > 0) {
+      return inf.fotos;
+    }
+    // Si el backend envía las fotos en la lista general de evidencias de la queja:
+    if (this.quejaSeleccionada?.evidencias && this.quejaSeleccionada.evidencias.length > 0) {
+      if (inf.informeId) {
+        const matches = this.quejaSeleccionada.evidencias.filter(
+          (e: any) => e.informeId === inf.informeId
+        );
+        if (matches.length > 0) return matches;
+      }
+      if (inf.tipoInforme) {
+        const matches = this.quejaSeleccionada.evidencias.filter(
+          (e: any) => e.etapa === inf.tipoInforme
+        );
+        if (matches.length > 0) return matches;
+      }
+    }
+    return [];
+  }
+
+  // ── Evidencias fotográficas del reporte inicial del ciudadano ──
+  get evidenciasCiudadano(): EvidenciaDetalleDTO[] {
+    if (!this.quejaSeleccionada?.evidencias) return [];
+    const deCiudadano = this.quejaSeleccionada.evidencias.filter(
+      (e: any) => !e.informeId && (!e.etapa || e.etapa === 'REPORTE_CIUDADANO')
+    );
+    return deCiudadano.length > 0 ? deCiudadano : this.quejaSeleccionada.evidencias;
+  }
+
   mostrarToast(mensaje: string, tipo: 'success' | 'warning' | 'error' | 'info' = 'info'): void {
     if (this.toastTimeout) clearTimeout(this.toastTimeout);
     this.toast = { visible: true, mensaje, tipo };
@@ -522,6 +558,15 @@ export class DetalleQuejaGestionComponent implements OnInit {
           descripcion:
             'Se comprobó en sitio que el foco reventó por una sobrecarga y dañó el sóquet principal del poste. Se requiere cambio total de luminaria.',
           fechaRegistro: '2026-10-07T15:05:00',
+          evidencias: [
+            {
+              evidenciaId: 31,
+              urlArchivo: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=500',
+              nombreArchivo: 'peritaje_foco_danado.jpg',
+              formato: 'jpg',
+              fechaSubida: '2026-10-07T15:05:00',
+            },
+          ],
         },
       ],
       historial: [
