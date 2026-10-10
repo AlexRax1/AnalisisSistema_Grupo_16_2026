@@ -14,8 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import java.time.LocalDateTime;
@@ -23,22 +21,6 @@ import java.time.LocalDateTime;
 @Service
 @RequiredArgsConstructor
 public class UsuarioService {
-
-    private final Map<String, CodigoVerificacion> codigosVerificacion = new ConcurrentHashMap<>();
-
-    private static class CodigoVerificacion {
-        private final String codigo;
-        private final LocalDateTime expiracion;
-
-        public CodigoVerificacion(String codigo, LocalDateTime expiracion) {
-            this.codigo = codigo;
-            this.expiracion = expiracion;
-        }
-
-        public boolean esValido(String codigoIngresado) {
-            return this.codigo.equals(codigoIngresado) && LocalDateTime.now().isBefore(this.expiracion);
-        }
-    }
 
     private final UsuarioRepository usuarioRepository;
     private final AuthService authService;
@@ -111,9 +93,10 @@ public class UsuarioService {
     }
 
     @Transactional(readOnly = true)
-    public PerfilUsuarioDTO obtenerPerfilCiudadano(String correoUsuario) {
-        Usuario usuario = usuarioRepository.findByCorreo(correoUsuario)
-                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado."));
+    public PerfilUsuarioDTO obtenerPerfilCiudadano(String identificador) {
+        Usuario usuario = usuarioRepository.findByCredencial_Username(identificador)
+                .or(() -> usuarioRepository.findByCorreoIgnoreCase(identificador))
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado en la base de datos."));
 
         return PerfilUsuarioDTO.builder()
                 .dpi(usuario.getDpi())
@@ -126,12 +109,11 @@ public class UsuarioService {
     }
 
     @Transactional
-    public void actualizarPerfilCiudadano(String correoUsuarioActual, ActualizarPerfilDTO dto) {
-
+    public void actualizarPerfilCiudadano(String identificadorActual, ActualizarPerfilDTO dto) {
+        // 1. Validar campos obligatorios
         if (dto.getTelefono() == null || dto.getTelefono().trim().isEmpty() ||
-                dto.getDireccion() == null || dto.getDireccion().trim().isEmpty() ||
-                dto.getCorreo() == null || dto.getCorreo().trim().isEmpty()) {
-            throw new IllegalArgumentException("Debe ingresar los campos obligatorios.");
+                dto.getDireccion() == null || dto.getDireccion().trim().isEmpty()) {
+            throw new IllegalArgumentException("Debe ingresar el teléfono y la dirección.");
         }
 
         String telefonoLimpio = dto.getTelefono().trim();
@@ -139,59 +121,46 @@ public class UsuarioService {
             throw new IllegalArgumentException("El número de teléfono debe constar de 8 dígitos.");
         }
 
-        String correoNuevo = dto.getCorreo().trim().toLowerCase();
-        if (!correoNuevo.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
-            throw new IllegalArgumentException("Debe ingresar un formato de correo electrónico válido.");
-        }
+        // 2. Buscar usuario por credencial o correo en base de datos
+        Usuario usuario = usuarioRepository.findByCredencial_Username(identificadorActual)
+                .or(() -> usuarioRepository.findByCorreoIgnoreCase(identificadorActual))
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado en la base de datos."));
 
-        Usuario usuario = usuarioRepository.findByCorreo(correoUsuarioActual)
-                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado."));
-
-        if (!usuario.getCorreo().equalsIgnoreCase(correoNuevo)) {
-            if (usuarioRepository.existsByCorreo(correoNuevo)) {
-                throw new IllegalArgumentException("El correo electrónico ingresado ya se encuentra registrado por otro usuario.");
-            }
-            usuario.setCorreo(correoNuevo);
-        }
-
+        // 3. Actualizar telefono y direccion (DPI, nombres y correo son inmutables)
         usuario.setTelefono(telefonoLimpio);
         usuario.setDireccion(dto.getDireccion().trim());
 
-        // 4. Lógica Opcional de Cambio de Contraseña (FA03, FA04)
+        // 4. Cambio opcional de contrasena
         if (dto.getNuevaPassword() != null && !dto.getNuevaPassword().trim().isEmpty()) {
-
             Credencial credencial = usuario.getCredencial();
             if (credencial == null) {
                 throw new IllegalArgumentException("No se encontró una credencial asociada a este usuario.");
             }
 
-            // FA04: Validar contraseña actual con el hash almacenado en la credencial
-            String hashPasswordActual = credencial.getPassword(); // O credencial.getClave() / credencial.getContrasenia() según tu entidad Credencial
-
+            // Validar que la contrasena actual sea correcta
+            String hashPasswordActual = credencial.getPassword();
             if (dto.getPasswordActual() == null || dto.getPasswordActual().isEmpty() ||
                     !passwordEncoder.matches(dto.getPasswordActual(), hashPasswordActual)) {
                 throw new IllegalArgumentException("La contraseña actual ingresada es incorrecta.");
             }
 
-            // Validar coincidencia de nueva contraseña
+            // Validar coincidencia de nueva contrasena
             if (!dto.getNuevaPassword().equals(dto.getConfirmarNuevaPassword())) {
                 throw new IllegalArgumentException("La nueva contraseña y su confirmación no coinciden.");
             }
 
-            // RN05: Formato de Contraseña (mínimo 6 caracteres, mayúscula, número y símbolo) (FA03)
-            String regexPassword = "^(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&.#_-])[A-Za-z\\d@$!%*?&.#_-]{6,}$";
-            if (!dto.getNuevaPassword().matches(regexPassword)) {
-                throw new IllegalArgumentException("La nueva contraseña no cumple con los requisitos de seguridad.");
+            // Validar longitud minima
+            if (dto.getNuevaPassword().trim().length() < 6) {
+                throw new IllegalArgumentException("La nueva contraseña debe tener al menos 6 caracteres.");
             }
 
-            // Actualizar contraseña encriptada en la Credencial
-            credencial.setPassword(passwordEncoder.encode(dto.getNuevaPassword()));
+            // Encriptar y actualizar contrasena
+            credencial.setPassword(passwordEncoder.encode(dto.getNuevaPassword().trim()));
         }
 
-        // Auditoría de modificación
+        // 5. Guardar cambios en base de datos
         usuario.setFechaModificacion(LocalDateTime.now());
-        usuario.setUsuarioModificacion(correoUsuarioActual);
-
+        usuario.setUsuarioModificacion(identificadorActual);
         usuarioRepository.save(usuario);
     }
 
@@ -212,38 +181,6 @@ public class UsuarioService {
 
     // Verifica si un correo electronico esta registrado
     public boolean existePorCorreo(String correo) {
-        return correo != null && usuarioRepository.existsByCorreo(correo.trim().toLowerCase());
-    }
-
-    // Almacena temporalmente el codigo de verificacion con expiracion de 15 minutos
-    public void guardarCodigoVerificacion(String correo, String codigo) {
-        if (correo != null && codigo != null) {
-            codigosVerificacion.put(correo.trim().toLowerCase(),
-                    new CodigoVerificacion(codigo.trim(), LocalDateTime.now().plusMinutes(15)));
-        }
-    }
-
-    // Valida que el codigo ingresado coincida y no haya expirado
-    public boolean validarCodigo(String correo, String codigo) {
-        if (correo == null || codigo == null) {
-            return false;
-        }
-        String clave = correo.trim().toLowerCase();
-        CodigoVerificacion cv = codigosVerificacion.get(clave);
-        if (cv == null) {
-            return false;
-        }
-        if (LocalDateTime.now().isAfter(cv.expiracion)) {
-            codigosVerificacion.remove(clave);
-            return false;
-        }
-        return cv.esValido(codigo.trim());
-    }
-
-    // Elimina el codigo de verificacion una vez utilizada la recuperacion
-    public void eliminarCodigoVerificacion(String correo) {
-        if (correo != null) {
-            codigosVerificacion.remove(correo.trim().toLowerCase());
-        }
+        return correo != null && usuarioRepository.existsByCorreoIgnoreCase(correo.trim());
     }
 }

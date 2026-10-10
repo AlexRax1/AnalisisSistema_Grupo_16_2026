@@ -41,6 +41,7 @@ export const routes: Routes = [
     children: [
       { path: 'mis-quejas', component: MisQuejasComponent },
       { path: 'nueva-queja', component: CrearQuejaComponent },
+      { path: 'perfil', component: MiPerfilComponent },
       { path: '', redirectTo: 'mis-quejas', pathMatch: 'full' }
     ]
   },
@@ -87,11 +88,6 @@ export const routes: Routes = [
       { path: 'reportes', component: AdminReportesComponent },
       { path: '', redirectTo: 'usuarios', pathMatch: 'full' }
     ]
-  },
-
-  {
-    path: 'ciudadano/perfil',
-    component: MiPerfilComponent,
   },
 
   {

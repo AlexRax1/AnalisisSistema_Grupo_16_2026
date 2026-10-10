@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   ReactiveFormsModule,
@@ -36,9 +36,14 @@ export class LoginComponent implements OnInit {
     private authService: AuthService,
     private router: Router,
     private route: ActivatedRoute,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
+    // Limpiar tokens residuales previos al ingresar a la pantalla de login
+    localStorage.removeItem('token');
+    localStorage.removeItem('rol');
+
     if (this.route.snapshot.queryParams['registrado'] === 'true') {
       this.successMsg = '¡Su cuenta ha sido creada exitosamente! Ya puede iniciar sesión.';
     }
@@ -101,7 +106,10 @@ export class LoginComponent implements OnInit {
         this.redirigirSegunRol(res.rol);
       },
       error: () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('rol');
         this.errorMsg = 'Correo electrónico o contraseña incorrectos.';
+        this.cdr.detectChanges();
       },
     });
   }
@@ -136,11 +144,13 @@ export class LoginComponent implements OnInit {
     this.recuperarForm.reset();
     this.errorMsg = '';
     this.successMsg = '';
+    this.cdr.detectChanges();
   }
 
   cerrarRecuperacion(): void {
     this.mostrarModalRecuperacion = false;
     this.errorMsg = '';
+    this.cdr.detectChanges();
   }
 
   // Paso 1: Solicitar el código y enviarlo por correo
@@ -149,6 +159,7 @@ export class LoginComponent implements OnInit {
 
     if (correoControl?.invalid || !correoControl?.value) {
       this.errorMsg = 'Debe ingresar los campos obligatorios.';
+      this.cdr.detectChanges();
       return;
     }
 
@@ -161,6 +172,7 @@ export class LoginComponent implements OnInit {
         this.pasoRecuperacion = 'INGRESAR_CODIGO';
         this.recuperarForm.get('codigo')?.setValidators([Validators.required]);
         this.recuperarForm.get('codigo')?.updateValueAndValidity();
+        this.cdr.detectChanges();
       },
       error: (err: any) => {
         // Captura el mensaje si el correo no está registrado (FA05)
@@ -170,6 +182,7 @@ export class LoginComponent implements OnInit {
             : err.error?.mensaje ||
               err.error?.message ||
               'El correo ingresado no se encuentra registrado.';
+        this.cdr.detectChanges();
       },
     });
   }
@@ -181,6 +194,7 @@ export class LoginComponent implements OnInit {
 
     if (!codigoInput) {
       this.errorMsg = 'Debe ingresar los campos obligatorios.';
+      this.cdr.detectChanges();
       return;
     }
 
@@ -202,6 +216,7 @@ export class LoginComponent implements OnInit {
         this.recuperarForm.get('confirmarPassword')?.setValidators([Validators.required]);
         this.recuperarForm.get('nuevaPassword')?.updateValueAndValidity();
         this.recuperarForm.get('confirmarPassword')?.updateValueAndValidity();
+        this.cdr.detectChanges();
       },
       error: (err: any) => {
         // Manejo de código inválido o expirado (FA06)
@@ -211,6 +226,7 @@ export class LoginComponent implements OnInit {
             : err.error?.mensaje ||
               err.error?.message ||
               'El código ingresado es inválido o ha expirado.';
+        this.cdr.detectChanges();
       },
     });
   }
@@ -222,16 +238,19 @@ export class LoginComponent implements OnInit {
     if (nuevaPassControl?.hasError('pattern')) {
       this.errorMsg =
         'La contraseña debe incluir al menos una letra mayúscula, un número y un carácter especial.';
+      this.cdr.detectChanges();
       return;
     }
 
     if (this.recuperarForm.hasError('noCoincide')) {
       this.errorMsg = 'Las contraseñas ingresadas no coinciden.';
+      this.cdr.detectChanges();
       return;
     }
 
     if (this.recuperarForm.invalid) {
       this.errorMsg = 'Debe ingresar los campos obligatorios.';
+      this.cdr.detectChanges();
       return;
     }
 
@@ -242,6 +261,7 @@ export class LoginComponent implements OnInit {
     this.authService.restablecerPassword(correo, newPassword).subscribe({
       next: () => {
         this.successMsg = 'Su contraseña ha sido actualizada con éxito.';
+        this.cdr.detectChanges();
         setTimeout(() => {
           this.cerrarRecuperacion();
         }, 2000);
@@ -249,6 +269,7 @@ export class LoginComponent implements OnInit {
       error: (err: any) => {
         this.errorMsg =
           err.error?.mensaje || err.error?.message || 'Error al actualizar la contraseña.';
+        this.cdr.detectChanges();
       },
     });
   }

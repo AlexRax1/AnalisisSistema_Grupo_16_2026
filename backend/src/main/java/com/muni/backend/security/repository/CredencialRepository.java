@@ -12,4 +12,5 @@ import java.util.Optional;
 public interface CredencialRepository extends JpaRepository<Credencial, Integer> {
 
     Optional<Credencial> findByUsername(String username);
+    Optional<Credencial> findByUsernameIgnoreCase(String username);
 }

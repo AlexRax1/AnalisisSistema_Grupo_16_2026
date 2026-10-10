@@ -11,8 +11,10 @@ import java.util.Optional;
 public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
     boolean existsByDpi(String dpi);
     boolean existsByCorreo(String correo);
+    boolean existsByCorreoIgnoreCase(String correo);
     Optional<Usuario> findByDpi(String dpi);
     Optional<Usuario> findByCorreo(String correo);
+    Optional<Usuario> findByCorreoIgnoreCase(String correo);
 
     /**
      * Busca usuarios activos por nombre de rol.
