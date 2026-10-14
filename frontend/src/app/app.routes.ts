@@ -10,8 +10,10 @@ import { CrearQuejaComponent } from './modules/portal-ciudadano/pages/crear-quej
 import { BandejaGestionComponent } from './modules/gestion-municipal/pages/bandeja-gestion/bandeja-gestion';
 import { DetalleQuejaGestionComponent } from './modules/gestion-municipal/pages/detalle-queja-gestion/detalle-queja-gestion';
 import { BandejaInspectorComponent } from './modules/operaciones-campo/pages/bandeja-inspector/bandeja-inspector';
+import { InicioInspectorComponent } from './modules/operaciones-campo/pages/inicio-inspector/inicio-inspector';
 import { DetalleQuejaInspectorComponent } from './modules/operaciones-campo/pages/detalle-queja-inspector/detalle-queja-inspector';
 import { BandejaEspecialistaComponent } from './modules/operaciones-campo/pages/bandeja-especialista/bandeja-especialista';
+import { InicioEspecialistaComponent } from './modules/operaciones-campo/pages/inicio-especialista/inicio-especialista';
 import { DetalleQuejaEspecialistaComponent } from './modules/operaciones-campo/pages/detalle-queja-especialista/detalle-queja-especialista';
 import { AdminUsuariosComponent } from './modules/admin/pages/admin-usuarios/admin-usuarios';
 import { AdminReportesComponent } from './modules/admin/pages/admin-reportes/admin-reportes';
@@ -62,9 +64,10 @@ export const routes: Routes = [
     path: 'inspector',
     component: DashboardLayoutComponent,
     children: [
+      { path: 'inicio', component: InicioInspectorComponent },
       { path: 'inspecciones', component: BandejaInspectorComponent },
       { path: 'detalle-inspector/:id', component: DetalleQuejaInspectorComponent },
-      { path: '', redirectTo: 'inspecciones', pathMatch: 'full' }
+      { path: '', redirectTo: 'inicio', pathMatch: 'full' }
     ]
   },
 
@@ -73,9 +76,10 @@ export const routes: Routes = [
     path: 'especialista',
     component: DashboardLayoutComponent,
     children: [
+      { path: 'inicio', component: InicioEspecialistaComponent },
       { path: 'ordenes', component: BandejaEspecialistaComponent },
       { path: 'detalle-especialista/:id', component: DetalleQuejaEspecialistaComponent },
-      { path: '', redirectTo: 'ordenes', pathMatch: 'full' }
+      { path: '', redirectTo: 'inicio', pathMatch: 'full' }
     ]
   },
 

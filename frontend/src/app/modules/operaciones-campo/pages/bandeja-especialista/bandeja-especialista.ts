@@ -2,7 +2,7 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs/operators';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { EspecialistaService } from '../../../../core/services/especialista.service';
 import {
   QuejaResumenDTO,
@@ -12,7 +12,7 @@ import {
 @Component({
   selector: 'app-bandeja-especialista',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './bandeja-especialista.html',
   styleUrl: './bandeja-especialista.css',
 })
@@ -154,6 +154,9 @@ export class BandejaEspecialistaComponent implements OnInit {
       case 'MEDIA':
       case 'MODERADA':
         return 'badge-info';
+      case 'BAJA':
+      case 'LEVE':
+        return 'badge-success';
       default:
         return 'badge-neutral';
     }
@@ -192,6 +195,19 @@ export class BandejaEspecialistaComponent implements OnInit {
         prioridadConfirmada: 'ALTA',
         fechaRegistro: '2026-10-06T09:30:00',
         ciudadanoNombre: 'Rodrigo Fuentes',
+      },
+      {
+        quejaId: 22,
+        correlativo: 'QUE-2026-000022',
+        tipoRegistro: 'PRINCIPAL',
+        categoria: 'Parques y Jardines',
+        subcategoria: 'Poda de ramas sobre tendido',
+        zona: 1,
+        direccionExacta: '5ta Calle y 2da Avenida esquina',
+        estadoActual: 'EN REPARACIÓN TÉCNICA',
+        prioridadConfirmada: 'BAJA',
+        fechaRegistro: '2026-10-08T10:00:00',
+        ciudadanoNombre: 'Andrea Gómez',
       },
     ];
   }

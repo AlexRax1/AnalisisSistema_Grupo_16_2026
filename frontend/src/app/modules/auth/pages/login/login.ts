@@ -123,10 +123,10 @@ export class LoginComponent implements OnInit {
         this.router.navigate(['/funcionario/bandeja']);
         break;
       case 'INSPECTOR':
-        this.router.navigate(['/inspector/inspecciones']);
+        this.router.navigate(['/inspector/inicio']);
         break;
       case 'ESPECIALISTA':
-        this.router.navigate(['/especialista/ordenes']);
+        this.router.navigate(['/especialista/inicio']);
         break;
       case 'ADMINISTRADOR':
         this.router.navigate(['/admin/usuarios']);

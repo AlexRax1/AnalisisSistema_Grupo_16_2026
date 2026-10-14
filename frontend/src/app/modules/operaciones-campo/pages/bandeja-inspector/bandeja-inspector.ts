@@ -1,6 +1,6 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs/operators';
 import { InspectorService } from '../../../../core/services/inspector.service';
@@ -20,7 +20,7 @@ interface FotoAdjunta {
 @Component({
   selector: 'app-bandeja-inspector',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './bandeja-inspector.html',
   styleUrl: './bandeja-inspector.css',
 })
@@ -71,8 +71,6 @@ export class BandejaInspectorComponent implements OnInit {
         next: (tareas) => {
           this.quejasAsignadas = tareas || [];
           this.aplicarFiltros();
-
-
           this.cdr.detectChanges();
         },
         error: (err) => {
@@ -166,6 +164,9 @@ export class BandejaInspectorComponent implements OnInit {
       case 'MEDIA':
       case 'MODERADA':
         return 'badge-info';
+      case 'BAJA':
+      case 'LEVE':
+        return 'badge-success';
       default:
         return 'badge-neutral';
     }
@@ -205,6 +206,19 @@ export class BandejaInspectorComponent implements OnInit {
         prioridadConfirmada: 'ALTA',
         fechaRegistro: '2026-10-07T11:00:00',
         ciudadanoNombre: 'Lucía Morales',
+      },
+      {
+        quejaId: 21,
+        correlativo: 'QUE-2026-000021',
+        tipoRegistro: 'PRINCIPAL',
+        categoria: 'Mantenimiento de Vías',
+        subcategoria: 'Limpieza de cunetas',
+        zona: 1,
+        direccionExacta: '3ra Avenida 4-15 Zona 1',
+        estadoActual: 'EN INSPECCIÓN',
+        prioridadConfirmada: 'BAJA',
+        fechaRegistro: '2026-10-08T09:15:00',
+        ciudadanoNombre: 'Marcos Soto',
       },
     ];
   }

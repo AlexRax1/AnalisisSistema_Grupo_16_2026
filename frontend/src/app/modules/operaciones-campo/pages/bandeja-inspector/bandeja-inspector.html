@@ -32,6 +32,10 @@
       </p>
     </div>
     <div class="header-action-tools">
+      <button class="btn btn-outline" routerLink="/inspector/inicio" title="Volver al Inicio">
+        <span class="mat-icon">home</span>
+        Inicio
+      </button>
       <button class="btn btn-outline btn-refresh" (click)="cargarBandejaTareas()" [disabled]="cargandoBandeja" title="Recargar bandeja">
         <span class="mat-icon" [class.rotating]="cargandoBandeja">sync</span>
         {{ cargandoBandeja ? 'Actualizando...' : 'Actualizar Inspecciones' }}
@@ -47,10 +51,11 @@
       <div class="inbox-card">
         <div class="inbox-header">
           <div class="inbox-header-title">
-            <span class="mat-icon inbox-title-icon">assignment</span>
-            <h3>Por Inspeccionar</h3>
+            <span class="mat-icon inbox-title-icon">assignment_late</span>
+            <h3>Quejas y Reportes Pendientes</h3>
+            <span class="inbox-status-tag">Por Inspeccionar</span>
+            <span class="inbox-counter-badge" title="Total quejas pendientes">{{ quejasFiltradas.length }}</span>
           </div>
-          <span class="inbox-counter-badge">{{ quejasFiltradas.length }}</span>
         </div>
 
         <!-- Buscador y Filtros -->
@@ -60,7 +65,7 @@
             <input
               type="text"
               class="search-input"
-              placeholder="Buscar por correlativo, zona..."
+              placeholder="Buscar por correlativo..."
               [(ngModel)]="filtroTexto"
               (ngModelChange)="onFiltroTextoChange()"
             />
@@ -97,6 +102,13 @@
               (click)="cambiarFiltroPrioridad('MEDIA')"
             >
               Media
+            </button>
+            <button
+              class="priority-chip chip-baja"
+              [class.active]="filtroPrioridad === 'BAJA'"
+              (click)="cambiarFiltroPrioridad('BAJA')"
+            >
+              Baja
             </button>
           </div>
         </div>

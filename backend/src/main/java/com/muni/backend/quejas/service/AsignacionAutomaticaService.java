@@ -18,10 +18,7 @@ public class AsignacionAutomaticaService {
 
     private final UsuarioRepository usuarioRepository;
 
-    /**
-     * Obtiene el Funcionario Municipal activo con menor número de quejas activas.
-     * Retorna Optional por si aún no se han configurado funcionarios en el sistema.
-     */
+
     public Optional<Usuario> asignarFuncionarioAutomatico() {
         List<Integer> ids = usuarioRepository.buscarIdFuncionarioMenorCarga(PageRequest.of(0, 1));
         if (ids.isEmpty()) {
@@ -31,10 +28,7 @@ public class AsignacionAutomaticaService {
         return usuarioRepository.findById(ids.get(0));
     }
 
-    /**
-     * Obtiene el Inspector de Campo activo con menor número de quejas en inspección.
-     * Lanza excepción si no hay inspectores activos disponibles.
-     */
+
     public Usuario asignarInspectorAutomatico() {
         List<Integer> ids = usuarioRepository.buscarIdInspectorMenorCarga(PageRequest.of(0, 1));
         if (ids.isEmpty()) {
@@ -44,11 +38,7 @@ public class AsignacionAutomaticaService {
         return usuarioRepository.findById(ids.get(0))
                 .orElseThrow(() -> new EstadoInvalidoException("Inspector asignado no encontrado."));
     }
-
-    /**
-     * Obtiene el Especialista Técnico activo con menor número de quejas en reparación.
-     * Prioriza especialistas de la dependencia indicada. Si no hay en esa dependencia, busca a nivel global.
-     */
+    
     public Usuario asignarEspecialistaAutomatico(Integer dependenciaId) {
         if (dependenciaId != null) {
             List<Integer> idsDep = usuarioRepository.buscarIdEspecialistaDependenciaMenorCarga(

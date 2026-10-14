@@ -140,7 +140,8 @@
 .inbox-header-title {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  flex-wrap: wrap;
+  gap: 0.6rem;
 }
 
 .inbox-header-title h3 {
@@ -155,9 +156,21 @@
   color: var(--primary-600, #2563eb);
 }
 
+.inbox-status-tag {
+  background: var(--primary-50, #eff6ff);
+  color: var(--primary-700, #1d4ed8);
+  border: 1px solid var(--primary-200, #bfdbfe);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.15rem 0.55rem;
+  border-radius: 9999px;
+  white-space: nowrap;
+}
+
 .inbox-counter-badge {
   background: var(--warning-100, #fef3c7);
   color: var(--warning-700, #b45309);
+  border: 1px solid var(--warning-200, #fde68a);
   font-size: 0.8rem;
   font-weight: 800;
   padding: 0.2rem 0.6rem;
@@ -239,6 +252,7 @@
 .priority-chip.chip-urgente.active { background: var(--danger-600, #dc2626); border-color: var(--danger-600, #dc2626); }
 .priority-chip.chip-alta.active { background: var(--warning-600, #d97706); border-color: var(--warning-600, #d97706); }
 .priority-chip.chip-media.active { background: var(--info-600, #0284c7); border-color: var(--info-600, #0284c7); }
+.priority-chip.chip-baja.active { background: var(--success-600, #059669); border-color: var(--success-600, #059669); }
 
 .inbox-list {
   display: flex;

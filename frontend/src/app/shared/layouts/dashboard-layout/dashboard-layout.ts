@@ -45,12 +45,18 @@ export class DashboardLayoutComponent implements OnInit {
     inspector: {
       titulo: 'Inspector de Campo',
       badgeClass: 'badge-info',
-      items: [{ label: 'Inspecciones', icon: 'search', route: '/inspector/inspecciones' }],
+      items: [
+        { label: 'Inicio', icon: 'home', route: '/inspector/inicio' },
+        { label: 'Inspecciones', icon: 'search', route: '/inspector/inspecciones' },
+      ],
     },
     especialista: {
       titulo: 'Especialista Técnico',
       badgeClass: 'badge-success',
-      items: [{ label: 'Órdenes de Trabajo', icon: 'build', route: '/especialista/ordenes' }],
+      items: [
+        { label: 'Inicio', icon: 'home', route: '/especialista/inicio' },
+        { label: 'Órdenes de Trabajo', icon: 'build', route: '/especialista/ordenes' },
+      ],
     },
     admin: {
       titulo: 'Administrador',
@@ -114,10 +120,10 @@ export class DashboardLayoutComponent implements OnInit {
         this.router.navigate(['/funcionario/bandeja']);
         break;
       case 'inspector':
-        this.router.navigate(['/inspector/inspecciones']);
+        this.router.navigate(['/inspector/inicio']);
         break;
       case 'especialista':
-        this.router.navigate(['/especialista/ordenes']);
+        this.router.navigate(['/especialista/inicio']);
         break;
       case 'admin':
         this.router.navigate(['/admin/usuarios']);
