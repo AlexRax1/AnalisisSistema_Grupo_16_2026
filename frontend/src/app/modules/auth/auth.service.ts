@@ -25,11 +25,13 @@ export interface ResetPasswordReq {
   newPassword: string;
 }
 
+import { environment } from '../../../environments/environment';
+
 @Injectable({
   providedIn: 'root',
 })
 export class AuthService {
-  private BASE_URL = 'http://localhost:8080';
+  private BASE_URL = environment.apiUrl;
 
   constructor(private http: HttpClient) {}
 

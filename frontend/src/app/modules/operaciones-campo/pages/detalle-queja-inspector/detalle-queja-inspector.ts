@@ -10,6 +10,7 @@ import {
   RegistrarInformeInspeccionReq,
   ESTADO_COLORS,
 } from '../../../../core/models/queja.model';
+import { environment } from '../../../../../environments/environment';
 
 interface FotoAdjunta {
   file: File;
@@ -227,7 +228,7 @@ export class DetalleQuejaInspectorComponent implements OnInit {
     const url = typeof ev === 'string' ? ev : ev.urlArchivo;
     if (!url) return '';
     if (url.startsWith('/')) {
-      return `http://localhost:8080${url}`;
+      return `${environment.apiUrl}${url}`;
     }
     return url;
   }

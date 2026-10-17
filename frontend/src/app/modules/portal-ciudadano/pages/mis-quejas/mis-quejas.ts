@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { QuejaService } from '../../../../core/services/queja.service';
 import { QuejaDetalleDTO } from '../../../../core/models/queja.model';
+import { environment } from '../../../../../environments/environment';
 
 const ESTADO_COLORS: { [key: string]: string } = {
   REGISTRADA: 'badge-info',
@@ -22,7 +23,7 @@ const ESTADO_COLORS: { [key: string]: string } = {
   styleUrl: './mis-quejas.css',
 })
 export class MisQuejasComponent implements OnInit {
-  backendUrl: string = 'http://localhost:8080';
+  backendUrl: string = environment.apiUrl;
   quejasOriginales: QuejaDetalleDTO[] = [];
   quejas: QuejaDetalleDTO[] = [];
   quejaSeleccionada?: QuejaDetalleDTO;
