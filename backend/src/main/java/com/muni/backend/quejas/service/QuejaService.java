@@ -2,6 +2,7 @@ package com.muni.backend.quejas.service;
 
 import com.muni.backend.quejas.dto.ciudadano.*;
 import com.muni.backend.quejas.dto.shared.*;
+import com.muni.backend.quejas.exception.AccesoDenegadoException;
 import com.muni.backend.quejas.model.EvidenciaDigital;
 import com.muni.backend.quejas.model.HistorialEstadoQueja;
 import com.muni.backend.quejas.model.Queja;
@@ -153,9 +154,18 @@ public class QuejaService {
     }
 
     @Transactional(readOnly = true)
-    public QuejaDetalleDTO obtenerPorCorrelativo(String correlativo) {
+    public QuejaDetalleDTO obtenerPorCorrelativo(String correlativo, String identificadorUsuario) {
         Queja queja = quejaRepository.findByCorrelativo(correlativo)
                 .orElseThrow(() -> new IllegalArgumentException("No se encontró la queja con correlativo: " + correlativo));
+
+        Usuario usuarioAutenticado = usuarioRepository.findByCredencial_Username(identificadorUsuario)
+                .or(() -> usuarioRepository.findByCorreoIgnoreCase(identificadorUsuario))
+                .orElseThrow(() -> new AccesoDenegadoException("No tiene permiso para consultar esta queja."));
+
+        if (queja.getCiudadano() == null
+                || !usuarioAutenticado.getUsuarioId().equals(queja.getCiudadano().getUsuarioId())) {
+            throw new AccesoDenegadoException("No tiene permiso para consultar esta queja.");
+        }
 
         return convertirADetalleDTO(queja);
     }

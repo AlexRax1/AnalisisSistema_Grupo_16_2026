@@ -33,7 +33,6 @@ public class EmailService {
             log.info("Correo de recuperación enviado con éxito a {}", correoDestino);
         } catch (Exception e) {
             log.warn("No se pudo enviar el correo de recuperación a {}: {}", correoDestino, e.getMessage());
-            log.info("[DEV/TEST] CÓDIGO DE RECUPERACIÓN GENERADO PARA {}: {}", correoDestino, codigo);
         }
     }
 }

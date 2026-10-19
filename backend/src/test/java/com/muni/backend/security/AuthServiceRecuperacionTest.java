@@ -145,13 +145,14 @@ class AuthServiceRecuperacionTest {
                 .fechaExpiracion(LocalDateTime.now().plusMinutes(10))
                 .build();
 
-        when(recuperacionPasswordRepository.findTopByCredencial_UserIdAndUtilizadoFalseAndFechaExpiracionAfterOrderByFechaCreacionDesc(
-                eq(10), any(LocalDateTime.class)
+        when(recuperacionPasswordRepository.findTopByCredencial_UserIdAndCodigoVerificacionAndUtilizadoFalseAndFechaExpiracionAfterOrderByFechaCreacionDesc(
+                eq(10), eq("123456"), any(LocalDateTime.class)
         )).thenReturn(Optional.of(rec));
         when(passwordEncoder.encode("NuevaPassword123*")).thenReturn("encodedNewPass");
 
         ResetPasswordRequest req = new ResetPasswordRequest();
         req.setCorreo("ciudadano@test.com");
+        req.setCodigo("123456");
         req.setNewPassword("NuevaPassword123*");
 
         authService.resetPassword(req);
@@ -171,12 +172,13 @@ class AuthServiceRecuperacionTest {
     @Test
     void testResetPassword_SinSolicitudActiva() {
         when(usuarioRepository.findByCorreoIgnoreCase("ciudadano@test.com")).thenReturn(Optional.of(mockUsuario));
-        when(recuperacionPasswordRepository.findTopByCredencial_UserIdAndUtilizadoFalseAndFechaExpiracionAfterOrderByFechaCreacionDesc(
-                eq(10), any(LocalDateTime.class)
+        when(recuperacionPasswordRepository.findTopByCredencial_UserIdAndCodigoVerificacionAndUtilizadoFalseAndFechaExpiracionAfterOrderByFechaCreacionDesc(
+                eq(10), eq("123456"), any(LocalDateTime.class)
         )).thenReturn(Optional.empty());
 
         ResetPasswordRequest req = new ResetPasswordRequest();
         req.setCorreo("ciudadano@test.com");
+        req.setCodigo("123456");
         req.setNewPassword("NuevaPassword123*");
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
@@ -185,5 +187,22 @@ class AuthServiceRecuperacionTest {
 
         assertEquals("El código ingresado es inválido o ha expirado.", ex.getMessage());
         verify(credencialRepository, never()).save(any());
+    }
+
+    @Test
+    void testResetPassword_SinCodigo() {
+        ResetPasswordRequest req = new ResetPasswordRequest();
+        req.setCorreo("ciudadano@test.com");
+        req.setNewPassword("NuevaPassword123*");
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                authService.resetPassword(req)
+        );
+
+        assertEquals("El código de verificación es obligatorio.", ex.getMessage());
+        verify(credencialRepository, never()).save(any());
+        verify(recuperacionPasswordRepository, never())
+                .findTopByCredencial_UserIdAndCodigoVerificacionAndUtilizadoFalseAndFechaExpiracionAfterOrderByFechaCreacionDesc(
+                        anyInt(), anyString(), any(LocalDateTime.class));
     }
 }

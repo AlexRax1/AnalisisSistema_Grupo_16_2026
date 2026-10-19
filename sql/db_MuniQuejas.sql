@@ -1,6 +1,6 @@
 CREATE TABLE rol_user (
     rol_user_id serial PRIMARY KEY,
-    nombre_rol varchar(50) NOT NULL UNIQUE
+    nombre_rol varchar(30) NOT NULL UNIQUE
 );
 
 INSERT INTO rol_user (nombre_rol) VALUES
@@ -60,7 +60,7 @@ INSERT INTO dependencias (nombre_dependencia, codigo_dependencia, descripcion) V
 
 CREATE TABLE usuarios (
     usuario_id serial PRIMARY KEY,
-    user_id int REFERENCES credenciales(user_id),
+    user_id int UNIQUE NOT NULL REFERENCES credenciales(user_id),
     dpi varchar(13) UNIQUE NOT NULL,
     nombres varchar(100) NOT NULL,
     apellidos varchar(100) NOT NULL,
@@ -128,6 +128,7 @@ CREATE TABLE quejas (
     ciudadano_id int NOT NULL REFERENCES usuarios(usuario_id),
     categoria_id int NOT NULL REFERENCES categorias_queja(categoria_id),
     subcategoria_id int REFERENCES subcategorias_queja(subcategoria_id),
+    zona integer NOT NULL,
     direccion_exacta text NOT NULL,
     punto_referencia text,
     latitud numeric(10, 7) NOT NULL,
@@ -216,12 +217,6 @@ CREATE TABLE evidencias_digitales (
     fecha_subida timestamp DEFAULT CURRENT_TIMESTAMP
 );
 
-
-CREATE TABLE recuperacion_password (
-    recuperacion_id serial PRIMARY KEY,
-    user_id int NOT NULL REFERENCES credenciales(user_id),
-    codigo_verificacion varchar(10) NOT NULL,
-    fecha_expiracion timestamp NOT NULL,
-    utilizado boolean DEFAULT FALSE,
-    fecha_creacion timestamp DEFAULT CURRENT_TIMESTAMP
-);
+-- Ajustar las secuencias luego de insertar categorías y subcategorías con IDs explícitos
+SELECT setval('categorias_queja_categoria_id_seq', (SELECT MAX(categoria_id) FROM categorias_queja));
+SELECT setval('subcategorias_queja_subcategoria_id_seq', (SELECT MAX(subcategoria_id) FROM subcategorias_queja));

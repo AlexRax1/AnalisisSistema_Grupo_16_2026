@@ -282,10 +282,10 @@ export class DetalleQuejaEspecialistaComponent implements OnInit {
     if (!ev) return '';
     const url = typeof ev === 'string' ? ev : ev.urlArchivo;
     if (!url) return '';
-    if (url.startsWith('/')) {
-      return `${environment.apiUrl}${url}`;
+    if (/^https?:\/\//i.test(url)) {
+      return url;
     }
-    return url;
+    return `${environment.apiUrl}${url.startsWith('/') ? '' : '/'}${url}`;
   }
 
   // ── Toast ──

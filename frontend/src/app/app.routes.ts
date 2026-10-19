@@ -15,11 +15,7 @@ import { DetalleQuejaInspectorComponent } from './modules/operaciones-campo/page
 import { BandejaEspecialistaComponent } from './modules/operaciones-campo/pages/bandeja-especialista/bandeja-especialista';
 import { InicioEspecialistaComponent } from './modules/operaciones-campo/pages/inicio-especialista/inicio-especialista';
 import { DetalleQuejaEspecialistaComponent } from './modules/operaciones-campo/pages/detalle-queja-especialista/detalle-queja-especialista';
-import { AdminUsuariosComponent } from './modules/admin/pages/admin-usuarios/admin-usuarios';
-import { AdminReportesComponent } from './modules/admin/pages/admin-reportes/admin-reportes';
 import { MiPerfilComponent } from './modules/admin/pages/mi-perfil/mi-perfil.component';
-import { CatalogoQuejasAdminComponent } from './modules/admin/catalogo-quejas/catalogo-quejas.component';
-import { GestionPersonalComponent } from './modules/admin/gestion-personal/gestion-personal.component';
 
 export const routes: Routes = [
   // Portal público de bienvenida
@@ -83,27 +79,9 @@ export const routes: Routes = [
     ]
   },
 
-  // Dashboard: Administrador
-  {
-    path: 'admin',
-    component: DashboardLayoutComponent,
-    children: [
-      { path: 'usuarios', component: AdminUsuariosComponent },
-      { path: 'reportes', component: AdminReportesComponent },
-      { path: '', redirectTo: 'usuarios', pathMatch: 'full' }
-    ]
-  },
-
-  {
-    path: 'admin/catalogo-quejas',
-    component: CatalogoQuejasAdminComponent,
-    // canActivate: [RoleGuard] // Opcional: Proteger con el guard del Funcionario/Administrador
-  },
-
-  {
-    path: 'admin/gestion-personal',
-    component: GestionPersonalComponent
-  },
+  // Módulos administrativos deshabilitados temporalmente.
+  // El backend de /admin/quejas y /admin/usuarios-internos aún se está
+  // desarrollando en otra rama, por lo que no se registran rutas /admin.
 
   // Fallback
   { path: '**', redirectTo: '' }

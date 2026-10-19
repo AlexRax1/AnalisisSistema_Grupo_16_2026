@@ -16,13 +16,14 @@ RUN ./mvnw clean package -DskipTests
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
-# Crear directorio para almacenamiento de imágenes
-RUN mkdir -p /app/subidas/evidencias
-
 # Copiar el binario ejecutable
 COPY --from=build /app/target/*.jar app.jar
 
-ENV SERVER_PORT=8080
+# Puerto y opciones de JVM para contenedor (75 % de la memoria del contenedor)
+ENV SERVER_PORT=8080 \
+    JAVA_OPTS="-XX:MaxRAMPercentage=75 -XX:+UseContainerSupport -Djava.security.egd=file:/dev/./urandom"
+
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# exec deja a Java como PID 1 para recibir correctamente SIGTERM
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar app.jar"]

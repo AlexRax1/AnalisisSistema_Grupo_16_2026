@@ -4,6 +4,7 @@ import com.muni.backend.quejas.dto.ciudadano.QuejaDerivadaDTO;
 import com.muni.backend.quejas.dto.ciudadano.QuejaDetalleDTO;
 import com.muni.backend.quejas.dto.ciudadano.QuejaRegistroDTO;
 import com.muni.backend.quejas.dto.ciudadano.QuejaRegistroResponse;
+import com.muni.backend.quejas.exception.AccesoDenegadoException;
 import com.muni.backend.quejas.service.PdfService;
 import com.muni.backend.quejas.service.QuejaService;
 import lombok.RequiredArgsConstructor;
@@ -56,10 +57,14 @@ public class QuejaController {
     }
 
     @GetMapping("/detalle/{correlativo}")
-    public ResponseEntity<?> obtenerDetallePorCorrelativo(@PathVariable String correlativo) {
+    public ResponseEntity<?> obtenerDetallePorCorrelativo(
+            @PathVariable String correlativo,
+            Authentication authentication) {
         try {
-            QuejaDetalleDTO detalle = quejaService.obtenerPorCorrelativo(correlativo);
+            QuejaDetalleDTO detalle = quejaService.obtenerPorCorrelativo(correlativo, authentication.getName());
             return ResponseEntity.ok(detalle);
+        } catch (AccesoDenegadoException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
@@ -69,17 +74,28 @@ public class QuejaController {
     }
 
     @GetMapping("/{correlativo}/constancia-pdf")
-    public ResponseEntity<byte[]> descargarConstanciaPdf(@PathVariable String correlativo) {
-        QuejaDetalleDTO detalle = quejaService.obtenerPorCorrelativo(correlativo);
-        byte[] pdfBytes = pdfService.generarConstanciaPdf(detalle);
+    public ResponseEntity<?> descargarConstanciaPdf(
+            @PathVariable String correlativo,
+            Authentication authentication) {
+        try {
+            QuejaDetalleDTO detalle = quejaService.obtenerPorCorrelativo(correlativo, authentication.getName());
+            byte[] pdfBytes = pdfService.generarConstanciaPdf(detalle);
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_PDF);
-        headers.setContentDispositionFormData("attachment", "Constancia_" + correlativo + ".pdf");
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDispositionFormData("attachment", "Constancia_" + correlativo + ".pdf");
 
-        return ResponseEntity.ok()
-                .headers(headers)
-                .body(pdfBytes);
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(pdfBytes);
+        } catch (AccesoDenegadoException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al generar la constancia PDF: " + e.getMessage());
+        }
     }
 
     @PostMapping(value = "/reportar-derivada", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

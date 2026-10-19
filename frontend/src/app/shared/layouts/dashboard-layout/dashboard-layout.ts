@@ -58,15 +58,6 @@ export class DashboardLayoutComponent implements OnInit {
         { label: 'Órdenes de Trabajo', icon: 'build', route: '/especialista/ordenes' },
       ],
     },
-    admin: {
-      titulo: 'Administrador',
-      badgeClass: 'badge-danger',
-      items: [
-        { label: 'Gestión de Personal', icon: 'people', route: '/admin/usuarios' },
-        { label: 'Catálogo de Quejas', icon: 'assessment', route: '/admin/catalogo-quejas' },
-        { label: 'Reportes', icon: 'bar_chart', route: '/admin/reportes' },
-      ],
-    },
   };
 
   currentConfig: RolConfig | null = null;
@@ -105,7 +96,6 @@ export class DashboardLayoutComponent implements OnInit {
       funcionario: 'FUNCIONARIO',
       inspector: 'INSPECTOR',
       especialista: 'ESPECIALISTA',
-      admin: 'ADMINISTRADOR',
     };
 
     if (mapaRoles[nuevoSegmento]) {
@@ -124,9 +114,6 @@ export class DashboardLayoutComponent implements OnInit {
         break;
       case 'especialista':
         this.router.navigate(['/especialista/inicio']);
-        break;
-      case 'admin':
-        this.router.navigate(['/admin/usuarios']);
         break;
     }
   }

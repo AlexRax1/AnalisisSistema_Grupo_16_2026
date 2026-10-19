@@ -57,9 +57,10 @@ export class AuthService {
   }
 
   // PUT: http://localhost:8080/auth/reset-password
-  restablecerPassword(correo: string, newPassword: string): Observable<string> {
+  restablecerPassword(correo: string, codigo: string, newPassword: string): Observable<string> {
     const body = {
       correo: correo,
+      codigo: codigo,
       newPassword: newPassword,
     };
 

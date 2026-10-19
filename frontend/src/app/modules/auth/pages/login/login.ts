@@ -129,7 +129,8 @@ export class LoginComponent implements OnInit {
         this.router.navigate(['/especialista/inicio']);
         break;
       case 'ADMINISTRADOR':
-        this.router.navigate(['/admin/usuarios']);
+        // El módulo administrativo está deshabilitado temporalmente.
+        this.router.navigate(['/']);
         break;
       default:
         this.router.navigate(['/ciudadano/mis-quejas']);
@@ -255,10 +256,11 @@ export class LoginComponent implements OnInit {
     }
 
     const correo = this.recuperarForm.get('correoRecuperacion')?.value;
+    const codigo = this.recuperarForm.get('codigo')?.value;
     const newPassword = nuevaPassControl?.value;
 
-    // En lugar del ID quemado 1, enviamos el correo y la nueva contraseña
-    this.authService.restablecerPassword(correo, newPassword).subscribe({
+    // Enviamos el correo, el código validado y la nueva contraseña
+    this.authService.restablecerPassword(correo, codigo, newPassword).subscribe({
       next: () => {
         this.successMsg = 'Su contraseña ha sido actualizada con éxito.';
         this.cdr.detectChanges();

@@ -4,6 +4,8 @@
 
 .env
 .env.*
+# La plantilla de variables sí se versiona.
+!.env.example
 env
 env.*
 *.env

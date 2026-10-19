@@ -164,8 +164,21 @@ public class UsuarioService {
         usuarioRepository.save(usuario);
     }
 
-    public Usuario buscarPorDpi(String dpi) {
-        return usuarioRepository.findByDpi(dpi).orElse(null);
+    @Transactional(readOnly = true)
+    public PerfilUsuarioDTO obtenerPerfilPorDpi(String dpi) {
+        Usuario usuario = usuarioRepository.findByDpi(dpi).orElse(null);
+        if (usuario == null) {
+            return null;
+        }
+
+        return PerfilUsuarioDTO.builder()
+                .dpi(usuario.getDpi())
+                .nombres(usuario.getNombres())
+                .apellidos(usuario.getApellidos())
+                .telefono(usuario.getTelefono())
+                .direccion(usuario.getDireccion())
+                .correo(usuario.getCorreo())
+                .build();
     }
 
     public List<UsuarioResumenDTO> listarPorRol(String nombreRol) {

@@ -3,7 +3,6 @@ package com.muni.backend.usuarios.controller;
 import com.muni.backend.usuarios.dto.PerfilUsuarioDTO;
 import com.muni.backend.usuarios.dto.UsuarioRegistroDTO;
 import com.muni.backend.usuarios.dto.UsuarioResumenDTO;
-import com.muni.backend.usuarios.model.Usuario;
 import com.muni.backend.usuarios.service.UsuarioService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -40,10 +39,11 @@ public class UsuarioController {
     }
 
     @GetMapping("/dpi/{dpi}")
-    public ResponseEntity<Usuario> obtenerPorDpi(@PathVariable String dpi) {
-        Usuario usuario = usuarioService.buscarPorDpi(dpi);
-        if (usuario != null) {
-            return ResponseEntity.ok(usuario);
+    @PreAuthorize("hasAnyAuthority('FUNCIONARIO_MUNICIPAL', 'ADMINISTRADOR')")
+    public ResponseEntity<PerfilUsuarioDTO> obtenerPorDpi(@PathVariable String dpi) {
+        PerfilUsuarioDTO perfil = usuarioService.obtenerPerfilPorDpi(dpi);
+        if (perfil != null) {
+            return ResponseEntity.ok(perfil);
         }
         return ResponseEntity.notFound().build();
     }

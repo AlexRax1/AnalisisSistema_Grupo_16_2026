@@ -13,7 +13,6 @@ import com.muni.backend.shared.service.EmailService;
 import com.muni.backend.usuarios.model.Usuario;
 import com.muni.backend.usuarios.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -27,7 +26,6 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class AuthService {
 
     private final CredencialRepository credencialRepository;
@@ -135,8 +133,6 @@ public class AuthService {
                 .build();
         recuperacionPasswordRepository.save(recuperacion);
 
-        log.info("[RECUPERACION_PASSWORD] Código OTP generado para {} (user_id {}): {}", correo, credencial.getUserId(), codigo);
-
         // Enviar notificación por correo electrónico
         emailService.enviarCodigoRecuperacion(correo.trim(), codigo);
     }
@@ -171,6 +167,9 @@ public class AuthService {
         if (request.getCorreo() == null || request.getCorreo().isBlank()) {
             throw new IllegalArgumentException("El correo es obligatorio.");
         }
+        if (request.getCodigo() == null || request.getCodigo().isBlank()) {
+            throw new IllegalArgumentException("El código de verificación es obligatorio.");
+        }
         if (request.getNewPassword() == null || request.getNewPassword().isBlank()) {
             throw new IllegalArgumentException("La nueva contraseña es obligatoria.");
         }
@@ -180,10 +179,10 @@ public class AuthService {
 
         Credencial credencial = obtenerCredencialPorCorreo(request.getCorreo());
 
-        // Verificar que exista una solicitud válida y vigente en recuperacion_password
+        // Verificar que exista una solicitud válida y vigente asociada al código enviado
         RecuperacionPassword recuperacion = recuperacionPasswordRepository
-                .findTopByCredencial_UserIdAndUtilizadoFalseAndFechaExpiracionAfterOrderByFechaCreacionDesc(
-                        credencial.getUserId(), LocalDateTime.now()
+                .findTopByCredencial_UserIdAndCodigoVerificacionAndUtilizadoFalseAndFechaExpiracionAfterOrderByFechaCreacionDesc(
+                        credencial.getUserId(), request.getCodigo().trim(), LocalDateTime.now()
                 )
                 .orElseThrow(() -> new IllegalArgumentException("El código ingresado es inválido o ha expirado."));
 
