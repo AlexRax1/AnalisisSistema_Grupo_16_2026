@@ -32,7 +32,7 @@ jobs:
           api_location: "" # No hay API en Static Web Apps; el backend está en Container Apps
           output_location: "dist/municipalidadFrontend/browser" # Built app content directory
           # La URL real se configura como variable de repositorio: Settings > Secrets and variables > Actions > Variables
-          app_build_command: "BACKEND_URL=${{ vars.BACKEND_URL }} npm run build"
+          app_build_command: "BACKEND_URL=https://camuniquejas.kinddesert-acc0c79c.eastus2.azurecontainerapps.io npm run build"
           ###### End of Repository/Build Configurations ######
 
   close_pull_request_job:
