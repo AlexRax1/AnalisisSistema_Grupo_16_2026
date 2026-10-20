@@ -22,7 +22,6 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/inspector")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 @PreAuthorize("hasAuthority('INSPECTOR_CAMPO')")
 public class InspectorController {
 

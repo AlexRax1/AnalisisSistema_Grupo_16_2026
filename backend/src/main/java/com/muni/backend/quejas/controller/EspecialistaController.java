@@ -22,7 +22,6 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/especialista")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 @PreAuthorize("hasAuthority('ESPECIALISTA_TECNICO')")
 public class EspecialistaController {
 

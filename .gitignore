@@ -4,8 +4,9 @@
 
 .env
 .env.*
-# La plantilla de variables sí se versiona.
+# Las plantillas de variables sí se versionan.
 !.env.example
+!.env.vm.example
 env
 env.*
 *.env
@@ -123,6 +124,7 @@ Desktop.ini
 
 **/subidas/
 **/uploads/
+**/evidencias/
 
 # office / libreofice /onlyofice
 .~lock.*#

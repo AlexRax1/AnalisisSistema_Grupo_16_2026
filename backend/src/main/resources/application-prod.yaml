@@ -22,3 +22,8 @@ management:
   endpoint:
     health:
       show-details: never
+  health:
+    # El estado del contenedor no debe depender de que Gmail esté disponible.
+    # El envío de correo se sigue probando cuando se usa la recuperación de clave.
+    mail:
+      enabled: false

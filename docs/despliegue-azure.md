@@ -1,5 +1,9 @@
 # Despliegue rápido en Azure
 
+> **Nota:** esta guía corresponde al plan anterior (Static Web Apps + Container
+> Apps + PostgreSQL gestionado). El plan vigente es una sola VM con Docker
+> Compose; usa [`docs/despliegue-vm.md`](./despliegue-vm.md).
+
 Guía para la demo de 3 días. Ejecutar desde la raíz del repositorio con Azure CLI, `psql`, `openssl` y Node.js 20+ instalados.
 
 ## 0. Variables

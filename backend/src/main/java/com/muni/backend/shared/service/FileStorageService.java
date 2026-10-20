@@ -11,12 +11,18 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.Locale;
 import java.util.UUID;
 
 @Service
 public class FileStorageService {
 
     private static final String CONTENEDOR_POR_DEFECTO = "evidencias";
+    private static final long TAMANIO_MAXIMO_BYTES = 5L * 1024 * 1024;
 
     @Value("${AZURE_STORAGE_CONNECTION_STRING:}")
     private String connectionString;
@@ -24,8 +30,20 @@ public class FileStorageService {
     @Value("${AZURE_STORAGE_CONTAINER:evidencias}")
     private String containerName;
 
+    @Value("${STORAGE_TYPE:azure}")
+    private String storageType;
+
+    @Value("${STORAGE_PATH:evidencias}")
+    private String storagePath;
+
     private volatile BlobContainerClient containerClient;
 
+    /**
+     * Guarda una evidencia en Azure Blob Storage o en un volumen local.
+     *
+     * El modo se elige con STORAGE_TYPE=azure|local. En local se devuelve una
+     * ruta relativa (/evidencias/...) que Nginx sirve desde el volumen compartido.
+     */
     public String guardarArchivo(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("El archivo adjunto está vacío.");
@@ -38,14 +56,55 @@ public class FileStorageService {
             throw new IllegalArgumentException("Solo se admiten archivos de imagen en formato JPG, JPEG o PNG.");
         }
 
-        if (file.getSize() > 5242880) {
+        if (file.getSize() > TAMANIO_MAXIMO_BYTES) {
             throw new IllegalArgumentException("El archivo adjunto excede el tamaño máximo permitido de 5 MB.");
         }
 
-        String extension = contentType.toLowerCase().contains("png") ? ".png" : ".jpg";
+        String tipoAlmacenamiento = storageType == null
+                ? "azure"
+                : storageType.trim().toLowerCase(Locale.ROOT);
+
+        String extension = contentType.toLowerCase(Locale.ROOT).contains("png") ? ".png" : ".jpg";
         String contentTypeFinal = extension.equals(".png") ? "image/png" : "image/jpeg";
         String nombreArchivo = UUID.randomUUID() + extension;
 
+        if ("local".equals(tipoAlmacenamiento)) {
+            return guardarLocal(file, nombreArchivo);
+        }
+
+        if ("azure".equals(tipoAlmacenamiento) || tipoAlmacenamiento.isBlank()) {
+            return guardarAzure(file, nombreArchivo, contentTypeFinal);
+        }
+
+        throw new IllegalStateException(
+                "STORAGE_TYPE inválido: '" + storageType + "'. Use 'local' o 'azure'.");
+    }
+
+    private String guardarLocal(MultipartFile file, String nombreArchivo) {
+        String rutaConfigurada = storagePath == null || storagePath.isBlank()
+                ? "evidencias"
+                : storagePath.trim();
+
+        try {
+            Path directorio = Paths.get(rutaConfigurada).toAbsolutePath().normalize();
+            Files.createDirectories(directorio);
+
+            Path destino = directorio.resolve(nombreArchivo).normalize();
+            if (!destino.startsWith(directorio)) {
+                throw new IllegalArgumentException("Ruta de archivo inválida.");
+            }
+
+            try (InputStream inputStream = file.getInputStream()) {
+                Files.copy(inputStream, destino, StandardCopyOption.REPLACE_EXISTING);
+            }
+
+            return "/evidencias/" + nombreArchivo;
+        } catch (IOException e) {
+            throw new RuntimeException("Error al guardar la imagen en el almacenamiento local", e);
+        }
+    }
+
+    private String guardarAzure(MultipartFile file, String nombreArchivo, String contentTypeFinal) {
         BlobContainerClient container = obtenerContenedor();
 
         try (InputStream inputStream = file.getInputStream()) {

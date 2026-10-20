@@ -18,7 +18,6 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/funcionario")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 @PreAuthorize("hasAuthority('FUNCIONARIO_MUNICIPAL')")
 public class FuncionarioController {
 
