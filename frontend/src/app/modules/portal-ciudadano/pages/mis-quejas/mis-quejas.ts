@@ -233,7 +233,7 @@ export class MisQuejasComponent implements OnInit {
         this.cdr.detectChanges();
       },
       error: (err) => {
-        this.errorModal = err.error || 'Ocurrió un error al enviar el reporte.';
+        this.errorModal = err.error?.error || err.error?.mensaje || err.error?.message || 'Ocurrió un error al enviar el reporte.';
         this.enviandoDerivada = false;
         this.cdr.detectChanges();
       },

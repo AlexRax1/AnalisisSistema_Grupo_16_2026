@@ -343,7 +343,7 @@ export class CrearQuejaComponent implements OnInit, AfterViewInit, OnDestroy {
       error: (err) => {
         this.cargando = false;
         console.error('Error al registrar queja:', err);
-        this.errorMensaje = err?.error?.message || 'Ocurrió un error al enviar la queja al servidor. Por favor verifica tu conexión o autenticación.';
+        this.errorMensaje = err?.error?.error || err?.error?.mensaje || err?.error?.message || 'Ocurrió un error al enviar la queja al servidor. Por favor verifica tu conexión o autenticación.';
         window.scrollTo({ top: 0, behavior: 'smooth' });
         this.cdr.detectChanges();
       }

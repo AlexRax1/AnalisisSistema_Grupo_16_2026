@@ -539,6 +539,7 @@ public class QuejaService {
         }
     }
 
+    @Transactional(readOnly = true)
     public Page<QuejaDetalleDTO> obtenerCatalogoConFiltros(
             String estado,
             Integer categoriaId,
