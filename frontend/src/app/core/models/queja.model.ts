@@ -171,7 +171,6 @@ export interface RegistrarInformeInspeccionReq {
 export interface RegistrarInformeReparacionReq {
   descripcion: string;
   materialesUtilizados: string;
-  horasTrabajadas: number;
   instruccionesCuadrilla?: string;
 }
 

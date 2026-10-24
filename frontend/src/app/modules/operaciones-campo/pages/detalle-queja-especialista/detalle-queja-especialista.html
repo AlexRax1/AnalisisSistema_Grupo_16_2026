@@ -222,7 +222,7 @@
           <span>Registro de Informe Técnico de Reparación</span>
         </div>
         <p class="section-subtitle">
-          Documente las labores de mantenimiento ejecutadas, materiales utilizados, horas hombre y adjunte las fotografías de prueba obligatorias.
+          Documente las labores de mantenimiento ejecutadas, materiales utilizados y adjunte las fotografías de prueba obligatorias.
         </p>
 
         <!-- Banner de Errores de Validación -->
@@ -256,21 +256,7 @@
           ></textarea>
         </div>
 
-        <!-- Campo 3: Horas Trabajadas (Decimal) -->
-        <div class="form-group margin-top-md">
-          <label class="form-label required">Horas Trabajadas (Decimal)</label>
-          <input
-            type="number"
-            step="0.5"
-            min="0.5"
-            class="form-input"
-            placeholder="Ej. 3.5"
-            [(ngModel)]="horasTrabajadas"
-          />
-          <span class="field-hint">Tiempo total invertido por la cuadrilla.</span>
-        </div>
-
-        <!-- Campo 4: Subida de Fotografías de Pruebas (OBLIGATORIAS) -->
+        <!-- Campo 3: Subida de Fotografías de Pruebas (OBLIGATORIAS) -->
         <div class="form-group margin-top-lg photo-upload-section">
           <div class="upload-section-header">
             <label class="form-label required" style="margin-bottom: 0;">
@@ -323,7 +309,7 @@
           <button
             class="btn btn-success btn-block btn-lg"
             (click)="enviarInformeReparacion()"
-            [disabled]="cargandoEnvio || descripcionReparacion.length < 20 || !materialesUtilizados || !horasTrabajadas || fotos.length === 0"
+            [disabled]="cargandoEnvio || descripcionReparacion.length < 20 || !materialesUtilizados || fotos.length === 0"
           >
             <span class="mat-icon" *ngIf="!cargandoEnvio">check_circle</span>
             <span class="spinner" *ngIf="cargandoEnvio"></span>

@@ -1,204 +1,95 @@
 package com.muni.backend.quejas.controller;
 
-import com.muni.backend.quejas.dto.funcionario.*;
-import com.muni.backend.quejas.dto.shared.*;
-import com.muni.backend.quejas.exception.*;
+import com.muni.backend.quejas.dto.funcionario.AsignarInspectorDTO;
+import com.muni.backend.quejas.dto.funcionario.AutorizarReparacionDTO;
+import com.muni.backend.quejas.dto.funcionario.CierreAdministrativoDTO;
+import com.muni.backend.quejas.dto.funcionario.RechazoDevolucionDTO;
+import com.muni.backend.quejas.dto.funcionario.TareaAsignadaDTO;
+import com.muni.backend.quejas.dto.shared.MensajeResponse;
+import com.muni.backend.quejas.dto.shared.QuejaDetalleCompletoDTO;
+import com.muni.backend.quejas.dto.shared.QuejaResumenDTO;
+import com.muni.backend.quejas.model.Dependencia;
 import com.muni.backend.quejas.service.FuncionarioService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/funcionario")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 @PreAuthorize("hasAuthority('FUNCIONARIO_MUNICIPAL')")
 public class FuncionarioController {
 
     private final FuncionarioService funcionarioService;
 
-    /**
-     * Lista de dependencias municipales activas para dropdowns de selección.
-     */
+    // Lista las dependencias activas para los selects del funcionario.
     @GetMapping("/dependencias")
-    public ResponseEntity<List<com.muni.backend.quejas.model.Dependencia>> listarDependencias() {
-        return ResponseEntity.ok(funcionarioService.listarDependenciasActivas());
+    public List<Dependencia> listarDependencias() {
+        return funcionarioService.listarDependenciasActivas();
     }
 
-    /**
-     * Bandeja de quejas asignadas al funcionario (resumen para lista).
-     */
+    // Bandeja de quejas asignadas al funcionario.
     @GetMapping("/mis-quejas")
-    public ResponseEntity<?> obtenerMisQuejas(Authentication authentication) {
-        try {
-            String username = authentication.getName();
-            List<QuejaResumenDTO> quejas = funcionarioService.obtenerMisQuejas(username);
-            return ResponseEntity.ok(quejas);
-        } catch (AccesoDenegadoException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Error al obtener quejas: " + e.getMessage()));
-        }
+    public List<QuejaResumenDTO> obtenerMisQuejas(Authentication authentication) {
+        return funcionarioService.obtenerMisQuejas(authentication.getName());
     }
 
-    /**
-     * Detalle completo de una queja seleccionada (con evidencias, informes previos, historial y acciones disponibles).
-     */
+    // Detalle completo de una queja.
     @GetMapping("/{quejaId}")
-    public ResponseEntity<?> obtenerDetalleQueja(
+    public QuejaDetalleCompletoDTO obtenerDetalleQueja(
             @PathVariable Integer quejaId,
             Authentication authentication) {
-        try {
-            String username = authentication.getName();
-            QuejaDetalleCompletoDTO detalle = funcionarioService.obtenerDetalleQueja(quejaId, username);
-            return ResponseEntity.ok(detalle);
-
-
-        } catch (QuejaNoEncontradaException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
-        } catch (AccesoDenegadoException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Error al obtener detalle de la queja: " + e.getMessage()));
-        }
+        return funcionarioService.obtenerDetalleQueja(quejaId, authentication.getName());
     }
 
-    /*
-     * funocion descontinuada, borrar despues
-     */
+    // Endpoint antiguo de asignación por demanda; se conserva por compatibilidad.
     @PostMapping("/tareas/siguiente")
-    public ResponseEntity<?> asignarSiguienteTarea(Authentication authentication) {
-        try {
-            String username = authentication.getName();
-            TareaAsignadaDTO tarea = funcionarioService.asignarSiguienteTarea(username);
-            return ResponseEntity.ok(tarea);
-        } catch (SinTareasDisponiblesException e) {
-            return ResponseEntity.status(HttpStatus.NO_CONTENT).body(Map.of("mensaje", e.getMessage()));
-        } catch (AccesoDenegadoException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Error al asignar tarea: " + e.getMessage()));
-        }
+    public TareaAsignadaDTO asignarSiguienteTarea(Authentication authentication) {
+        return funcionarioService.asignarSiguienteTarea(authentication.getName());
     }
 
-    /**
-     * Asignar inspector de campo de forma automática por menor carga activa.
-     */
+    // Asigna automáticamente el inspector con menor carga.
     @PostMapping("/{quejaId}/asignar-inspector")
-    public ResponseEntity<?> asignarInspector(
+    public MensajeResponse asignarInspector(
             @PathVariable Integer quejaId,
             @RequestBody(required = false) AsignarInspectorDTO dto,
             Authentication authentication) {
-        try {
-            String username = authentication.getName();
-            MensajeResponse response = funcionarioService.asignarInspector(quejaId, dto, username);
-            return ResponseEntity.ok(response);
-
-
-
-        } catch (QuejaNoEncontradaException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
-        } catch (EstadoInvalidoException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        } catch (AccesoDenegadoException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Error al asignar inspector: " + e.getMessage()));
-        }
+        return funcionarioService.asignarInspector(quejaId, dto, authentication.getName());
     }
 
-    /**
-     * Autorizar reparación con asignación automática de especialista por menor carga en la dependencia.
-     */
+    // Autoriza la reparación y asigna automáticamente un especialista.
     @PostMapping("/{quejaId}/autorizar-reparacion")
-    public ResponseEntity<?> autorizarReparacion(
+    public MensajeResponse autorizarReparacion(
             @PathVariable Integer quejaId,
             @Valid @RequestBody AutorizarReparacionDTO dto,
             Authentication authentication) {
-        try {
-            String username = authentication.getName();
-            MensajeResponse response = funcionarioService.autorizarReparacion(quejaId, dto, username);
-            return ResponseEntity.ok(response);
-
-
-
-
-        } catch (QuejaNoEncontradaException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
-        } catch (EstadoInvalidoException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        } catch (AccesoDenegadoException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Error al autorizar reparación: " + e.getMessage()));
-        }
+        return funcionarioService.autorizarReparacion(quejaId, dto, authentication.getName());
     }
 
-    /**
-     * Cierre administrativo definitivo de la queja.
-     */
+    // Cierra administrativamente la queja.
     @PostMapping("/{quejaId}/cierre")
-    public ResponseEntity<?> cierreAdministrativo(
+    public MensajeResponse cierreAdministrativo(
             @PathVariable Integer quejaId,
             @Valid @RequestBody CierreAdministrativoDTO dto,
             Authentication authentication) {
-        try {
-            String username = authentication.getName();
-            MensajeResponse response = funcionarioService.cierreAdministrativo(quejaId, dto, username);
-            return ResponseEntity.ok(response);
-
-
-
-        } catch (QuejaNoEncontradaException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
-        } catch (EstadoInvalidoException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        } catch (AccesoDenegadoException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Error en cierre administrativo: " + e.getMessage()));
-        }
+        return funcionarioService.cierreAdministrativo(quejaId, dto, authentication.getName());
     }
 
-    /**
-     * Rechazo definitivo o devolución de la queja.
-     */
+    // Rechaza o devuelve la queja al estado anterior.
     @PostMapping("/{quejaId}/rechazar-devolver")
-    public ResponseEntity<?> rechazarODevolver(
+    public MensajeResponse rechazarODevolver(
             @PathVariable Integer quejaId,
             @Valid @RequestBody RechazoDevolucionDTO dto,
             Authentication authentication) {
-        try {
-            String username = authentication.getName();
-            MensajeResponse response = funcionarioService.rechazarODevolver(quejaId, dto, username);
-            return ResponseEntity.ok(response);
-
-
-
-
-
-        } catch (QuejaNoEncontradaException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
-        } catch (EstadoInvalidoException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        } catch (AccesoDenegadoException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Error al rechazar/devolver: " + e.getMessage()));
-        }
+        return funcionarioService.rechazarODevolver(quejaId, dto, authentication.getName());
     }
 }
