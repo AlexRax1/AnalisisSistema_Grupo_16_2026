@@ -1,4 +1,4 @@
-import { Component, NgZone, OnInit } from '@angular/core';
+import { Component, ChangeDetectorRef, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -53,7 +53,7 @@ export class MisQuejasComponent implements OnInit {
 
   constructor(
     private quejaService: QuejaService,
-    private ngZone: NgZone,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
@@ -61,26 +61,25 @@ export class MisQuejasComponent implements OnInit {
   }
 
   cargarQuejas(): void {
+    this.cargando = true;
+    this.cdr.detectChanges();
     this.quejaService.obtenerMisQuejas().subscribe({
       next: (data) => {
-        // Envolvemos en NgZone para obligar a Angular a refrescar el DOM al instante
-        this.ngZone.run(() => {
-          this.quejasOriginales = data || [];
-          this.quejas = [...this.quejasOriginales];
+        this.quejasOriginales = data || [];
+        this.quejas = [...this.quejasOriginales];
 
-          if (this.quejas.length > 0) {
-            this.quejaSeleccionada = this.quejas[0];
-          } else {
-            this.quejaSeleccionada = undefined;
-          }
-          this.cargando = false;
-        });
+        if (this.quejas.length > 0) {
+          this.quejaSeleccionada = this.quejas[0];
+        } else {
+          this.quejaSeleccionada = undefined;
+        }
+        this.cargando = false;
+        this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('Error al cargar quejas:', err);
-        this.ngZone.run(() => {
-          this.cargando = false;
-        });
+        this.cargando = false;
+        this.cdr.detectChanges();
       },
     });
   }
@@ -116,6 +115,15 @@ export class MisQuejasComponent implements OnInit {
 
   verDetalle(queja: QuejaDetalleDTO): void {
     this.quejaSeleccionada = queja;
+  }
+
+  getUrlEvidencia(ev: any): string {
+    if (!ev) return '';
+    const url = typeof ev === 'string' ? ev : ev.urlArchivo;
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    if (url.startsWith('/')) return `${this.backendUrl}${url}`;
+    return `${this.backendUrl}/${url}`;
   }
 
   obtenerClaseBadge(estado: string): string {
@@ -197,18 +205,16 @@ export class MisQuejasComponent implements OnInit {
 
     this.quejaService.registrarQuejaDerivada(payload, this.fotosDerivada).subscribe({
       next: (res) => {
-        this.ngZone.run(() => {
-          alert(res.mensaje);
-          this.enviandoDerivada = false;
-          this.cerrarModalDerivada();
-          this.cargarQuejas(); // Refrescar el historial
-        });
+        alert(res.mensaje);
+        this.enviandoDerivada = false;
+        this.cerrarModalDerivada();
+        this.cargarQuejas(); // Refrescar el historial
+        this.cdr.detectChanges();
       },
       error: (err) => {
-        this.ngZone.run(() => {
-          this.errorModal = err.error || 'Ocurrió un error al enviar el reporte.';
-          this.enviandoDerivada = false;
-        });
+        this.errorModal = err.error || 'Ocurrió un error al enviar el reporte.';
+        this.enviandoDerivada = false;
+        this.cdr.detectChanges();
       },
     });
   }

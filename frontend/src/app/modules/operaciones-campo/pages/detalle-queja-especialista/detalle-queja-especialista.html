@@ -1,0 +1,372 @@
+<div class="especialista-detalle-container">
+  <!-- ══ Notification Toast Banner ══ -->
+  <div
+    class="toast-banner"
+    *ngIf="toast.visible"
+    [ngClass]="'toast-' + toast.tipo"
+  >
+    <span class="mat-icon toast-icon">
+      {{
+        toast.tipo === 'success'
+          ? 'check_circle'
+          : toast.tipo === 'warning'
+            ? 'warning'
+            : toast.tipo === 'error'
+              ? 'error'
+              : 'info'
+      }}
+    </span>
+    <span class="toast-message">{{ toast.mensaje }}</span>
+    <button class="toast-close" (click)="cerrarToast()">&times;</button>
+  </div>
+
+  <!-- ══ Header y Botón Regresar ══ -->
+  <div class="page-top-header">
+    <div class="header-left">
+      <button class="btn btn-outline btn-regresar" (click)="regresar()">
+        <span class="mat-icon">arrow_back</span>
+        Regresar a Bandeja
+      </button>
+      <div>
+        <h1 class="page-main-title">
+          <span class="mat-icon header-icon">build</span>
+          Detalle de Reparación Técnica
+        </h1>
+        <p class="page-main-subtitle">
+          Revise el diagnóstico del inspector y registre el informe final.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <main class="detail-content">
+    <!-- Loading Detalle -->
+    <div class="detail-loading-card" *ngIf="cargandoDetalle">
+      <div class="spinner-blue large-spinner"></div>
+      <p>Cargando expediente técnico...</p>
+    </div>
+
+    <!-- Detalle Seleccionado -->
+    <div class="detail-content-wrapper" *ngIf="!cargandoDetalle && quejaSeleccionada">
+
+      <!-- Header del Expediente -->
+      <div class="expediente-header-card">
+        <div class="header-left-info">
+          <div class="expediente-chip">
+            <span class="mat-icon">confirmation_number</span>
+            <span class="expediente-num">{{ quejaSeleccionada.correlativo }}</span>
+          </div>
+
+          <span class="badge badge-info">
+            {{ quejaSeleccionada.estadoActual }}
+          </span>
+
+          <span class="badge" [ngClass]="getBadgePrioridad(quejaSeleccionada.prioridadConfirmada)">
+            Prioridad {{ quejaSeleccionada.prioridadConfirmada }}
+          </span>
+
+          <span class="date-chip" *ngIf="quejaSeleccionada.fechaRegistro">
+            <span class="mat-icon">schedule</span>
+            {{ formatearFecha(quejaSeleccionada.fechaRegistro) }}
+          </span>
+        </div>
+      </div>
+
+      <!-- ══ SECCIÓN DESTACADA: DIAGNÓSTICO DEL INSPECTOR (INSPECCION_INICIAL) ══ -->
+      <div class="diagnostico-inspector-card" *ngIf="diagnosticoInspector">
+        <div class="diagnostico-header">
+          <div class="diagnostico-header-left">
+            <span class="mat-icon diag-icon">fact_check</span>
+            <div>
+              <h3 class="diagnostico-title">Diagnóstico del Inspector de Campo</h3>
+              <span class="diagnostico-subtitle">
+                Peritaje registrado por: <strong>{{ diagnosticoInspector.autorNombre }}</strong> el {{ formatearFecha(diagnosticoInspector.fechaRegistro) }}
+              </span>
+            </div>
+          </div>
+          <div class="diagnostico-badges">
+            <span class="badge" [ngClass]="diagnosticoInspector.problemaVerificado ? 'badge-success' : 'badge-danger'">
+              Problema Verificado: {{ diagnosticoInspector.problemaVerificado ? 'SÍ' : 'NO' }}
+            </span>
+            <span class="badge" [ngClass]="getBadgePrioridad(diagnosticoInspector.gravedad)">
+              Gravedad: {{ diagnosticoInspector.gravedad }}
+            </span>
+          </div>
+        </div>
+
+        <div class="diagnostico-content">
+          <!-- Recursos y Materiales Sugeridos -->
+          <div class="diag-recursos-box" *ngIf="diagnosticoInspector.recursosSugeridos">
+            <span class="mat-icon box-icon">handyman</span>
+            <div>
+              <strong class="box-title">Materiales y Recursos Sugeridos por el Inspector:</strong>
+              <p class="box-text">{{ diagnosticoInspector.recursosSugeridos }}</p>
+              <span class="box-hint">Verifique contar con estos repuestos y herramientas antes de acudir a la calle.</span>
+            </div>
+          </div>
+
+          <!-- Descripción de la Falla Encontrada -->
+          <div class="diag-description-box">
+            <strong>Observaciones del Peritaje:</strong>
+            <p>{{ diagnosticoInspector.descripcion }}</p>
+          </div>
+
+          <!-- Fotografías / Pruebas del Peritaje del Inspector -->
+          <div class="diag-evidencias-box" *ngIf="fotosInspector && fotosInspector.length > 0" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e2e8f0;">
+            <strong style="display: block; margin-bottom: 0.5rem; color: #1e293b;">Fotografías del Peritaje Técnico del Inspector ({{ fotosInspector.length }}):</strong>
+            <div class="evidence-grid">
+              <div
+                *ngFor="let ev of fotosInspector"
+                class="evidence-thumbnail-card"
+                (click)="abrirVisorImagen(getUrlEvidencia(ev))"
+              >
+                <img
+                  [src]="getUrlEvidencia(ev)"
+                  alt="Foto peritaje inspector"
+                  class="evidence-thumb-img"
+                  onerror="this.src='https://images.unsplash.com/photo-1584467735871-8e85353a8413?w=300'"
+                />
+                <div class="thumb-hover-overlay">
+                  <span class="mat-icon">zoom_in</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Banner si aún no hay diagnóstico del inspector -->
+      <div class="no-diagnostico-banner" *ngIf="!diagnosticoInspector">
+        <span class="mat-icon info-icon">info</span>
+        <div>
+          <strong>Sin informe de inspección previa registrado.</strong>
+          <p>Proceda a evaluar y reparar de acuerdo con el reporte general del ciudadano.</p>
+        </div>
+      </div>
+
+      <!-- Ubicación e Información de Campo -->
+      <div class="expediente-info-card">
+        <div class="card-section-title">
+          <span class="mat-icon section-title-icon">pin_drop</span>
+          <span>Ubicación y Datos de la Obra</span>
+        </div>
+
+        <div class="info-blocks-grid">
+          <div class="info-block location-block">
+            <label class="block-label">Dirección y Referencias</label>
+            <div class="location-detail-card">
+              <div class="location-address-row">
+                <span class="mat-icon address-icon">location_on</span>
+                <div>
+                  <strong>{{ quejaSeleccionada.direccionExacta }}</strong>
+                  <div class="reference-note" *ngIf="quejaSeleccionada.puntoReferencia">
+                    <span class="mat-icon mini-icon">near_me</span>
+                    <strong>Punto de Referencia:</strong> {{ quejaSeleccionada.puntoReferencia }}
+                  </div>
+                </div>
+              </div>
+
+              <div class="gps-coords-bar" *ngIf="quejaSeleccionada.latitud && quejaSeleccionada.longitud">
+                <span class="gps-text">
+                  <span class="mat-icon mini-icon">my_location</span>
+                  Coordenadas GPS: {{ quejaSeleccionada.latitud }}, {{ quejaSeleccionada.longitud }}
+                </span>
+                <a
+                  [href]="getGoogleMapsUrl(quejaSeleccionada.latitud, quejaSeleccionada.longitud)"
+                  target="_blank"
+                  class="btn-maps-link"
+                >
+                  <span class="mat-icon">directions</span>
+                  Cómo llegar (Google Maps)
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div class="info-block description-block">
+            <label class="block-label">Reporte Original del Ciudadano</label>
+            <div class="description-text-card">
+              <strong>{{ quejaSeleccionada.categoria }} <ng-container *ngIf="quejaSeleccionada.subcategoria">— {{ quejaSeleccionada.subcategoria }}</ng-container>:</strong>
+              <p style="margin-top: 0.35rem; margin-bottom: 0;">{{ quejaSeleccionada.descripcion }}</p>
+            </div>
+          </div>
+
+          <!-- Evidencias Fotográficas Iniciales -->
+          <div class="info-block evidence-block" *ngIf="quejaSeleccionada.evidencias && quejaSeleccionada.evidencias.length > 0">
+            <label class="block-label">Fotografías del Reporte Inicial ({{ quejaSeleccionada.evidencias.length }})</label>
+            <div class="evidence-grid">
+              <div
+                *ngFor="let ev of quejaSeleccionada.evidencias"
+                class="evidence-thumbnail-card"
+                (click)="abrirVisorImagen(getUrlEvidencia(ev))"
+              >
+                <img
+                  [src]="getUrlEvidencia(ev)"
+                  alt="Evidencia ciudadana"
+                  class="evidence-thumb-img"
+                  onerror="this.src='https://images.unsplash.com/photo-1584467735871-8e85353a8413?w=300'"
+                />
+                <div class="thumb-hover-overlay">
+                  <span class="mat-icon">zoom_in</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ FORMULARIO DE ACCIÓN: REGISTRAR INFORME TÉCNICO DE REPARACIÓN ══ -->
+      <div class="expediente-actions-card especialista-action-card">
+        <div class="card-section-title">
+          <span class="mat-icon section-title-icon color-green">construction</span>
+          <span>Registro de Informe Técnico de Reparación</span>
+        </div>
+        <p class="section-subtitle">
+          Documente las labores de mantenimiento ejecutadas, materiales utilizados, horas hombre y adjunte las fotografías de prueba obligatorias.
+        </p>
+
+        <!-- Banner de Errores de Validación -->
+        <div class="alert alert-error" *ngIf="errorFormulario" style="margin-bottom: 1.25rem;">
+          <span class="mat-icon">error</span>
+          <span>{{ errorFormulario }}</span>
+        </div>
+
+        <!-- Campo 1: Descripción de Trabajos Realizados -->
+        <div class="form-group">
+          <label class="form-label required">Descripción de las Labores Ejecutadas (mínimo 20 caracteres)</label>
+          <textarea
+            class="form-textarea"
+            rows="4"
+            placeholder="Ej. Se desmontó la lámpara averiada, se soldó nueva línea de neutro y se instaló bombilla LED 100W..."
+            [(ngModel)]="descripcionReparacion"
+          ></textarea>
+          <div class="char-counter" [class.valid-counter]="descripcionReparacion.length >= 20">
+            Caracteres: {{ descripcionReparacion.length }} / mínimo 20
+          </div>
+        </div>
+
+        <!-- Campo 2: Materiales Utilizados -->
+        <div class="form-group margin-top-md">
+          <label class="form-label required">Materiales y Repuestos Utilizados</label>
+          <textarea
+            class="form-textarea"
+            rows="3"
+            placeholder="Ej. 1 Lámpara LED 100W, 4m cable calibre 12, 1 cinta de aislar 3M, 2 conectores split-bolt..."
+            [(ngModel)]="materialesUtilizados"
+          ></textarea>
+        </div>
+
+        <!-- Campo 3: Horas Trabajadas (Decimal) -->
+        <div class="form-group margin-top-md">
+          <label class="form-label required">Horas Trabajadas (Decimal)</label>
+          <input
+            type="number"
+            step="0.5"
+            min="0.5"
+            class="form-input"
+            placeholder="Ej. 3.5"
+            [(ngModel)]="horasTrabajadas"
+          />
+          <span class="field-hint">Tiempo total invertido por la cuadrilla.</span>
+        </div>
+
+        <!-- Campo 4: Subida de Fotografías de Pruebas (OBLIGATORIAS) -->
+        <div class="form-group margin-top-lg photo-upload-section">
+          <div class="upload-section-header">
+            <label class="form-label required" style="margin-bottom: 0;">
+              Fotografías de Prueba de Reparación Finalizada (OBLIGATORIAS)
+            </label>
+            <span class="upload-counter-tag" [class.valid-tag]="fotos.length > 0">
+              {{ fotos.length }} / 3 fotografías adjuntas (Mínimo 1 obligatoria)
+            </span>
+          </div>
+          <p class="upload-help-text">
+            Adjunte las fotografías que demuestren que la obra fue ejecutada y el problema quedó solucionado en la calle. Formatos: JPG, JPEG, PNG, WEBP (máx. 5MB cada una).
+          </p>
+
+          <!-- Dropzone / Input Selector -->
+          <div class="file-dropzone-box" *ngIf="fotos.length < 3">
+            <input
+              type="file"
+              id="especialista-photos-input"
+              class="file-hidden-input"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              (change)="onFotosSeleccionadas($event)"
+            />
+            <label for="especialista-photos-input" class="file-dropzone-label">
+              <span class="mat-icon dropzone-icon color-green-icon">add_a_photo</span>
+              <span class="dropzone-main-text">Haga clic o arrastre aquí para subir fotografías de la reparación</span>
+              <span class="dropzone-sub-text">JPG, JPEG o PNG hasta 5 MB por archivo</span>
+            </label>
+          </div>
+
+          <!-- Galería de Miniaturas de Fotos Adjuntas -->
+          <div class="attached-photos-grid" *ngIf="fotos.length > 0">
+            <div *ngFor="let f of fotos; let i = index" class="attached-photo-item">
+              <img [src]="f.previewUrl" alt="Foto reparación" class="attached-img-preview" />
+              <button
+                type="button"
+                class="remove-photo-btn"
+                (click)="eliminarFoto(i)"
+                title="Eliminar foto"
+              >
+                <span class="mat-icon">close</span>
+              </button>
+              <div class="photo-badge-label">Obra Finalizada #{{ i + 1 }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botón de Envío -->
+        <div class="action-submit-footer margin-top-xl">
+          <button
+            class="btn btn-success btn-block btn-lg"
+            (click)="enviarInformeReparacion()"
+            [disabled]="cargandoEnvio || descripcionReparacion.length < 20 || !materialesUtilizados || !horasTrabajadas || fotos.length === 0"
+          >
+            <span class="mat-icon" *ngIf="!cargandoEnvio">check_circle</span>
+            <span class="spinner" *ngIf="cargandoEnvio"></span>
+            Registrar Informe Técnico de Reparación
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ══ MODAL VISOR DE FOTO ══ -->
+  <div class="modal-backdrop" *ngIf="imagenPrevisualizar" (click)="cerrarVisorImagen()">
+    <div class="image-modal-card" (click)="$event.stopPropagation()">
+      <div class="image-modal-header">
+        <span>Vista Previa de Evidencia</span>
+        <button class="modal-close-btn" (click)="cerrarVisorImagen()">&times;</button>
+      </div>
+      <div class="image-modal-body">
+        <img [src]="imagenPrevisualizar" alt="Evidencia" class="full-preview-img" />
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL DE ÉXITO ══ -->
+  <div class="modal-backdrop" *ngIf="mostrarModalExito">
+    <div class="modal-card success-modal-card">
+      <div class="success-modal-header">
+        <div class="success-icon-circle">
+          <span class="mat-icon">task_alt</span>
+        </div>
+        <h3 class="success-modal-title">¡Reparación Registrada con Éxito!</h3>
+      </div>
+
+      <div class="modal-body text-center">
+        <p class="success-modal-message">{{ mensajeExito }}</p>
+      </div>
+
+      <div class="modal-footer flex-center">
+        <button class="btn btn-primary" (click)="cerrarModalExito()">
+          Entendido, Continuar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

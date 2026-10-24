@@ -1,14 +1,10 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { finalize } from 'rxjs/operators';
 import { GestionMunicipalService } from '../../../../core/services/gestion-municipal.service';
-import {
-  GestionTareaDTO,
-  UsuarioCatDTO,
-  EvidenciaDTO,
-  ESTADO_COLORS,
-} from '../../../../core/models/queja.model';
+import { QuejaResumenDTO, ESTADO_COLORS } from '../../../../core/models/queja.model';
 
 @Component({
   selector: 'app-bandeja-gestion',
@@ -18,54 +14,12 @@ import {
   styleUrl: './bandeja-gestion.css',
 })
 export class BandejaGestionComponent implements OnInit {
-  // Estado de la tarea activa
-  tareaActiva: GestionTareaDTO | null = null;
-  cargando: boolean = false;
+  quejasAsignadas: QuejaResumenDTO[] = [];
+  quejasFiltradas: QuejaResumenDTO[] = [];
+  cargandoBandeja: boolean = false;
+  filtroTexto: string = '';
+  filtroPrioridad: string = 'TODAS';
 
-  // Catálogos
-  inspectores: UsuarioCatDTO[] = [];
-  especialistas: UsuarioCatDTO[] = [];
-  dependencias = [
-    { id: 1, nombre: 'Obras y Mantenimiento Vial' },
-    { id: 2, nombre: 'Agua Potable y Alcantarillado' },
-    { id: 3, nombre: 'Alumbrado Público y Electricidad' },
-    { id: 4, nombre: 'Parques, Áreas Verdes y Ornato' },
-    { id: 5, nombre: 'Salud Ambiental y Control Urbano' },
-  ];
-
-  // Formulario Fase 1: Inspección
-  inspectorSeleccionadoId: number | string | null = null;
-
-  // Formulario Fase 2: Reparación
-  dependenciaSeleccionadaId: number | string | null = null;
-  especialistaSeleccionadoId: number | string | null = null;
-
-  // Formulario Fase 3: Cierre
-  descripcionCierre: string = '';
-
-  // Modal de Rechazo / Devolución
-  mostrarModalRechazo: boolean = false;
-  motivoRechazo: string = '';
-  descripcionDetalladaRechazo: string = '';
-  esRechazoDefinitivo: boolean = true;
-  motivosOpciones: string[] = [
-    'Improcedente',
-    'Duplicada',
-    'Falta de Información',
-    'Fuera de Jurisdicción Municipal',
-    'Información Falsa o Incompleta',
-    'Otro',
-  ];
-
-  // Modal Feedback de Éxito / Caminos Buenos
-  mostrarModalExito: boolean = false;
-  mensajeExito: string = '';
-  tituloExito: string = '¡Operación Exitosa!';
-
-  // Visor de imagen en pantalla completa
-  imagenPrevisualizar: string | null = null;
-
-  // Sistema de Notificaciones Toast
   toast: {
     visible: boolean;
     mensaje: string;
@@ -75,371 +29,87 @@ export class BandejaGestionComponent implements OnInit {
     mensaje: '',
     tipo: 'info',
   };
-
   private toastTimeout: any = null;
 
   constructor(
     private gestionService: GestionMunicipalService,
     private cdr: ChangeDetectorRef,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
-    this.cargarCatálogos();
-    setTimeout(() => {
-      this.tomarSiguienteTarea();
-    }, 100);
+    this.cargarBandejaTareas();
   }
 
-  // Helpers de Fase
-  esFase1(): boolean {
-    if (!this.tareaActiva) return false;
-    const f = String(this.tareaActiva.faseAdministrativa || this.tareaActiva.faseRequerida || '').toUpperCase();
-    return f === 'ASIGNAR_INSPECTOR' || f === 'FASE_1_INSPECCION' || f === '1';
-  }
-
-  esFase2(): boolean {
-    if (!this.tareaActiva) return false;
-    const f = String(this.tareaActiva.faseAdministrativa || this.tareaActiva.faseRequerida || '').toUpperCase();
-    return f === 'AUTORIZAR_REPARACION' || f === 'FASE_2_REPARACION' || f === '2';
-  }
-
-  esFase3(): boolean {
-    if (!this.tareaActiva) return false;
-    const f = String(this.tareaActiva.faseAdministrativa || this.tareaActiva.faseRequerida || '').toUpperCase();
-    return f === 'CIERRE_ADMINISTRATIVO' || f === 'FASE_3_CIERRE' || f === '3';
-  }
-
-  getTituloFaseBadge(): string {
-    if (this.esFase1()) return 'Fase 1: Inspección';
-    if (this.esFase2()) return 'Fase 2: Reparación';
-    if (this.esFase3()) return 'Fase 3: Cierre';
-    return 'Fase Activa';
-  }
-
-  getUsuarioId(u: UsuarioCatDTO): number | string {
-    return u.usuarioId ?? u.id ?? 0;
-  }
-
-  getUsuarioNombre(u: UsuarioCatDTO): string {
-    return u.nombreCompleto || u.nombre || u.email || u.correo || 'Usuario';
-  }
-
-  getCategoriaTexto(tarea: GestionTareaDTO | null): string {
-    if (!tarea) return '';
-    if (tarea.categoria) return tarea.categoria;
-    if (tarea.categoriaId) return `Categoría #${tarea.categoriaId}`;
-    return 'Servicios Municipales';
-  }
-
-  // --- Carga de Catálogos ---
-  private cargarCatálogos(): void {
-    this.gestionService.obtenerInspectores().subscribe({
-      next: (data) => {
-        this.inspectores = data && data.length ? data : this.getInspectoresMock();
-        this.cdr.detectChanges();
-      },
-      error: () => {
-        this.inspectores = this.getInspectoresMock();
-        this.cdr.detectChanges();
-      },
-    });
-
-    this.gestionService.obtenerEspecialistas().subscribe({
-      next: (data) => {
-        this.especialistas = data && data.length ? data : this.getEspecialistasMock();
-        this.cdr.detectChanges();
-      },
-      error: () => {
-        this.especialistas = this.getEspecialistasMock();
-        this.cdr.detectChanges();
-      },
-    });
-  }
-
-  // --- Acción Principal: Pull Model (Tomar Siguiente Tarea) ---
-  tomarSiguienteTarea(): void {
-    this.cargando = true;
+  cargarBandejaTareas(): void {
+    this.cargandoBandeja = true;
     this.cdr.detectChanges();
 
     this.gestionService
-      .obtenerSiguienteTarea()
+      .obtenerMisQuejas()
       .pipe(
         finalize(() => {
-          this.cargando = false;
+          this.cargandoBandeja = false;
           this.cdr.detectChanges();
         }),
       )
       .subscribe({
-        next: (dto: GestionTareaDTO) => {
-          if (dto && (dto.quejaId || dto.correlativo)) {
-            this.tareaActiva = dto;
-            this.resetearFormularios();
-            this.mostrarToast(`Expediente ${dto.correlativo} cargado exitosamente.`, 'success');
-          } else {
-            this.tareaActiva = null;
-            this.mostrarToast('No hay tareas pendientes en este momento.', 'info');
-          }
+        next: (tareas) => {
+          this.quejasAsignadas = tareas || [];
+          this.aplicarFiltros();
           this.cdr.detectChanges();
         },
         error: (err) => {
-          this.tareaActiva = null;
-          if (err && err.status === 404) {
-            this.mostrarToast('No hay tareas pendientes en la cola.', 'info');
-          } else {
-            this.mostrarToast('No se encontraron tareas pendientes en el servidor.', 'warning');
-          }
+          console.warn('Error al cargar mis quejas desde el backend. Cargando datos de muestra...', err);
+          this.quejasAsignadas = this.getMockQuejasResumen();
+          this.aplicarFiltros();
+          this.mostrarToast('No se pudo conectar al servidor. Mostrando datos locales.', 'info');
           this.cdr.detectChanges();
         },
       });
   }
 
-  // --- Procesamiento de Fase 1: Inspección ---
-  confirmarFase1(): void {
-    if (!this.tareaActiva) return;
-    if (!this.inspectorSeleccionadoId) {
-      this.mostrarToast('Debe seleccionar un Inspector de Campo obligatorio.', 'warning');
-      return;
-    }
-
-    const correlativoAccion = this.tareaActiva.correlativo;
-    this.cargando = true;
-    this.cdr.detectChanges();
-
-    this.gestionService
-      .asignarInspector({
-        quejaId: this.tareaActiva.quejaId,
-        inspectorId: this.inspectorSeleccionadoId,
-      })
-      .pipe(
-        finalize(() => {
-          this.cargando = false;
-          this.cdr.detectChanges();
-        }),
-      )
-      .subscribe({
-        next: (res: any) => {
-          const msg =
-            res?.mensaje ||
-            (typeof res === 'string' ? res : `Inspector asignado exitosamente a la queja ${correlativoAccion}.`);
-          this.mostrarExito(msg, '¡Inspector Asignado!');
-        },
-        error: (err: any) => {
-          const msg =
-            err?.error?.mensaje ||
-            (typeof err?.error === 'string' ? err.error : `Inspector asignado exitosamente a la queja ${correlativoAccion}.`);
-          this.mostrarExito(msg, '¡Inspector Asignado!');
-        },
-      });
+  seleccionarQueja(quejaId: number): void {
+    this.router.navigate(['/funcionario/detalle-gestion', quejaId]);
   }
 
-  // --- Procesamiento de Fase 2: Reparación ---
-  confirmarFase2(): void {
-    if (!this.tareaActiva) return;
-    if (!this.dependenciaSeleccionadaId) {
-      this.mostrarToast('Debe seleccionar la Dependencia responsable.', 'warning');
-      return;
-    }
-    if (!this.especialistaSeleccionadoId) {
-      this.mostrarToast('Debe seleccionar un Especialista Técnico.', 'warning');
-      return;
-    }
+  aplicarFiltros(): void {
+    const texto = (this.filtroTexto || '').toLowerCase().trim();
+    const prioridad = this.filtroPrioridad.toUpperCase();
 
-    const correlativoAccion = this.tareaActiva.correlativo;
-    this.cargando = true;
-    this.cdr.detectChanges();
+    this.quejasFiltradas = this.quejasAsignadas.filter((q) => {
+      const coincideTexto =
+        !texto ||
+        q.correlativo.toLowerCase().includes(texto) ||
+        (q.ciudadanoNombre && q.ciudadanoNombre.toLowerCase().includes(texto)) ||
+        (q.categoria && q.categoria.toLowerCase().includes(texto)) ||
+        (q.subcategoria && q.subcategoria.toLowerCase().includes(texto)) ||
+        (q.direccionExacta && q.direccionExacta.toLowerCase().includes(texto));
 
-    this.gestionService
-      .autorizarReparacion({
-        quejaId: this.tareaActiva.quejaId,
-        dependenciaId: this.dependenciaSeleccionadaId,
-        especialistaId: this.especialistaSeleccionadoId,
-      })
-      .pipe(
-        finalize(() => {
-          this.cargando = false;
-          this.cdr.detectChanges();
-        }),
-      )
-      .subscribe({
-        next: (res: any) => {
-          const msg =
-            res?.mensaje ||
-            (typeof res === 'string'
-              ? res
-              : `Reparación autorizada y asignada exitosamente para la queja ${correlativoAccion}.`);
-          this.mostrarExito(msg, '¡Reparación Autorizada!');
-        },
-        error: (err: any) => {
-          const msg =
-            err?.error?.mensaje ||
-            (typeof err?.error === 'string'
-              ? err.error
-              : `Reparación autorizada y asignada exitosamente para la queja ${correlativoAccion}.`);
-          this.mostrarExito(msg, '¡Reparación Autorizada!');
-        },
-      });
+      const coincidePrioridad =
+        prioridad === 'TODAS' || (q.prioridadConfirmada && q.prioridadConfirmada.toUpperCase() === prioridad);
+
+      return coincideTexto && coincidePrioridad;
+    });
   }
 
-  // --- Procesamiento de Fase 3: Cierre Administrativo ---
-  confirmarFase3(): void {
-    if (!this.tareaActiva) return;
-    if (!this.descripcionCierre || !this.descripcionCierre.trim()) {
-      this.mostrarToast(
-        'Debe redactar la resolución administrativa final para proceder al cierre.',
-        'warning',
-      );
-      return;
-    }
-
-    const correlativoAccion = this.tareaActiva.correlativo;
-    this.cargando = true;
-    this.cdr.detectChanges();
-
-    this.gestionService
-      .cierreAdministrativo({
-        quejaId: this.tareaActiva.quejaId,
-        descripcionCierre: this.descripcionCierre.trim(),
-      })
-      .pipe(
-        finalize(() => {
-          this.cargando = false;
-          this.cdr.detectChanges();
-        }),
-      )
-      .subscribe({
-        next: (res: any) => {
-          const msg =
-            res?.mensaje ||
-            (typeof res === 'string'
-              ? res
-              : `Cierre administrativo ejecutado exitosamente para la queja ${correlativoAccion}.`);
-          this.mostrarExito(msg, '¡Cierre Administrativo Completado!');
-        },
-        error: (err: any) => {
-          const msg =
-            err?.error?.mensaje ||
-            (typeof err?.error === 'string'
-              ? err.error
-              : `Cierre administrativo ejecutado exitosamente para la queja ${correlativoAccion}.`);
-          this.mostrarExito(msg, '¡Cierre Completado!');
-        },
-      });
+  onFiltroTextoChange(): void {
+    this.aplicarFiltros();
   }
 
-  // --- Modal de Rechazo / Devolución ---
-  abrirModalRechazo(): void {
-    this.motivoRechazo = '';
-    this.descripcionDetalladaRechazo = '';
-    this.esRechazoDefinitivo = true;
-    this.mostrarModalRechazo = true;
-    this.cdr.detectChanges();
+  cambiarFiltroPrioridad(prioridad: string): void {
+    this.filtroPrioridad = prioridad;
+    this.aplicarFiltros();
   }
 
-  cerrarModalRechazo(): void {
-    this.mostrarModalRechazo = false;
-    this.cdr.detectChanges();
-  }
-
-  confirmarRechazoDevolucion(): void {
-    if (!this.tareaActiva) return;
-    if (!this.motivoRechazo) {
-      this.mostrarToast('Seleccione un motivo de rechazo/devolución.', 'warning');
-      return;
-    }
-    if (!this.descripcionDetalladaRechazo || !this.descripcionDetalladaRechazo.trim()) {
-      this.mostrarToast('Debe proporcionar una justificación detallada.', 'warning');
-      return;
-    }
-
-    const correlativoAccion = this.tareaActiva.correlativo;
-    this.cargando = true;
-    this.cdr.detectChanges();
-
-    this.gestionService
-      .rechazarDevolver({
-        quejaId: this.tareaActiva.quejaId,
-        motivoRechazo: this.motivoRechazo,
-        descripcionDetallada: this.descripcionDetalladaRechazo.trim(),
-        esRechazoDefinitivo: this.esRechazoDefinitivo,
-      })
-      .pipe(
-        finalize(() => {
-          this.cargando = false;
-          this.cdr.detectChanges();
-        }),
-      )
-      .subscribe({
-        next: (res: any) => {
-          this.cerrarModalRechazo();
-          const msg =
-            res?.mensaje ||
-            (typeof res === 'string'
-              ? res
-              : `Operación de rechazo/devolución procesada exitosamente para la queja ${correlativoAccion}.`);
-          const titulo = this.esRechazoDefinitivo ? '¡Queja Rechazada!' : '¡Queja Devuelta!';
-          this.mostrarExito(msg, titulo);
-        },
-        error: (err: any) => {
-          this.cerrarModalRechazo();
-          const titulo = this.esRechazoDefinitivo ? '¡Queja Rechazada!' : '¡Queja Devuelta!';
-          const msg =
-            err?.error?.mensaje ||
-            (typeof err?.error === 'string'
-              ? err.error
-              : `Operación de rechazo/devolución procesada exitosamente para la queja ${correlativoAccion}.`);
-          this.mostrarExito(msg, titulo);
-        },
-      });
-  }
-
-  // --- Modal Feedback de Éxito ---
-  mostrarExito(mensaje: string, titulo: string = '¡Operación Exitosa!'): void {
-    this.tituloExito = titulo;
-    this.mensajeExito = mensaje;
-    this.mostrarModalExito = true;
-    this.limpiarExpediente();
-    this.cdr.detectChanges();
-  }
-
-  cerrarModalExitoYTomarSiguiente(): void {
-    this.mostrarModalExito = false;
-    this.tomarSiguienteTarea();
-  }
-
-  cerrarModalExito(): void {
-    this.mostrarModalExito = false;
-    this.cdr.detectChanges();
-  }
-
-  // --- Limpieza y Reset de Estado ---
-  limpiarExpediente(): void {
-    this.tareaActiva = null;
-    this.resetearFormularios();
-    this.cdr.detectChanges();
-  }
-
-  private resetearFormularios(): void {
-    this.inspectorSeleccionadoId = null;
-    this.dependenciaSeleccionadaId = null;
-    this.especialistaSeleccionadoId = null;
-    this.descripcionCierre = '';
-    this.motivoRechazo = '';
-    this.descripcionDetalladaRechazo = '';
-    this.esRechazoDefinitivo = true;
-  }
-
-  // --- Utilidad para Notificaciones Toast ---
-  mostrarToast(
-    mensaje: string,
-    tipo: 'success' | 'warning' | 'error' | 'info' = 'info',
-  ): void {
+  mostrarToast(mensaje: string, tipo: 'success' | 'warning' | 'error' | 'info' = 'info'): void {
     if (this.toastTimeout) clearTimeout(this.toastTimeout);
     this.toast = { visible: true, mensaje, tipo };
     this.cdr.detectChanges();
     this.toastTimeout = setTimeout(() => {
       this.toast.visible = false;
       this.cdr.detectChanges();
-    }, 4000);
+    }, 4500);
   }
 
   cerrarToast(): void {
@@ -447,53 +117,14 @@ export class BandejaGestionComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
-  // Modal Visor de Imagen
-  abrirVisorImagen(url: string): void {
-    this.imagenPrevisualizar = url;
-    this.cdr.detectChanges();
-  }
-
-  cerrarVisorImagen(): void {
-    this.imagenPrevisualizar = null;
-    this.cdr.detectChanges();
-  }
-
-  // Helper de evidencia con soporte de URL base HTTP
-  getUrlEvidencia(ev: any): string {
-    if (!ev) return '';
-    let url = typeof ev === 'string' ? ev : ev.urlArchivo || '';
-    if (!url) return '';
-    if (url.startsWith('/')) {
-      return `http://localhost:8080${url}`;
-    }
-    return url;
-  }
-
-  getEvidenciasCombinadas(tarea: GestionTareaDTO | null): (EvidenciaDTO | string)[] {
-    if (!tarea) return [];
-    const lista: (EvidenciaDTO | string)[] = [];
-    if (tarea.evidencias && tarea.evidencias.length) {
-      lista.push(...tarea.evidencias);
-    }
-    if (tarea.fotos && tarea.fotos.length) {
-      tarea.fotos.forEach((foto) => {
-        const yaExiste = lista.some((item) => (typeof item === 'string' ? item : item.urlArchivo) === foto);
-        if (!yaExiste) {
-          lista.push(foto);
-        }
-      });
-    }
-    return lista;
-  }
-
-  formatearFecha(fecha?: string | Date): string {
-    if (!fecha) return 'Fecha no especificada';
+  formatearFecha(fecha?: string | Date | null): string {
+    if (!fecha) return 'Sin fecha';
     try {
       const d = new Date(fecha);
       if (isNaN(d.getTime())) return String(fecha);
       return d.toLocaleDateString('es-GT', {
         year: 'numeric',
-        month: 'long',
+        month: 'short',
         day: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
@@ -503,35 +134,69 @@ export class BandejaGestionComponent implements OnInit {
     }
   }
 
-  getGoogleMapsUrl(lat?: number, lng?: number): string {
-    if (!lat || !lng) return '';
-    return `https://www.google.com/maps?q=${lat},${lng}`;
-  }
-
-  // Helper de badges de prioridad
   getBadgePrioridad(prioridad?: string): string {
-    switch (prioridad) {
+    const p = (prioridad || '').toUpperCase();
+    switch (p) {
       case 'URGENTE':
-      case 'ALTA':
+      case 'CRITICA':
         return 'badge-danger';
-      case 'MEDIA':
+      case 'ALTA':
+      case 'GRAVE':
         return 'badge-warning';
-      default:
+      case 'MEDIA':
+      case 'MODERADA':
         return 'badge-info';
+      default:
+        return 'badge-neutral';
     }
   }
 
-  // --- Mocks para fallback de catálogos ---
-  private getInspectoresMock(): UsuarioCatDTO[] {
-    return [
-      { usuarioId: 3, id: 3, nombreCompleto: 'Carlos Roberto Mendoza Cruz', email: 'inspector@gmail.com', especialidad: 'Zonas 1-10' },
-      { usuarioId: 4, id: 4, nombreCompleto: 'Jorge Luis Pérez Ramos', email: 'inspector2@gmail.com', especialidad: 'Zonas 11-25' },
-    ];
+  getBadgeEstado(estado?: string): string {
+    if (!estado) return 'badge-neutral';
+    return ESTADO_COLORS[estado] || 'badge-neutral';
   }
 
-  private getEspecialistasMock(): UsuarioCatDTO[] {
+  private getMockQuejasResumen(): QuejaResumenDTO[] {
     return [
-      { usuarioId: 5, id: 5, nombreCompleto: 'Ing. Mario Juárez Estrada', email: 'especialista@gmail.com', especialidad: 'Pavimentación y Servicios' },
+      {
+        quejaId: 14,
+        correlativo: 'QUE-2026-000014',
+        tipoRegistro: 'PRINCIPAL',
+        categoria: 'Alumbrado Público',
+        subcategoria: 'Luminaria apagada / quemada',
+        zona: 3,
+        direccionExacta: '4ta Calle 8-12 Zona 3',
+        estadoActual: 'EN VALIDACIÓN DE REPARACIÓN',
+        prioridadConfirmada: 'URGENTE',
+        fechaRegistro: '2026-10-07T14:22:10',
+        ciudadanoNombre: 'Juan Pérez',
+      },
+      {
+        quejaId: 15,
+        correlativo: 'QUE-2026-000015',
+        tipoRegistro: 'PRINCIPAL',
+        categoria: 'Bacheo y Vialidad',
+        subcategoria: 'Hoyo profundo en vía principal',
+        zona: 1,
+        direccionExacta: '3ra Avenida 5-20 Zona 1',
+        estadoActual: 'REGISTRADA',
+        prioridadConfirmada: 'ALTA',
+        fechaRegistro: '2026-10-07T16:00:00',
+        ciudadanoNombre: 'María López',
+      },
+      {
+        quejaId: 16,
+        correlativo: 'QUE-2026-000016',
+        tipoRegistro: 'PRINCIPAL',
+        categoria: 'Fontanería y Drenajes',
+        subcategoria: 'Fuga de agua potable',
+        zona: 2,
+        direccionExacta: 'Calle Real hacia aldea Montúfar',
+        estadoActual: 'PENDIENTE DE CIERRE',
+        prioridadConfirmada: 'MEDIA',
+        fechaRegistro: '2026-10-06T10:15:00',
+        ciudadanoNombre: 'Carlos Hernández',
+      },
     ];
   }
 }

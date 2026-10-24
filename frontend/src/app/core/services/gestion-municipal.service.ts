@@ -1,76 +1,58 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
 import {
-  GestionTareaDTO,
-  AsignarInspectorReq,
-  AutorizarReparacionReq,
-  CierreAdministrativoReq,
-  RechazarDevolverReq,
-  UsuarioCatDTO,
+  QuejaResumenDTO,
+  QuejaDetalleCompletoDTO,
+  DependenciaMunicipalDTO,
+  AsignarInspectorActionReq,
+  AutorizarReparacionActionReq,
+  CierreAdministrativoActionReq,
+  RechazarDevolverActionReq,
 } from '../models/queja.model';
 
 @Injectable({
   providedIn: 'root',
 })
 export class GestionMunicipalService {
-  private apiGestionUrl = 'http://localhost:8080/api/gestion-municipal';
-  private apiUsuariosUrl = 'http://localhost:8080/api/usuarios';
+  private apiFuncionarioUrl = 'http://localhost:8080/api/funcionario';
 
   constructor(private http: HttpClient) {}
 
-  private parseResponse(res: string): any {
-    if (!res) return {};
-    try {
-      return JSON.parse(res);
-    } catch {
-      return { mensaje: res };
-    }
+  // ── Endpoints Funcionario Municipal (/api/funcionario) ──
+
+  // GET /api/funcionario/mis-quejas
+  obtenerMisQuejas(): Observable<QuejaResumenDTO[]> {
+    return this.http.get<QuejaResumenDTO[]>(`${this.apiFuncionarioUrl}/mis-quejas`);
   }
 
-  // POST /api/gestion-municipal/siguiente-tarea
-  obtenerSiguienteTarea(): Observable<GestionTareaDTO> {
-    return this.http
-      .post(`${this.apiGestionUrl}/siguiente-tarea`, {}, { responseType: 'text' })
-      .pipe(map((res) => this.parseResponse(res) as GestionTareaDTO));
+  // GET /api/funcionario/{quejaId}
+  obtenerDetalleQueja(quejaId: number | string): Observable<QuejaDetalleCompletoDTO> {
+    return this.http.get<QuejaDetalleCompletoDTO>(`${this.apiFuncionarioUrl}/${quejaId}`);
   }
 
-  // POST /api/gestion-municipal/asignar-inspector
-  asignarInspector(payload: AsignarInspectorReq): Observable<any> {
-    return this.http
-      .post(`${this.apiGestionUrl}/asignar-inspector`, payload, { responseType: 'text' })
-      .pipe(map((res) => this.parseResponse(res)));
+  // GET /api/funcionario/dependencias
+  obtenerDependencias(): Observable<DependenciaMunicipalDTO[]> {
+    return this.http.get<DependenciaMunicipalDTO[]>(`${this.apiFuncionarioUrl}/dependencias`);
   }
 
-  // POST /api/gestion-municipal/autorizar-reparacion
-  autorizarReparacion(payload: AutorizarReparacionReq): Observable<any> {
-    return this.http
-      .post(`${this.apiGestionUrl}/autorizar-reparacion`, payload, { responseType: 'text' })
-      .pipe(map((res) => this.parseResponse(res)));
+  // POST /api/funcionario/{quejaId}/asignar-inspector
+  asignarInspectorNuevo(quejaId: number | string, req: AsignarInspectorActionReq = {}): Observable<any> {
+    return this.http.post<any>(`${this.apiFuncionarioUrl}/${quejaId}/asignar-inspector`, req);
   }
 
-  // POST /api/gestion-municipal/cierre-administrativo
-  cierreAdministrativo(payload: CierreAdministrativoReq): Observable<any> {
-    return this.http
-      .post(`${this.apiGestionUrl}/cierre-administrativo`, payload, { responseType: 'text' })
-      .pipe(map((res) => this.parseResponse(res)));
+  // POST /api/funcionario/{quejaId}/autorizar-reparacion
+  autorizarReparacionNueva(quejaId: number | string, req: AutorizarReparacionActionReq): Observable<any> {
+    return this.http.post<any>(`${this.apiFuncionarioUrl}/${quejaId}/autorizar-reparacion`, req);
   }
 
-  // POST /api/gestion-municipal/rechazar-devolver
-  rechazarDevolver(payload: RechazarDevolverReq): Observable<any> {
-    return this.http
-      .post(`${this.apiGestionUrl}/rechazar-devolver`, payload, { responseType: 'text' })
-      .pipe(map((res) => this.parseResponse(res)));
+  // POST /api/funcionario/{quejaId}/cierre
+  cierreAdministrativoNuevo(quejaId: number | string, req: CierreAdministrativoActionReq): Observable<any> {
+    return this.http.post<any>(`${this.apiFuncionarioUrl}/${quejaId}/cierre`, req);
   }
 
-  // GET /api/usuarios/inspectores
-  obtenerInspectores(): Observable<UsuarioCatDTO[]> {
-    return this.http.get<UsuarioCatDTO[]>(`${this.apiUsuariosUrl}/inspectores`);
-  }
-
-  // GET /api/usuarios/especialistas
-  obtenerEspecialistas(): Observable<UsuarioCatDTO[]> {
-    return this.http.get<UsuarioCatDTO[]>(`${this.apiUsuariosUrl}/especialistas`);
+  // POST /api/funcionario/{quejaId}/rechazar-devolver
+  rechazarDevolverNuevo(quejaId: number | string, req: RechazarDevolverActionReq): Observable<any> {
+    return this.http.post<any>(`${this.apiFuncionarioUrl}/${quejaId}/rechazar-devolver`, req);
   }
 }

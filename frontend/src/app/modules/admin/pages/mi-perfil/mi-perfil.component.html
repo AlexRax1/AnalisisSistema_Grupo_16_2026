@@ -1,84 +1,312 @@
-<div class="container mt-4">
-  <div class="card shadow">
-    <div class="card-header bg-primary text-white">
-      <h4 class="mb-0">Mi Perfil</h4>
+<div class="perfil-container animate-fade-in">
+
+  <!-- Encabezado del Perfil -->
+  <div class="perfil-hero-card">
+    <div class="hero-left">
+      <div class="avatar-circle">
+        <span class="avatar-text" *ngIf="!cargando">{{ iniciales }}</span>
+        <span class="mat-icon avatar-placeholder" *ngIf="cargando">person</span>
+      </div>
+      <div class="hero-info">
+        <div class="hero-badges">
+          <span class="badge-role">
+            <span class="mat-icon">person</span>
+            Ciudadano
+          </span>
+          <span class="badge-active">
+            <span class="mat-icon">check_circle</span>
+            Activo
+          </span>
+        </div>
+        <h1 class="hero-name">{{ nombreCompleto }}</h1>
+        <div class="hero-meta">
+          <span class="meta-item">
+            <span class="mat-icon">badge</span>
+            DPI: <strong>{{ dpiFormateado }}</strong>
+          </span>
+          <span class="meta-item" *ngIf="perfilForm.get('correo')?.value">
+            <span class="mat-icon">email</span>
+            {{ perfilForm.get('correo')?.value }}
+          </span>
+        </div>
+      </div>
     </div>
-    <div class="card-body">
-
-      <div *ngIf="mensajeExito" class="alert alert-success alert-dismissible fade show">
-        {{ mensajeExito }}
-      </div>
-      <div *ngIf="mensajeError" class="alert alert-danger alert-dismissible fade show">
-        {{ mensajeError }}
-      </div>
-
-      <!-- Formulario (Se muestra cuando cargando == false) -->
-      <form *ngIf="!cargando" [formGroup]="perfilForm" (ngSubmit)="guardarCambios()">
-        <!-- Campos del formulario -->
-      </form>
-
-      <div *ngIf="cargando" class="text-center py-4">
-        <div class="spinner-border text-primary" role="status"></div>
-        <p class="mt-2">Cargando datos del perfil...</p>
-      </div>
-
-      <form *ngIf="!cargando" [formGroup]="perfilForm" (ngSubmit)="guardarCambios()">
-
-        <h5 class="text-secondary border-bottom pb-2">Información Personal</h5>
-        <div class="row mb-3">
-          <div class="col-md-4">
-            <label class="form-label">DPI (Solo Lectura)</label>
-            <input type="text" class="form-control" formControlName="dpi" readonly />
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">Nombres (Solo Lectura)</label>
-            <input type="text" class="form-control" formControlName="nombres" readonly />
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">Apellidos (Solo Lectura)</label>
-            <input type="text" class="form-control" formControlName="apellidos" readonly />
-          </div>
-        </div>
-
-        <h5 class="text-secondary border-bottom pb-2 mt-4">Datos de Contacto</h5>
-        <div class="row mb-3">
-          <div class="col-md-4">
-            <label class="form-label">Teléfono *</label>
-            <input type="text" class="form-control" formControlName="telefono" maxlength="8" />
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">Correo Electrónico *</label>
-            <input type="email" class="form-control" formControlName="correo" />
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">Dirección de Residencia *</label>
-            <input type="text" class="form-control" formControlName="direccion" />
-          </div>
-        </div>
-
-        <h5 class="text-secondary border-bottom pb-2 mt-4">Cambiar Contraseña (Opcional)</h5>
-        <div class="row mb-3">
-          <div class="col-md-4">
-            <label class="form-label">Contraseña Actual</label>
-            <input type="password" class="form-control" formControlName="passwordActual" />
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">Nueva Contraseña</label>
-            <input type="password" class="form-control" formControlName="nuevaPassword" />
-            <small class="text-muted d-block mt-1">Mínimo 6 caracteres, 1 mayúscula, 1 número y 1 símbolo.</small>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label">Confirmar Nueva Contraseña</label>
-            <input type="password" class="form-control" formControlName="confirmarNuevaPassword" />
-          </div>
-        </div>
-
-        <div class="d-flex justify-content-end gap-2 mt-4">
-          <button type="button" class="btn btn-secondary" (click)="cancelar()">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Guardar Cambios</button>
-        </div>
-
-      </form>
+    <div class="hero-actions">
+      <button type="button" class="btn-hero-back" (click)="cancelar()">
+        <span class="mat-icon">arrow_back</span>
+        Volver a Mis Quejas
+      </button>
     </div>
   </div>
+
+  <!-- Alertas de estado -->
+  <div *ngIf="mensajeExito" class="perfil-alert alert-success">
+    <div class="alert-icon">
+      <span class="mat-icon">check_circle</span>
+    </div>
+    <div class="alert-content">
+      <strong>Operación exitosa</strong>
+      <p>{{ mensajeExito }}</p>
+    </div>
+    <button type="button" class="alert-close" (click)="mensajeExito = ''">&times;</button>
+  </div>
+
+  <div *ngIf="mensajeError" class="perfil-alert alert-error">
+    <div class="alert-icon">
+      <span class="mat-icon">error_outline</span>
+    </div>
+    <div class="alert-content">
+      <strong>Error</strong>
+      <p>{{ mensajeError }}</p>
+    </div>
+    <button type="button" class="alert-close" (click)="mensajeError = ''">&times;</button>
+  </div>
+
+  <!-- Cargando -->
+  <div *ngIf="cargando" class="loading-state-card">
+    <div class="spinner-blue"></div>
+    <p>Cargando información del perfil...</p>
+  </div>
+
+  <!-- Formulario -->
+  <form *ngIf="!cargando" [formGroup]="perfilForm" (ngSubmit)="guardarCambios()" class="perfil-form">
+
+    <!-- SECCIÓN 1: DATOS NO EDITABLES -->
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-icon-box bg-slate-icon">
+          <span class="mat-icon">lock</span>
+        </div>
+        <div class="section-title-wrap">
+          <div class="title-with-pill">
+            <h3>Datos de la Cuenta</h3>
+            <span class="pill-locked">
+              <span class="mat-icon">lock</span> No editable
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="fields-grid-3">
+        <!-- DPI -->
+        <div class="field-item">
+          <label class="field-label">
+            <span class="mat-icon field-label-icon">badge</span>
+            DPI
+          </label>
+          <div class="input-readonly-box">
+            <input type="text" class="field-input readonly-input" formControlName="dpi" readonly />
+            <span class="mat-icon lock-field-icon" title="No editable">lock</span>
+          </div>
+        </div>
+
+        <!-- Nombres -->
+        <div class="field-item">
+          <label class="field-label">
+            <span class="mat-icon field-label-icon">person</span>
+            Nombres
+          </label>
+          <div class="input-readonly-box">
+            <input type="text" class="field-input readonly-input" formControlName="nombres" readonly />
+            <span class="mat-icon lock-field-icon" title="No editable">lock</span>
+          </div>
+        </div>
+
+        <!-- Apellidos -->
+        <div class="field-item">
+          <label class="field-label">
+            <span class="mat-icon field-label-icon">person_outline</span>
+            Apellidos
+          </label>
+          <div class="input-readonly-box">
+            <input type="text" class="field-input readonly-input" formControlName="apellidos" readonly />
+            <span class="mat-icon lock-field-icon" title="No editable">lock</span>
+          </div>
+        </div>
+
+        <!-- Correo Electrónico (No editable) -->
+        <div class="field-item">
+          <label class="field-label">
+            <span class="mat-icon field-label-icon">email</span>
+            Correo Electrónico
+          </label>
+          <div class="input-readonly-box">
+            <input type="text" class="field-input readonly-input" formControlName="correo" readonly />
+            <span class="mat-icon lock-field-icon" title="No editable">lock</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECCIÓN 2: DATOS EDITABLES -->
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-icon-box bg-blue-icon">
+          <span class="mat-icon">edit</span>
+        </div>
+        <div class="section-title-wrap">
+          <div class="title-with-pill">
+            <h3>Datos de Contacto</h3>
+            <span class="pill-editable">
+              <span class="mat-icon">edit</span> Editable
+            </span>
+          </div>
+          <p class="section-desc">Puedes actualizar tu teléfono y tu dirección.</p>
+        </div>
+      </div>
+
+      <div class="fields-grid-2">
+        <!-- Teléfono -->
+        <div class="field-item">
+          <label class="field-label required">
+            <span class="mat-icon field-label-icon">phone</span>
+            Número de Teléfono
+          </label>
+          <div class="input-with-prefix">
+            <span class="input-prefix">+502</span>
+            <input
+              type="text"
+              class="field-input input-prefixed"
+              formControlName="telefono"
+              maxlength="8"
+              placeholder="Ej. 55551234"
+            />
+          </div>
+          <span class="field-note">8 dígitos</span>
+        </div>
+
+        <!-- Dirección -->
+        <div class="field-item">
+          <label class="field-label required">
+            <span class="mat-icon field-label-icon">home</span>
+            Dirección
+          </label>
+          <div class="input-with-icon">
+            <span class="mat-icon input-lead-icon">location_on</span>
+            <input
+              type="text"
+              class="field-input input-iconed"
+              formControlName="direccion"
+              placeholder="Ej. 3ra Calle 4-12 Zona 1"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECCIÓN 3: CAMBIO DE CONTRASEÑA (OPCIONAL) -->
+    <div class="section-card security-card">
+      <div class="section-header" style="cursor: pointer;" (click)="toggleSeccionPassword()">
+        <div class="section-icon-box bg-purple-icon">
+          <span class="mat-icon">lock_reset</span>
+        </div>
+        <div class="section-title-wrap">
+          <div class="title-with-pill">
+            <h3>Cambiar Contraseña</h3>
+            <span class="pill-optional">Opcional</span>
+          </div>
+          <p class="section-desc">
+            {{ mostrarSeccionPassword ? 'Ingresa tu contraseña actual y la nueva contraseña.' : 'Haz clic aquí si deseas cambiar tu contraseña.' }}
+          </p>
+        </div>
+        <button type="button" class="toggle-password-section-btn">
+          <span class="mat-icon">{{ mostrarSeccionPassword ? 'keyboard_arrow_up' : 'keyboard_arrow_down' }}</span>
+        </button>
+      </div>
+
+      <div class="security-body animate-fade-in" *ngIf="mostrarSeccionPassword">
+        <div class="fields-grid-3 margin-top-md">
+          <!-- Contraseña Actual -->
+          <div class="field-item">
+            <label class="field-label required">
+              <span class="mat-icon field-label-icon">key</span>
+              Contraseña Actual
+            </label>
+            <div class="input-password-box">
+              <input
+                [type]="verPasswordActual ? 'text' : 'password'"
+                class="field-input input-password"
+                formControlName="passwordActual"
+                placeholder="Clave actual"
+              />
+              <button
+                type="button"
+                class="btn-toggle-eye"
+                (click)="toggleVerPassword('actual')"
+                tabindex="-1"
+              >
+                <span class="mat-icon">{{ verPasswordActual ? 'visibility_off' : 'visibility' }}</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Nueva Contraseña -->
+          <div class="field-item">
+            <label class="field-label required">
+              <span class="mat-icon field-label-icon">lock</span>
+              Nueva Contraseña
+            </label>
+            <div class="input-password-box">
+              <input
+                [type]="verNuevaPassword ? 'text' : 'password'"
+                class="field-input input-password"
+                formControlName="nuevaPassword"
+                placeholder="Nueva clave"
+              />
+              <button
+                type="button"
+                class="btn-toggle-eye"
+                (click)="toggleVerPassword('nueva')"
+                tabindex="-1"
+              >
+                <span class="mat-icon">{{ verNuevaPassword ? 'visibility_off' : 'visibility' }}</span>
+              </button>
+            </div>
+            <span class="field-note">Mínimo 6 caracteres</span>
+          </div>
+
+          <!-- Confirmar Nueva Contraseña -->
+          <div class="field-item">
+            <label class="field-label required">
+              <span class="mat-icon field-label-icon">check_circle</span>
+              Confirmar Contraseña
+            </label>
+            <div class="input-password-box">
+              <input
+                [type]="verConfirmarPassword ? 'text' : 'password'"
+                class="field-input input-password"
+                formControlName="confirmarNuevaPassword"
+                placeholder="Repite la nueva clave"
+              />
+              <button
+                type="button"
+                class="btn-toggle-eye"
+                (click)="toggleVerPassword('confirmar')"
+                tabindex="-1"
+              >
+                <span class="mat-icon">{{ verConfirmarPassword ? 'visibility_off' : 'visibility' }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Botones de Acción -->
+    <div class="actions-footer-bar">
+      <div></div>
+      <div class="footer-buttons">
+        <button type="button" class="btn btn-outline" (click)="cancelar()" [disabled]="guardando">
+          <span class="mat-icon">close</span>
+          Cancelar
+        </button>
+        <button type="submit" class="btn btn-primary btn-save" [disabled]="guardando || perfilForm.invalid">
+          <span class="mat-icon" *ngIf="!guardando">save</span>
+          <span class="spinner-btn" *ngIf="guardando"></span>
+          {{ guardando ? 'Guardando...' : 'Guardar Cambios' }}
+        </button>
+      </div>
+    </div>
+
+  </form>
 </div>

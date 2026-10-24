@@ -4,10 +4,8 @@ import com.muni.backend.security.service.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -16,12 +14,12 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.CorsFilter;
 
 import java.util.List;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -34,14 +32,15 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-    
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
+        // Permite la conexión desde Angular (localhost:4200) y cualquier origen de prueba
         configuration.setAllowedOriginPatterns(List.of("*"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(List.of("*"));
-        configuration.setExposedHeaders(List.of("Authorization"));
+        configuration.setExposedHeaders(List.of("Authorization", "Content-Disposition"));
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -52,18 +51,30 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+                // Habilita la configuración CORS nativa de Spring
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // 1. Opciones preflight siempre permitidas
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        // Rutas públicas de autenticación
+
+                        // 2. Rutas totalmente públicas
                         .requestMatchers("/auth/**", "/api/auth/**", "/usuarios/registro-ciudadano", "/api/usuarios/registro-ciudadano").permitAll()
                         .requestMatchers("/subidas/**", "/subidas/evidencias/**").permitAll()
-                        .requestMatchers("/quejas/**", "/api/quejas/**", "/api/gestion-municipal/**", "/usuarios/**", "/api/usuarios/**").authenticated()
+
+                        // Permite la entrada completa a los controladores de admin quejas
+                        .requestMatchers("/admin/quejas/**", "/admin/quejas").permitAll()
+
+                        // 3. Rutas con restricción de roles
+                        .requestMatchers("/admin/usuarios-internos/**").hasAuthority("ADMINISTRADOR")
+                        .requestMatchers("/admin/**").hasAnyAuthority("ADMINISTRADOR", "ROLE_ADMINISTRADOR", "EMPLEADO", "ROLE_EMPLEADO")
+
+                        // 4. Resto de peticiones autenticadas
                         .anyRequest().authenticated()
                 )
-                // Registramos el filtro JWT antes del filtro de usuario/contraseña estándar
+                // 👈 Agrega el filtro CORS nativo antes de la autenticación
+                .addFilterBefore(new CorsFilter(corsConfigurationSource()), UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

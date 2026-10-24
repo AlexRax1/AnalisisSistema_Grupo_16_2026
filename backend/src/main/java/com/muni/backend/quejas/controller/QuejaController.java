@@ -1,9 +1,9 @@
 package com.muni.backend.quejas.controller;
 
-import com.muni.backend.quejas.dto.QuejaDerivadaDTO;
-import com.muni.backend.quejas.dto.QuejaDetalleDTO;
-import com.muni.backend.quejas.dto.QuejaRegistroDTO;
-import com.muni.backend.quejas.dto.QuejaRegistroResponse;
+import com.muni.backend.quejas.dto.ciudadano.QuejaDerivadaDTO;
+import com.muni.backend.quejas.dto.ciudadano.QuejaDetalleDTO;
+import com.muni.backend.quejas.dto.ciudadano.QuejaRegistroDTO;
+import com.muni.backend.quejas.dto.ciudadano.QuejaRegistroResponse;
 import com.muni.backend.quejas.service.PdfService;
 import com.muni.backend.quejas.service.QuejaService;
 import lombok.RequiredArgsConstructor;

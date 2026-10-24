@@ -1,0 +1,19 @@
+package com.muni.backend.quejas.dto.shared;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import java.time.LocalDateTime;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class EvidenciaDTO {
+    private Integer evidenciaId;
+    private Integer informeId;
+    private String etapa;
+    private String urlArchivo;
+    private String nombreArchivo;
+    private String formato;
+    private LocalDateTime fechaSubida;
+}

@@ -215,3 +215,13 @@ CREATE TABLE evidencias_digitales (
     subido_por_usuario_id int REFERENCES usuarios(usuario_id),
     fecha_subida timestamp DEFAULT CURRENT_TIMESTAMP
 );
+
+
+CREATE TABLE recuperacion_password (
+    recuperacion_id serial PRIMARY KEY,
+    user_id int NOT NULL REFERENCES credenciales(user_id),
+    codigo_verificacion varchar(10) NOT NULL,
+    fecha_expiracion timestamp NOT NULL,
+    utilizado boolean DEFAULT FALSE,
+    fecha_creacion timestamp DEFAULT CURRENT_TIMESTAMP
+);
