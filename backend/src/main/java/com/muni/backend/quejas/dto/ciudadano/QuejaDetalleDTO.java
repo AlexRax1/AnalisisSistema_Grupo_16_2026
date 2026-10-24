@@ -22,4 +22,7 @@ public class QuejaDetalleDTO {
     private String prioridadConfirmada;
     private LocalDateTime fechaRegistro;
     private List<EvidenciaDTO> evidencias;
+    private String dpiCiudadano;
+    private String nombreCategoria;
+    private String nombreInspector;
 }

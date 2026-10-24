@@ -75,7 +75,7 @@ export class LoginComponent implements OnInit {
     );
   }
 
-  // Validador personalizado para FA07: Contraseñas no coinciden
+  //  Contraseñas no coinciden
   validarQueCoincidanContrasenas(control: AbstractControl): ValidationErrors | null {
     const pass = control.get('nuevaPassword')?.value;
     const confirmPass = control.get('confirmarPassword')?.value;
@@ -257,7 +257,7 @@ export class LoginComponent implements OnInit {
     const correo = this.recuperarForm.get('correoRecuperacion')?.value;
     const newPassword = nuevaPassControl?.value;
 
-    // En lugar del ID quemado 1, enviamos el correo y la nueva contraseña
+    // Envio el correo y la nueva contraseña
     this.authService.restablecerPassword(correo, newPassword).subscribe({
       next: () => {
         this.successMsg = 'Su contraseña ha sido actualizada con éxito.';

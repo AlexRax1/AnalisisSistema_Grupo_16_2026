@@ -3,6 +3,7 @@ package com.muni.backend.quejas.repository;
 import com.muni.backend.quejas.model.Queja;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.QueryHint;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
@@ -12,6 +13,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,6 +27,18 @@ public interface QuejaRepository extends JpaRepository<Queja, Integer> {
     List<Queja> findByInspector_UsuarioIdAndEstadoActual(Integer inspectorId, String estadoActual);
 
     List<Queja> findByEspecialista_UsuarioIdAndEstadoActual(Integer especialistaId, String estadoActual);
+
+    Page<Queja> findByCorrelativoContainingIgnoreCaseAndEstadoActual(String correlativo, String estado, Pageable pageable);
+    Page<Queja> findByCorrelativoContainingIgnoreCase(String correlativo, Pageable pageable);
+    Page<Queja> findByEstadoActual(String estado, Pageable pageable);
+    Page<Queja> findByFechaRegistroBetween(LocalDateTime inicio, LocalDateTime fin, Pageable pageable);
+    Page<Queja> findByEstadoActualAndFechaRegistroBetween(String estado, LocalDateTime inicio, LocalDateTime fin, Pageable pageable);
+    Page<Queja> findByCorrelativoContainingIgnoreCaseAndFechaRegistroBetween(String correlativo, LocalDateTime inicio, LocalDateTime fin, Pageable pageable);
+    Page<Queja> findByCorrelativoContainingIgnoreCaseAndEstadoActualAndFechaRegistroBetween(String correlativo, String estado, LocalDateTime inicio, LocalDateTime fin, Pageable pageable);
+    Page<Queja> findByEstadoActualIgnoreCase(String estado, Pageable pageable);
+    Page<Queja> findByCorrelativoContainingIgnoreCaseAndEstadoActualIgnoreCase(String correlativo, String estado, Pageable pageable);
+    Page<Queja> findByEstadoActualIgnoreCaseAndFechaRegistroBetween(String estado, LocalDateTime inicio, LocalDateTime fin, Pageable pageable);
+    Page<Queja> findByCorrelativoContainingIgnoreCaseAndEstadoActualIgnoreCaseAndFechaRegistroBetween(String correlativo, String estado, LocalDateTime inicio, LocalDateTime fin, Pageable pageable);
 
     @Query("""
         SELECT q FROM Queja q
@@ -122,4 +136,34 @@ public interface QuejaRepository extends JpaRepository<Queja, Integer> {
             q.fechaRegistro ASC
         """)
     List<Queja> buscarSiguienteTarea(@Param("funcionarioId") Integer funcionarioId, Pageable pageable);
+
+    @Query("""
+        SELECT DISTINCT q FROM Queja q
+        LEFT JOIN q.ciudadano u
+        LEFT JOIN q.categoria c
+        WHERE (:estado IS NULL OR q.estadoActual = :estado)
+          AND (:categoriaId IS NULL OR c.categoriaId = :categoriaId)
+          AND (
+               :prioridad IS NULL 
+               OR q.prioridadConfirmada = :prioridad 
+               OR q.prioridadSugerida = :prioridad
+          )
+          AND (
+               :buscar IS NULL 
+               OR LOWER(q.correlativo) LIKE :buscar
+               OR LOWER(u.dpi) LIKE :buscar
+          )
+          AND (CAST(:fechaInicio AS timestamp) IS NULL OR q.fechaRegistro >= :fechaInicio)
+          AND (CAST(:fechaFin AS timestamp) IS NULL OR q.fechaRegistro <= :fechaFin)
+        ORDER BY q.fechaRegistro DESC
+        """)
+    Page<Queja> buscarCatalogoConFiltros(
+            @Param("estado") String estado,
+            @Param("categoriaId") Integer categoriaId,
+            @Param("prioridad") String prioridad,
+            @Param("buscar") String buscar,
+            @Param("fechaInicio") LocalDateTime fechaInicio,
+            @Param("fechaFin") LocalDateTime fechaFin,
+            Pageable pageable
+    );
 }

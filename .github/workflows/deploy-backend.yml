@@ -1,0 +1,35 @@
+name: Build and Deploy Backend to ACR
+
+on:
+  push:
+    branches: [ "produccion" ]
+    paths:
+      - 'backend/**'
+  workflow_dispatch: # Permite ejecutar el flujo manualmente desde la interfaz web
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Descargar el código fuente del repositorio
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Iniciar sesión en Azure Container Registry
+      - name: Log in to Azure Container Registry
+        uses: azure/docker-login@v1
+        with:
+          login-server: acrmuniquejas.azurecr.io
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      # 3. Compilar la imagen Docker usando la carpeta /backend
+      - name: Build Docker image
+        run: |
+          docker build ./backend -t acrmuniquejas.azurecr.io/muniques-backend:v1
+
+      # 4. Subir la imagen compilada a tu ACR
+      - name: Push Docker image to ACR
+        run: |
+          docker push acrmuniquejas.azurecr.io/muniques-backend:v1

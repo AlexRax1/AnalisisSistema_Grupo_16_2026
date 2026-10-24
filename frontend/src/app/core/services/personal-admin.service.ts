@@ -40,7 +40,7 @@ export class PersonalAdminService {
   }
 
   cambiarEstado(id: number, activo: boolean, motivo?: string): Observable<{ mensaje: string }> {
-    return this.http.patch<{ mensaje: string }>(
+    return this.http.put<{ mensaje: string }>(
       `${this.apiUrl}/${id}/estado`,
       { activo, motivo },
       {

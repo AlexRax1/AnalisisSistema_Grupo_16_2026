@@ -15,6 +15,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -42,33 +44,66 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         final String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
 
+        // 1. Ver qué header está llegando
+        System.out.println(">>> REQUEST URI: " + request.getRequestURI());
+        System.out.println(">>> AUTH HEADER RECIBIDO: " + authHeader);
+
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            System.out.println(">>> No hay Bearer token, dejando pasar sin autenticación");
             filterChain.doFilter(request, response);
             return;
         }
 
         final String token = authHeader.substring(7);
 
-        if (jwtService.isTokenValid(token)) {
-            String username = jwtService.getUsernameFromToken(token);
-            List<String> roles = jwtService.getRolesFromToken(token);
+        try {
+            if (jwtService.isTokenValid(token)) {
+                String username = jwtService.getUsernameFromToken(token);
+                List<String> roles = jwtService.getRolesFromToken(token);
 
-            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                List<SimpleGrantedAuthority> authorities = roles.stream()
-                        .map(SimpleGrantedAuthority::new)
-                        .collect(Collectors.toList());
+                System.out.println(">>> TOKEN VÁLIDO. Usuario: " + username + " | Roles: " + roles);
 
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        username,
-                        null,
-                        authorities
-                );
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                    List<SimpleGrantedAuthority> authorities = obtenerAutoridadesConPrefijo(roles);
 
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                            username, null, authorities
+                    );
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                }
+            } else {
+                System.out.println(">>> EL TOKEN NO ES VÁLIDO SEGÚN jwtService.isTokenValid()");
             }
+        } catch (Exception e) {
+            System.err.println(">>> EXCEPCIÓN EN FILTRO JWT: " + e.getMessage());
+            e.printStackTrace(); // Muestra el stacktrace exacto en la consola de Spring Boot
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private List<SimpleGrantedAuthority> obtenerAutoridadesConPrefijo(List<String> roles) {
+        if (roles == null || roles.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+
+        for (String role : roles) {
+            if (role == null || role.isBlank()) continue;
+
+            String roleLimpio = role.trim();
+            // 1. Añadimos el rol exacto como viene en la base de datos (ej. "ADMINISTRADOR")
+            authorities.add(new SimpleGrantedAuthority(roleLimpio));
+
+            // 2. Si no tiene el prefijo "ROLE_", añadimos también la versión con prefijo (ej. "ROLE_ADMINISTRADOR")
+            if (!roleLimpio.startsWith("ROLE_")) {
+                authorities.add(new SimpleGrantedAuthority("ROLE_" + roleLimpio));
+            }
+        }
+
+        return authorities;
     }
 }

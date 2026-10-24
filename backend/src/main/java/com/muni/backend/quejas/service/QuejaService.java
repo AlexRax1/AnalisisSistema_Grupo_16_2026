@@ -4,18 +4,37 @@ import com.muni.backend.quejas.dto.ciudadano.*;
 import com.muni.backend.quejas.dto.shared.*;
 import com.muni.backend.quejas.model.EvidenciaDigital;
 import com.muni.backend.quejas.model.HistorialEstadoQueja;
+import com.muni.backend.quejas.model.CategoriaQueja;
 import com.muni.backend.quejas.model.Queja;
+import com.muni.backend.quejas.model.SubcategoriaQueja;
+import com.muni.backend.quejas.repository.CategoriaQuejaRepository;
 import com.muni.backend.quejas.repository.EvidenciaDigitalRepository;
 import com.muni.backend.quejas.repository.HistorialEstadoQuejaRepository;
 import com.muni.backend.quejas.repository.QuejaRepository;
+import com.muni.backend.quejas.repository.SubcategoriaQuejaRepository;
 import com.muni.backend.shared.service.FileStorageService;
 import com.muni.backend.usuarios.model.Usuario;
 import com.muni.backend.usuarios.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
 
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.Year;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -25,6 +44,8 @@ import java.util.stream.Collectors;
 public class QuejaService {
 
     private final QuejaRepository quejaRepository;
+    private final CategoriaQuejaRepository categoriaQuejaRepository;
+    private final SubcategoriaQuejaRepository subcategoriaQuejaRepository;
     private final EvidenciaDigitalRepository evidenciaRepository;
     private final UsuarioRepository usuarioRepository;
     private final HistorialEstadoQuejaRepository historialRepository;
@@ -67,8 +88,18 @@ public class QuejaService {
         Queja queja = new Queja();
         queja.setCorrelativo("TEMP-" + System.currentTimeMillis());
         queja.setCiudadano(ciudadano);
-        queja.setCategoriaId(dto.getCategoriaId());
-        queja.setSubcategoriaId(dto.getSubcategoriaId());
+
+        // El modelo usa la relación a CategoriaQueja/SubcategoriaQueja; los campos *Id son de solo lectura.
+        CategoriaQueja categoria = categoriaQuejaRepository.findById(dto.getCategoriaId())
+                .orElseThrow(() -> new IllegalArgumentException("La categoría seleccionada no existe."));
+        queja.setCategoria(categoria);
+
+        if (dto.getSubcategoriaId() != null) {
+            SubcategoriaQueja subcategoria = subcategoriaQuejaRepository.findById(dto.getSubcategoriaId())
+                    .orElseThrow(() -> new IllegalArgumentException("La subcategoría seleccionada no existe."));
+            queja.setSubcategoria(subcategoria);
+        }
+
         queja.setZona(dto.getZona());
         queja.setDireccionExacta(dto.getDireccionExacta().trim());
         queja.setPuntoReferencia(dto.getPuntoReferencia());
@@ -149,17 +180,10 @@ public class QuejaService {
     // Convierte la entidad Queja al DTO que consume el portal ciudadano.
     private QuejaDetalleDTO convertirADetalleDTO(Queja queja) {
         QuejaDetalleDTO dto = new QuejaDetalleDTO();
+
+        // Mapeos básicos
         dto.setQuejaId(queja.getQuejaId());
         dto.setCorrelativo(queja.getCorrelativo());
-
-        // Categoría y subcategoría se mantienen como ID para no cambiar el contrato del frontend.
-        if (queja.getCategoriaId() != null) {
-            dto.setCategoria(queja.getCategoriaId().toString());
-        }
-        if (queja.getSubcategoriaId() != null) {
-            dto.setSubcategoria(queja.getSubcategoriaId().toString());
-        }
-
         dto.setZona(queja.getZona());
         dto.setDireccionExacta(queja.getDireccionExacta());
         dto.setPuntoReferencia(queja.getPuntoReferencia());
@@ -167,19 +191,60 @@ public class QuejaService {
         dto.setLongitud(queja.getLongitud());
         dto.setDescripcion(queja.getDescripcion());
         dto.setEstadoActual(queja.getEstadoActual());
-        dto.setPrioridadConfirmada(queja.getPrioridadConfirmada());
         dto.setFechaRegistro(queja.getFechaRegistro());
 
-        // Queja no tiene relación JPA con sus evidencias; se consultan aparte.
-        List<EvidenciaDigital> evidencias = evidenciaRepository.findByQueja(queja);
-        if (evidencias != null && !evidencias.isEmpty()) {
-            List<EvidenciaDTO> evidenciasDTO = evidencias.stream().map(e -> {
-                EvidenciaDTO evDto = new EvidenciaDTO();
-                evDto.setUrlArchivo(e.getUrlArchivo());
-                evDto.setNombreArchivo(e.getNombreArchivo());
-                return evDto;
-            }).collect(Collectors.toList());
-            dto.setEvidencias(evidenciasDTO);
+        // 1. Categoria (Obtener nombre legible)
+        if (queja.getCategoria() != null) {
+            dto.setCategoria(queja.getCategoria().getNombreCategoria());
+            dto.setNombreCategoria(queja.getCategoria().getNombreCategoria());
+        } else if (queja.getCategoriaId() != null) {
+            dto.setCategoria(queja.getCategoriaId().toString());
+        }
+
+        // 2. Subcategoria
+        if (queja.getSubcategoria() != null) {
+            dto.setSubcategoria(queja.getSubcategoria().getNombreSubcategoria());
+        } else if (queja.getSubcategoriaId() != null) {
+            dto.setSubcategoria(queja.getSubcategoriaId().toString());
+        }
+
+        // 3. DPI Ciudadano
+        if (queja.getCiudadano() != null && queja.getCiudadano().getDpi() != null) {
+            dto.setDpiCiudadano(queja.getCiudadano().getDpi());
+        } else {
+            dto.setDpiCiudadano("Sin DPI");
+        }
+
+        // 4. Nombre Inspector
+        if (queja.getInspector() != null) {
+            String nombreCompleto = (queja.getInspector().getNombres() != null ? queja.getInspector().getNombres() : "") + " "
+                    + (queja.getInspector().getApellidos() != null ? queja.getInspector().getApellidos() : "");
+            dto.setNombreInspector(nombreCompleto.trim());
+        } else {
+            dto.setNombreInspector("Sin Asignar");
+        }
+
+        // 5. Prioridad (Garantizar que no vaya nulo)
+        if (queja.getPrioridadConfirmada() != null && !queja.getPrioridadConfirmada().trim().isEmpty()) {
+            dto.setPrioridadConfirmada(queja.getPrioridadConfirmada());
+        } else if (queja.getPrioridadSugerida() != null && !queja.getPrioridadSugerida().trim().isEmpty()) {
+            dto.setPrioridadConfirmada(queja.getPrioridadSugerida());
+        } else {
+            dto.setPrioridadConfirmada("MEDIA");
+        }
+
+        // 6. Evidencias Digitales
+        if (evidenciaRepository != null) {
+            List<EvidenciaDigital> evidencias = evidenciaRepository.findByQueja(queja);
+            if (evidencias != null && !evidencias.isEmpty()) {
+                List<EvidenciaDTO> evidenciasDTO = evidencias.stream().map(e -> {
+                    EvidenciaDTO evDto = new EvidenciaDTO();
+                    evDto.setUrlArchivo(e.getUrlArchivo());
+                    evDto.setNombreArchivo(e.getNombreArchivo());
+                    return evDto;
+                }).collect(Collectors.toList());
+                dto.setEvidencias(evidenciasDTO);
+            }
         }
 
         return dto;
@@ -218,8 +283,8 @@ public class QuejaService {
         Queja nuevaQueja = new Queja();
         nuevaQueja.setCorrelativo("TEMP-" + System.currentTimeMillis());
         nuevaQueja.setCiudadano(ciudadano);
-        nuevaQueja.setCategoriaId(quejaPadre.getCategoriaId());
-        nuevaQueja.setSubcategoriaId(quejaPadre.getSubcategoriaId());
+        nuevaQueja.setCategoria(quejaPadre.getCategoria());
+        nuevaQueja.setSubcategoria(quejaPadre.getSubcategoria());
         nuevaQueja.setZona(quejaPadre.getZona());
         nuevaQueja.setDireccionExacta(quejaPadre.getDireccionExacta());
         nuevaQueja.setPuntoReferencia(quejaPadre.getPuntoReferencia());
@@ -276,5 +341,168 @@ public class QuejaService {
                 "Su reporte de " + tipoMensaje + " ha sido registrado exitosamente y vinculado al expediente "
                         + dto.getCorrelativoPadre() + ". Se le ha asignado el nuevo correlativo " + correlativoOficial + "."
         );
+    }
+
+    @Transactional(readOnly = true)
+    public Page<QuejaDetalleDTO> obtenerCatalogoAdministrativo(
+            String buscar, String estado, String categoria, String prioridad,
+            LocalDate fechaInicio, LocalDate fechaFin, Pageable pageable) {
+
+        LocalDateTime inicio = (fechaInicio != null) ? fechaInicio.atStartOfDay() : null;
+        LocalDateTime fin = (fechaFin != null) ? fechaFin.atTime(LocalTime.MAX) : null;
+
+        String termino = (buscar != null && !buscar.trim().isEmpty()) ? buscar.trim() : null;
+
+        // Asignación directa del estado exacto
+        String estadoFiltro = (estado != null && !estado.trim().isEmpty() && !"TODAS".equalsIgnoreCase(estado.trim()))
+                ? estado.trim() : null;
+
+        Page<Queja> quejasPage;
+
+        if (inicio != null && fin != null) {
+            if (termino != null && estadoFiltro != null) {
+                quejasPage = quejaRepository.findByCorrelativoContainingIgnoreCaseAndEstadoActualIgnoreCaseAndFechaRegistroBetween(
+                        termino, estadoFiltro, inicio, fin, pageable);
+            } else if (termino != null) {
+                quejasPage = quejaRepository.findByCorrelativoContainingIgnoreCaseAndFechaRegistroBetween(termino, inicio, fin, pageable);
+            } else if (estadoFiltro != null) {
+                quejasPage = quejaRepository.findByEstadoActualIgnoreCaseAndFechaRegistroBetween(estadoFiltro, inicio, fin, pageable);
+            } else {
+                quejasPage = quejaRepository.findByFechaRegistroBetween(inicio, fin, pageable);
+            }
+        } else {
+            if (termino != null && estadoFiltro != null) {
+                quejasPage = quejaRepository.findByCorrelativoContainingIgnoreCaseAndEstadoActualIgnoreCase(termino, estadoFiltro, pageable);
+            } else if (termino != null) {
+                quejasPage = quejaRepository.findByCorrelativoContainingIgnoreCase(termino, pageable);
+            } else if (estadoFiltro != null) {
+                quejasPage = quejaRepository.findByEstadoActualIgnoreCase(estadoFiltro, pageable);
+            } else {
+                quejasPage = quejaRepository.findAll(pageable);
+            }
+        }
+
+        return quejasPage.map(this::convertirADetalleDTO);
+    }
+
+    @Transactional(readOnly = true)
+    public byte[] generarPdfCatalogo() {
+        List<Queja> quejas = quejaRepository.findAll();
+
+        try (PDDocument document = new PDDocument();
+             ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+
+            PDPage page = new PDPage();
+            document.addPage(page);
+
+            try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
+                contentStream.beginText();
+                contentStream.setFont(PDType1Font.HELVETICA_BOLD, 16);
+                contentStream.newLineAtOffset(50, 750);
+                contentStream.showText("CATÁLOGO GENERAL DE QUEJAS MUNICIPALES");
+                contentStream.endText();
+
+                int y = 710;
+                contentStream.setFont(PDType1Font.HELVETICA, 10);
+
+                for (Queja q : quejas) {
+                    if (y < 50) { // Si se acaba la página, no encimar texto
+                        break;
+                    }
+                    contentStream.beginText();
+                    contentStream.newLineAtOffset(50, y);
+                    String linea = String.format("%s | %s | %s | Zona %d",
+                            q.getCorrelativo() != null ? q.getCorrelativo() : "S/C",
+                            q.getEstadoActual() != null ? q.getEstadoActual() : "S/E",
+                            q.getPrioridadConfirmada() != null ? q.getPrioridadConfirmada() : "MEDIA",
+                            q.getZona());
+                    contentStream.showText(linea);
+                    contentStream.endText();
+                    y -= 20;
+                }
+            }
+
+            document.save(baos);
+            return baos.toByteArray();
+        } catch (IOException e) {
+            throw new RuntimeException("Error al generar el archivo PDF", e);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public byte[] generarExcelCatalogo() {
+        List<Queja> quejas = quejaRepository.findAll();
+
+        try (Workbook workbook = new XSSFWorkbook();
+             ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+
+            Sheet sheet = workbook.createSheet("Catálogo de Quejas");
+
+            // Crear fila de encabezados
+            Row headerRow = sheet.createRow(0);
+            String[] columnas = {"Correlativo", "Fecha Registro", "Zona", "Dirección", "Estado", "Prioridad", "Descripción"};
+
+            CellStyle headerStyle = workbook.createCellStyle();
+            Font headerFont = workbook.createFont();
+            headerFont.setBold(true);
+            headerStyle.setFont(headerFont);
+
+            for (int i = 0; i < columnas.length; i++) {
+                Cell cell = headerRow.createCell(i);
+                cell.setCellValue(columnas[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            // Llenar datos
+            int rowNum = 1;
+            for (Queja q : quejas) {
+                Row row = sheet.createRow(rowNum++);
+                row.createCell(0).setCellValue(q.getCorrelativo() != null ? q.getCorrelativo() : "");
+                row.createCell(1).setCellValue(q.getFechaRegistro() != null ? q.getFechaRegistro().toString() : "");
+                row.createCell(2).setCellValue(q.getZona());
+                row.createCell(3).setCellValue(q.getDireccionExacta() != null ? q.getDireccionExacta() : "");
+                row.createCell(4).setCellValue(q.getEstadoActual() != null ? q.getEstadoActual() : "");
+                row.createCell(5).setCellValue(q.getPrioridadConfirmada() != null ? q.getPrioridadConfirmada() : "");
+                row.createCell(6).setCellValue(q.getDescripcion() != null ? q.getDescripcion() : "");
+            }
+
+            // Autoajustar ancho de columnas
+            for (int i = 0; i < columnas.length; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            workbook.write(baos);
+            return baos.toByteArray();
+        } catch (IOException e) {
+            throw new RuntimeException("Error al generar el archivo Excel", e);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public Page<QuejaDetalleDTO> obtenerCatalogoConFiltros(
+            String estado,
+            Integer categoriaId,
+            String prioridad,
+            String buscar,
+            LocalDate fechaInicio,
+            LocalDate fechaFin,
+            Pageable pageable
+    ) {
+        LocalDateTime inicio = (fechaInicio != null) ? fechaInicio.atStartOfDay() : null;
+        LocalDateTime fin = (fechaFin != null) ? fechaFin.atTime(LocalTime.MAX) : null;
+
+        String estadoFiltro = (estado != null && !estado.trim().isEmpty() && !estado.equalsIgnoreCase("TODAS")) ? estado.trim() : null;
+        String prioridadFiltro = (prioridad != null && !prioridad.trim().isEmpty() && !prioridad.equalsIgnoreCase("TODAS")) ? prioridad.trim().toUpperCase() : null;
+
+        // Si viene vacio o espacios, se pasa como NULL exacto, de lo contrario se convierte a minusculas
+        String buscarFiltro = (buscar != null && !buscar.trim().isEmpty()) ? buscar.trim().toLowerCase() : null;
+
+        Integer categoriaFiltro = (categoriaId != null && categoriaId > 0) ? categoriaId : null;
+
+        Page<Queja> quejas = quejaRepository.buscarCatalogoConFiltros(
+                estadoFiltro, categoriaFiltro, prioridadFiltro, buscarFiltro, inicio, fin, pageable
+        );
+
+        return quejas.map(this::convertirADetalleDTO);
     }
 }

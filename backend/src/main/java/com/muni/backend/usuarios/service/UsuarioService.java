@@ -1,6 +1,11 @@
 package com.muni.backend.usuarios.service;
 
+import com.muni.backend.quejas.dto.shared.EmpleadoDTO;
+import com.muni.backend.quejas.dto.shared.GuardarEmpleadoDTO;
 import com.muni.backend.security.model.Credencial;
+import com.muni.backend.security.model.RolUser;
+import com.muni.backend.security.repository.CredencialRepository;
+import com.muni.backend.security.repository.RolUserRepository;
 import com.muni.backend.security.service.AuthService;
 import com.muni.backend.usuarios.dto.ActualizarPerfilDTO;
 import com.muni.backend.usuarios.dto.PerfilUsuarioDTO;
@@ -9,6 +14,7 @@ import com.muni.backend.usuarios.dto.UsuarioResumenDTO;
 import com.muni.backend.usuarios.model.Usuario;
 import com.muni.backend.usuarios.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +31,10 @@ public class UsuarioService {
     private final UsuarioRepository usuarioRepository;
     private final AuthService authService;
     private final PasswordEncoder passwordEncoder;
+    @Autowired
+    private RolUserRepository rolUserRepository;
+    @Autowired
+    private CredencialRepository credencialRepository;
 
     @Transactional
     public void registrarCiudadano(UsuarioRegistroDTO dto) {
@@ -41,13 +51,10 @@ public class UsuarioService {
         if (!dto.getPassword().equals(dto.getConfirmPassword())) {
             throw new IllegalArgumentException("Las contraseñas ingresadas no coinciden.");
         }
-
-
-         /* descomentar despues
         // Complejidad de contraseña (mínimo 6 caracteres, al menos 1 mayúscula, 1 número y 1 carácter especial)
         if (!dto.getPassword().matches("^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?]).{6,}$")) {
             throw new IllegalArgumentException("La contraseña debe contener al menos 6 caracteres, una letra mayúscula, un número y un carácter especial.");
-        }*/
+        }
         // Teléfono de 8 dígitos
         if (!dto.getTelefono().matches("^[0-9]{8}$")) {
             throw new IllegalArgumentException("El número telefónico debe contener exactamente 8 dígitos numéricos.");
@@ -182,5 +189,146 @@ public class UsuarioService {
     // Verifica si un correo electronico esta registrado
     public boolean existePorCorreo(String correo) {
         return correo != null && usuarioRepository.existsByCorreoIgnoreCase(correo.trim());
+    }
+
+    public List<EmpleadoDTO> listarUsuariosInternos() {
+        return usuarioRepository.findAll().stream()
+                .map(this::convertirAEmpleadoDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void registrarEmpleado(GuardarEmpleadoDTO dto) {
+        String nombreRolBD = mapearNombreRolBD(dto.getRol());
+        RolUser rol = rolUserRepository.findByNombreRol(nombreRolBD)
+                .orElseThrow(() -> new RuntimeException("Rol no encontrado en BD: " + nombreRolBD));
+
+        // 1. Primero se crea y guarda la Credencial (genera el user_id serial)
+        Credencial credencial = new Credencial();
+        credencial.setUsername(dto.getCorreoInstitucional());
+        credencial.setPassword(passwordEncoder.encode("Muni123456"));
+        credencial.setEstado("ACTIVO");
+        credencial.setRolUser(rol);
+
+        Credencial credencialGuardada = credencialRepository.save(credencial);
+
+        // 2. Luego se crea y guarda el Usuario asociando la Credencial persistida
+        Usuario usuario = new Usuario();
+        usuario.setDpi(dto.getDpi());
+        usuario.setNombres(dto.getNombres());
+        usuario.setApellidos(dto.getApellidos());
+        usuario.setCorreo(dto.getCorreoInstitucional());
+        usuario.setTelefono(dto.getTelefono());
+        usuario.setEstado("ACTIVO");
+        usuario.setCredencial(credencialGuardada);
+
+        usuarioRepository.save(usuario);
+    }
+
+    @Transactional
+    public void actualizarEmpleado(Long id, GuardarEmpleadoDTO dto) {
+        // 1. Buscar el usuario
+        Usuario usuario = usuarioRepository.findById(id.intValue())
+                .orElseThrow(() -> new RuntimeException("Empleado no encontrado con ID: " + id));
+
+        // 2. Actualizar datos personales
+        usuario.setDpi(dto.getDpi());
+        usuario.setNombres(dto.getNombres());
+        usuario.setApellidos(dto.getApellidos());
+        usuario.setCorreo(dto.getCorreoInstitucional());
+        usuario.setTelefono(dto.getTelefono());
+
+        // 3. Mapear el nombre que viene del formulario de Angular al nombre exacto en la BD
+        String nombreRolBD = mapearNombreRolBD(dto.getRol());
+
+        // 4. Buscar la entidad RolUser correspondiente
+        RolUser nuevoRol = rolUserRepository.findByNombreRol(nombreRolBD)
+                .orElseThrow(() -> new RuntimeException("Rol no encontrado en BD: " + nombreRolBD));
+
+        // 5. Asignar el nuevo rol a la credencial del usuario
+        if (usuario.getCredencial() != null) {
+            usuario.getCredencial().setRolUser(nuevoRol);
+        }
+
+        // 6. Guardar cambios
+        usuarioRepository.save(usuario);
+    }
+
+    private String mapearNombreRolBD(String rolFormulario) {
+        if (rolFormulario == null) return "CIUDADANO";
+
+        switch (rolFormulario.trim()) {
+            case "Administrador":
+                return "ADMINISTRADOR";
+            case "Funcionario Municipal":
+                return "FUNCIONARIO_MUNICIPAL";
+            case "Inspector de Campo":
+                return "INSPECTOR_CAMPO";
+            case "Especialista Técnico":
+                return "ESPECIALISTA_TECNICO";
+            case "Ciudadano":
+                return "CIUDADANO";
+            default:
+                return "CIUDADANO";
+        }
+    }
+
+    @Transactional
+    public void cambiarEstadoEmpleado(Long id, Boolean activo) {
+        Usuario usuario = usuarioRepository.findById(id.intValue())
+                .orElseThrow(() -> new RuntimeException("Empleado no encontrado con ID: " + id));
+
+        usuario.setEstado(activo ? "ACTIVO" : "INACTIVO");
+        usuarioRepository.save(usuario);
+    }
+
+    public EmpleadoDTO convertirAEmpleadoDTO(Usuario usuario) {
+        EmpleadoDTO dto = new EmpleadoDTO();
+        dto.setId(usuario.getUsuarioId().longValue());
+        dto.setDpi(usuario.getDpi());
+        dto.setNombres(usuario.getNombres());
+        dto.setApellidos(usuario.getApellidos());
+        dto.setCorreoInstitucional(usuario.getCorreo());
+        dto.setTelefono(usuario.getTelefono());
+        dto.setActivo("ACTIVO".equalsIgnoreCase(usuario.getEstado()));
+
+        // Obtener la dependencia si aplica
+        if (usuario.getDependencia() != null) {
+            dto.setDependencia(usuario.getDependencia().getNombreDependencia());
+        }
+
+        // Obtener el rol desde Credencial -> RolUser
+        if (usuario.getCredencial() != null && usuario.getCredencial().getRolUser() != null) {
+            String rolBD = usuario.getCredencial().getRolUser().getNombreRol();
+            dto.setRol(mapearNombreRolVista(rolBD));
+        } else {
+            dto.setRol("Funcionario Municipal");
+        }
+
+        return dto;
+    }
+
+    private String mapearNombreRolVista(String rolBD) {
+        if (rolBD == null) return "Ciudadano";
+
+        switch (rolBD.trim().toUpperCase()) {
+            case "ADMINISTRADOR":
+            case "ROLE_ADMINISTRADOR":
+                return "Administrador";
+            case "FUNCIONARIO_MUNICIPAL":
+            case "ROLE_FUNCIONARIO":
+                return "Funcionario Municipal";
+            case "INSPECTOR_CAMPO":
+            case "ROLE_INSPECTOR":
+                return "Inspector de Campo";
+            case "ESPECIALISTA_TECNICO":
+            case "ROLE_ESPECIALISTA":
+                return "Especialista Técnico";
+            case "CIUDADANO":
+            case "ROLE_CIUDADANO":
+                return "Ciudadano";
+            default:
+                return "Ciudadano";
+        }
     }
 }

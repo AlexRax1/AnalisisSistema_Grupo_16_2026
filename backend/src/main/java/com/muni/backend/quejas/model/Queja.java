@@ -24,11 +24,19 @@ public class Queja {
     @JoinColumn(name = "ciudadano_id", nullable = false)
     private Usuario ciudadano;
 
-    @Column(name = "categoria_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "categoria_id", nullable = false)
+    private CategoriaQueja categoria;
+
+    @Column(name = "categoria_id", insertable = false, updatable = false)
     private Integer categoriaId;
 
-    @Column(name = "subcategoria_id")
+    @Column(name = "subcategoria_id", insertable = false, updatable = false)
     private Integer subcategoriaId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "subcategoria_id")
+    private SubcategoriaQueja subcategoria;
 
     @Column(name = "zona", nullable = false)
     private Integer zona;

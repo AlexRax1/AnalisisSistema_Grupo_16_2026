@@ -26,6 +26,7 @@ export class GestionPersonalComponent implements OnInit {
   formEmpleado: GuardarEmpleadoDTO = this.limpiarFormulario();
 
   rolesDisponibles = [
+    'Ciudadano',
     'Funcionario Municipal',
     'Inspector de Campo',
     'Especialista Técnico',
@@ -105,7 +106,7 @@ export class GestionPersonalComponent implements OnInit {
       this.personalService.actualizarEmpleado(this.empleadoIdEdicion, this.formEmpleado).subscribe({
         next: (res) => {
           this.ngZone.run(() => {
-            alert(res.mensaje);
+            alert(res.mensaje || 'Empleado actualizado exitosamente.');
             this.guardando = false;
             this.cerrarModal();
             this.cargarEmpleados();
@@ -113,7 +114,22 @@ export class GestionPersonalComponent implements OnInit {
         },
         error: (err) => {
           this.ngZone.run(() => {
-            this.errorModal = err.error?.mensaje || 'Error al actualizar el empleado.';
+            const mensajeServidor = err.error?.mensaje || err.error?.message || '';
+
+            // Detecta si es un error de duplicidad en la base de datos
+            if (
+              mensajeServidor.includes('llave duplicada') ||
+              mensajeServidor.includes('duplicate key') ||
+              mensajeServidor.includes('credenciales_username_key') ||
+              err.status === 400 ||
+              err.status === 409
+            ) {
+              this.errorModal =
+                'El DPI o correo electrónico ingresado ya se encuentra registrado para otro empleado.';
+            } else {
+              this.errorModal = 'Error al actualizar el empleado.';
+            }
+
             this.guardando = false;
           });
         },
@@ -122,7 +138,7 @@ export class GestionPersonalComponent implements OnInit {
       this.personalService.registrarEmpleado(this.formEmpleado).subscribe({
         next: (res) => {
           this.ngZone.run(() => {
-            alert(res.mensaje);
+            alert(res.mensaje || 'Empleado registrado exitosamente.');
             this.guardando = false;
             this.cerrarModal();
             this.cargarEmpleados();
@@ -130,8 +146,23 @@ export class GestionPersonalComponent implements OnInit {
         },
         error: (err) => {
           this.ngZone.run(() => {
-            this.errorModal =
-              err.error?.mensaje || 'El DPI o correo ya se encuentra registrado (FA02).';
+            const mensajeServidor = err.error?.mensaje || err.error?.message || '';
+
+            // Intercepta la restricción de unicidad de PostgreSQL (FA02)
+            if (
+              mensajeServidor.includes('llave duplicada') ||
+              mensajeServidor.includes('duplicate key') ||
+              mensajeServidor.includes('credenciales_username_key') ||
+              err.status === 400 ||
+              err.status === 409 ||
+              err.status === 500
+            ) {
+              this.errorModal =
+                'El DPI o correo electrónico ingresado ya se encuentra registrado para otro empleado.';
+            } else {
+              this.errorModal = 'Ocurrió un error al registrar el empleado.';
+            }
+
             this.guardando = false;
           });
         },
