@@ -4,10 +4,14 @@ import com.muni.backend.quejas.dto.ciudadano.*;
 import com.muni.backend.quejas.dto.shared.*;
 import com.muni.backend.quejas.model.EvidenciaDigital;
 import com.muni.backend.quejas.model.HistorialEstadoQueja;
+import com.muni.backend.quejas.model.CategoriaQueja;
 import com.muni.backend.quejas.model.Queja;
+import com.muni.backend.quejas.model.SubcategoriaQueja;
+import com.muni.backend.quejas.repository.CategoriaQuejaRepository;
 import com.muni.backend.quejas.repository.EvidenciaDigitalRepository;
 import com.muni.backend.quejas.repository.HistorialEstadoQuejaRepository;
 import com.muni.backend.quejas.repository.QuejaRepository;
+import com.muni.backend.quejas.repository.SubcategoriaQuejaRepository;
 import com.muni.backend.shared.service.FileStorageService;
 import com.muni.backend.usuarios.model.Usuario;
 import com.muni.backend.usuarios.repository.UsuarioRepository;
@@ -40,16 +44,21 @@ import java.util.stream.Collectors;
 public class QuejaService {
 
     private final QuejaRepository quejaRepository;
+    private final CategoriaQuejaRepository categoriaQuejaRepository;
+    private final SubcategoriaQuejaRepository subcategoriaQuejaRepository;
     private final EvidenciaDigitalRepository evidenciaRepository;
     private final UsuarioRepository usuarioRepository;
     private final HistorialEstadoQuejaRepository historialRepository;
     private final FileStorageService fileStorageService;
     private final AsignacionAutomaticaService asignacionAutomaticaService;
 
+    // 1. Registro de una queja principal
+
+    // Registra la queja, genera el correlativo y guarda las evidencias.
     @Transactional
     public QuejaRegistroResponse registrarQueja(QuejaRegistroDTO dto, List<MultipartFile> fotos, String correoCiudadano) {
 
-        // 1. Validaciones de Negocio
+        // Validaciones del formulario ciudadano antes de persistir.
         if (dto.getCategoriaId() == null || dto.getZona() == null ||
                 dto.getDireccionExacta() == null || dto.getDescripcion() == null ||
                 dto.getLatitud() == null || dto.getLongitud() == null) {
@@ -75,33 +84,22 @@ public class QuejaService {
         Usuario ciudadano = usuarioRepository.findByCorreo(correoCiudadano)
                 .orElseThrow(() -> new IllegalArgumentException("Ciudadano no encontrado."));
 
-        // 2. Cálculo de Prioridad por Demanda (Radio de 300 metros)
-        /*
-        int quejasSimilares = quejaRepository.contarQuejasCercanasActivas(
-                dto.getCategoriaId(),
-                dto.getZona(),
-                dto.getLatitud(),
-                dto.getLongitud(),
-                300.0
-        );
-
-        String prioridadCalculada;
-        if (quejasSimilares >= 4) {
-            prioridadCalculada = "URGENTE"; // 5 o más reportes en el área
-        } else if (quejasSimilares >= 2) {
-            prioridadCalculada = "ALTA";    // 3 a 4 reportes
-        } else if (quejasSimilares >= 1) {
-            prioridadCalculada = "MEDIA";   // 2 reportes
-        } else {
-            prioridadCalculada = "BAJA";    // Primer reporte aislado
-        }
-        */
-        // 3. Guardado inicial de Queja
+        // La prioridad por demanda está deshabilitada; toda queja nueva entra como MEDIA.
         Queja queja = new Queja();
         queja.setCorrelativo("TEMP-" + System.currentTimeMillis());
         queja.setCiudadano(ciudadano);
-        queja.setCategoriaId(dto.getCategoriaId());
-        queja.setSubcategoriaId(dto.getSubcategoriaId());
+
+        // El modelo usa la relación a CategoriaQueja/SubcategoriaQueja; los campos *Id son de solo lectura.
+        CategoriaQueja categoria = categoriaQuejaRepository.findById(dto.getCategoriaId())
+                .orElseThrow(() -> new IllegalArgumentException("La categoría seleccionada no existe."));
+        queja.setCategoria(categoria);
+
+        if (dto.getSubcategoriaId() != null) {
+            SubcategoriaQueja subcategoria = subcategoriaQuejaRepository.findById(dto.getSubcategoriaId())
+                    .orElseThrow(() -> new IllegalArgumentException("La subcategoría seleccionada no existe."));
+            queja.setSubcategoria(subcategoria);
+        }
+
         queja.setZona(dto.getZona());
         queja.setDireccionExacta(dto.getDireccionExacta().trim());
         queja.setPuntoReferencia(dto.getPuntoReferencia());
@@ -111,17 +109,16 @@ public class QuejaService {
         queja.setPrioridadSugerida("MEDIA");
         queja.setPrioridadConfirmada("MEDIA");
 
-        // Asignación automática al funcionario con menor carga activa
         asignacionAutomaticaService.asignarFuncionarioAutomatico().ifPresent(queja::setFuncionario);
 
+        // El primer guardado genera el ID para construir el correlativo oficial.
         Queja guardada = quejaRepository.save(queja);
 
-        // 4. Asignación del Correlativo Oficial
         String correlativo = String.format("QUE-%d-%06d", Year.now().getValue(), guardada.getQuejaId());
         guardada.setCorrelativo(correlativo);
         quejaRepository.save(guardada);
 
-        // Registro de trazabilidad inicial en historial
+        // El historial conserva la trazabilidad desde el estado inicial.
         HistorialEstadoQueja historial = new HistorialEstadoQueja();
         historial.setQueja(guardada);
         historial.setEstadoAnterior(null);
@@ -133,7 +130,7 @@ public class QuejaService {
                 : "Queja registrada.");
         historialRepository.save(historial);
 
-        // 5. Guardado de Evidencias Digitales
+        // Las evidencias se asocian a la queja ya persistida.
         for (MultipartFile foto : fotos) {
             String url = fileStorageService.guardarArchivo(foto);
 
@@ -154,12 +151,14 @@ public class QuejaService {
         );
     }
 
+    // 2. Consulta de quejas del ciudadano
+
+    // Historial del ciudadano, de la queja más reciente a la más antigua.
     @Transactional(readOnly = true)
     public List<QuejaDetalleDTO> obtenerMisQuejas(String correoCiudadano) {
         Usuario ciudadano = usuarioRepository.findByCorreo(correoCiudadano)
                 .orElseThrow(() -> new IllegalArgumentException("Ciudadano no encontrado."));
 
-        // Ajusta la llamada al método del repositorio según cómo tengas definido el ID de Usuario
         List<Queja> quejas = quejaRepository.findByCiudadano_UsuarioIdOrderByQuejaIdDesc(ciudadano.getUsuarioId());
 
         return quejas.stream()
@@ -167,6 +166,7 @@ public class QuejaService {
                 .collect(Collectors.toList());
     }
 
+    // Busca una queja por su correlativo oficial.
     @Transactional(readOnly = true)
     public QuejaDetalleDTO obtenerPorCorrelativo(String correlativo) {
         Queja queja = quejaRepository.findByCorrelativo(correlativo)
@@ -175,6 +175,9 @@ public class QuejaService {
         return convertirADetalleDTO(queja);
     }
 
+    // 3. Mapeo de entidad a DTO de respuesta
+
+    // Convierte la entidad Queja al DTO que consume el portal ciudadano.
     private QuejaDetalleDTO convertirADetalleDTO(Queja queja) {
         QuejaDetalleDTO dto = new QuejaDetalleDTO();
 
@@ -247,10 +250,13 @@ public class QuejaService {
         return dto;
     }
 
+    // 4. Registro de agravamiento o reincidencia
+
+    // Registra un agravamiento o reincidencia a partir de una queja padre.
     @Transactional
     public QuejaRegistroResponse registrarQuejaDerivada(QuejaDerivadaDTO dto, List<MultipartFile> fotos, String correoCiudadano) {
 
-        // 1. Validaciones básicas
+        // Validaciones del formulario antes de persistir.
         if (dto.getCorrelativoPadre() == null || dto.getDescripcion() == null || dto.getTipoDerivacion() == null) {
             throw new IllegalArgumentException("Debe completar todos los campos obligatorios.");
         }
@@ -267,44 +273,42 @@ public class QuejaService {
             throw new IllegalArgumentException("No puede adjuntar más de 3 fotografías.");
         }
 
-        // 2. Buscar la queja original (Padre)
+        // La queja padre aporta la ubicación y la clasificación del reporte.
         Queja quejaPadre = quejaRepository.findByCorrelativo(dto.getCorrelativoPadre())
                 .orElseThrow(() -> new IllegalArgumentException("La queja original no existe."));
 
         Usuario ciudadano = usuarioRepository.findByCorreo(correoCiudadano)
                 .orElseThrow(() -> new IllegalArgumentException("Ciudadano no encontrado."));
 
-        // 3. Crear la nueva queja derivada
         Queja nuevaQueja = new Queja();
         nuevaQueja.setCorrelativo("TEMP-" + System.currentTimeMillis());
         nuevaQueja.setCiudadano(ciudadano);
-        nuevaQueja.setCategoriaId(quejaPadre.getCategoriaId());
-        nuevaQueja.setSubcategoriaId(quejaPadre.getSubcategoriaId());
+        nuevaQueja.setCategoria(quejaPadre.getCategoria());
+        nuevaQueja.setSubcategoria(quejaPadre.getSubcategoria());
         nuevaQueja.setZona(quejaPadre.getZona());
         nuevaQueja.setDireccionExacta(quejaPadre.getDireccionExacta());
         nuevaQueja.setPuntoReferencia(quejaPadre.getPuntoReferencia());
         nuevaQueja.setLatitud(quejaPadre.getLatitud());
         nuevaQueja.setLongitud(quejaPadre.getLongitud());
 
-        // Incluir referencia a la queja original en la descripción
+        // El correlativo padre queda en la descripción para mantener la trazabilidad.
         nuevaQueja.setDescripcion("[" + dto.getTipoDerivacion() + " DE " + dto.getCorrelativoPadre() + "] " + desc);
 
-        // Si es Agravamiento, se asigna URGENTE automáticamente (FA05)
+        // Regla de negocio: un agravamiento es urgente; una reincidencia, alta.
         String prioridad = "AGRAVAMIENTO".equalsIgnoreCase(dto.getTipoDerivacion()) ? "URGENTE" : "ALTA";
         nuevaQueja.setPrioridadSugerida(prioridad);
         nuevaQueja.setPrioridadConfirmada(prioridad);
 
-        // Asignación automática al funcionario con menor carga activa
         asignacionAutomaticaService.asignarFuncionarioAutomatico().ifPresent(nuevaQueja::setFuncionario);
 
+        // El ID generado permite construir el correlativo oficial.
         Queja guardada = quejaRepository.save(nuevaQueja);
 
-        // 4. Asignación de Correlativo Oficial
         String correlativoOficial = String.format("QUE-%d-%06d", Year.now().getValue(), guardada.getQuejaId());
         guardada.setCorrelativo(correlativoOficial);
         quejaRepository.save(guardada);
 
-        // Registro de trazabilidad inicial en historial
+        // Historial inicial de la queja derivada.
         HistorialEstadoQueja historial = new HistorialEstadoQueja();
         historial.setQueja(guardada);
         historial.setEstadoAnterior(null);
@@ -316,7 +320,7 @@ public class QuejaService {
                 : "Reporte de " + dto.getTipoDerivacion() + " registrado.");
         historialRepository.save(historial);
 
-        // 5. Guardado de Evidencias Digitales
+        // Las evidencias se asocian a la nueva queja.
         for (MultipartFile foto : fotos) {
             String url = fileStorageService.guardarArchivo(foto);
 
@@ -474,6 +478,7 @@ public class QuejaService {
         }
     }
 
+    @Transactional(readOnly = true)
     public Page<QuejaDetalleDTO> obtenerCatalogoConFiltros(
             String estado,
             Integer categoriaId,

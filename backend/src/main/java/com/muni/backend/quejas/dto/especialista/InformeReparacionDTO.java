@@ -15,6 +15,7 @@ public class InformeReparacionDTO {
 
     private String materialesUtilizados;
 
+    // Opcional: el frontend ya no lo envía; se conserva para informes antiguos.
     private BigDecimal horasTrabajadas;
 
     private String instruccionesCuadrilla;

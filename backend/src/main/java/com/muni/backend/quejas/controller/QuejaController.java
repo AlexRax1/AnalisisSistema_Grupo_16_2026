@@ -12,7 +12,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -25,49 +31,29 @@ public class QuejaController {
     private final QuejaService quejaService;
     private final PdfService pdfService;
 
+    // Registra una queja principal con sus fotografías.
     @PostMapping(value = "/registrar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> registrarQueja(
+    @ResponseStatus(HttpStatus.CREATED)
+    public QuejaRegistroResponse registrarQueja(
             @RequestPart("datos") QuejaRegistroDTO dto,
             @RequestPart("fotos") List<MultipartFile> fotos,
-            Authentication authentication
-    ) {
-        try {
-            String correoUsuario = authentication.getName();
-            QuejaRegistroResponse response = quejaService.registrarQueja(dto, fotos, correoUsuario);
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error al procesar el registro: " + e.getMessage());
-        }
+            Authentication authentication) {
+        return quejaService.registrarQueja(dto, fotos, authentication.getName());
     }
 
+    // Historial de quejas del ciudadano autenticado.
     @GetMapping("/mis-quejas")
-    public ResponseEntity<?> obtenerMisQuejas(Authentication authentication) {
-        try {
-            String correoUsuario = authentication.getName();
-            List<QuejaDetalleDTO> historial = quejaService.obtenerMisQuejas(correoUsuario);
-            return ResponseEntity.ok(historial);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error al obtener el historial de quejas: " + e.getMessage());
-        }
+    public List<QuejaDetalleDTO> obtenerMisQuejas(Authentication authentication) {
+        return quejaService.obtenerMisQuejas(authentication.getName());
     }
 
+    // Detalle de una queja por su correlativo.
     @GetMapping("/detalle/{correlativo}")
-    public ResponseEntity<?> obtenerDetallePorCorrelativo(@PathVariable String correlativo) {
-        try {
-            QuejaDetalleDTO detalle = quejaService.obtenerPorCorrelativo(correlativo);
-            return ResponseEntity.ok(detalle);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error al obtener el detalle de la queja: " + e.getMessage());
-        }
+    public QuejaDetalleDTO obtenerDetallePorCorrelativo(@PathVariable String correlativo) {
+        return quejaService.obtenerPorCorrelativo(correlativo);
     }
 
+    // Descarga la constancia de la queja en PDF.
     @GetMapping("/{correlativo}/constancia-pdf")
     public ResponseEntity<byte[]> descargarConstanciaPdf(@PathVariable String correlativo) {
         QuejaDetalleDTO detalle = quejaService.obtenerPorCorrelativo(correlativo);
@@ -82,21 +68,13 @@ public class QuejaController {
                 .body(pdfBytes);
     }
 
+    // Registra un agravamiento o reincidencia.
     @PostMapping(value = "/reportar-derivada", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> registrarQuejaDerivada(
+    @ResponseStatus(HttpStatus.CREATED)
+    public QuejaRegistroResponse registrarQuejaDerivada(
             @RequestPart("datos") QuejaDerivadaDTO dto,
             @RequestPart("fotos") List<MultipartFile> fotos,
-            Authentication authentication
-    ) {
-        try {
-            String correoUsuario = authentication.getName();
-            QuejaRegistroResponse response = quejaService.registrarQuejaDerivada(dto, fotos, correoUsuario);
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error al procesar el reporte derivado: " + e.getMessage());
-        }
+            Authentication authentication) {
+        return quejaService.registrarQuejaDerivada(dto, fotos, authentication.getName());
     }
 }

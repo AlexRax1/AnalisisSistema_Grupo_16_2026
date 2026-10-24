@@ -36,7 +36,6 @@ export class DetalleQuejaEspecialistaComponent implements OnInit {
   // ── Formulario de Informe Técnico de Reparación ──
   descripcionReparacion: string = '';
   materialesUtilizados: string = '';
-  horasTrabajadas: number | null = null;
   instruccionesCuadrilla: string = '';
 
   // Fotografías de Evidencia Obligatorias
@@ -197,11 +196,6 @@ export class DetalleQuejaEspecialistaComponent implements OnInit {
       return false;
     }
 
-    if (this.horasTrabajadas === null || this.horasTrabajadas <= 0) {
-      this.errorFormulario = 'Debe indicar un número válido de horas trabajadas (ej. 2.5).';
-      return false;
-    }
-
     // Obligatoriedad estricta de fotos de prueba solicitada por el usuario
     if (this.fotos.length === 0) {
       this.errorFormulario = 'Es OBLIGATORIO adjuntar al menos una (1) fotografía como prueba del trabajo completado.';
@@ -220,7 +214,6 @@ export class DetalleQuejaEspecialistaComponent implements OnInit {
     const datos: RegistrarInformeReparacionReq = {
       descripcion: this.descripcionReparacion.trim(),
       materialesUtilizados: this.materialesUtilizados.trim(),
-      horasTrabajadas: Number(this.horasTrabajadas),
       instruccionesCuadrilla: this.instruccionesCuadrilla?.trim() || 'N/A',
     };
 
@@ -254,7 +247,6 @@ export class DetalleQuejaEspecialistaComponent implements OnInit {
   private resetearFormulario(): void {
     this.descripcionReparacion = '';
     this.materialesUtilizados = '';
-    this.horasTrabajadas = null;
     this.instruccionesCuadrilla = '';
     this.fotos = [];
     this.errorFormulario = '';
