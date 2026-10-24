@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterOutlet, RouterLink, RouterLinkActive, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
+import { GestionPersonalComponent } from '../../../modules/admin/gestion-personal/gestion-personal.component';
 
 interface NavItem {
   label: string;
@@ -18,7 +19,7 @@ interface RolConfig {
 @Component({
   selector: 'app-dashboard-layout',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, GestionPersonalComponent],
   templateUrl: './dashboard-layout.html',
   styleUrl: './dashboard-layout.css',
 })
@@ -62,7 +63,8 @@ export class DashboardLayoutComponent implements OnInit {
       titulo: 'Administrador',
       badgeClass: 'badge-danger',
       items: [
-        { label: 'Gestión de Personal', icon: 'people', route: '/admin/usuarios' },
+        // 👈 La ruta del menú apunta correctamente a gestion-personal
+        { label: 'Gestión de Personal', icon: 'people', route: '/admin/gestion-personal' },
         { label: 'Catálogo de Quejas', icon: 'assessment', route: '/admin/catalogo-quejas' },
         { label: 'Reportes', icon: 'bar_chart', route: '/admin/reportes' },
       ],
@@ -83,11 +85,11 @@ export class DashboardLayoutComponent implements OnInit {
 
   private detectarRol() {
     const url = this.router.url;
-    const segmento = url.split('/')[1]; // ciudadano, funcionario, inspector, etc.
+    const segmento = url.split('/')[1]; // ciudadano, funcionario, inspector, admin, etc.
     this.segmentoActual = segmento || 'ciudadano';
     this.currentConfig = this.rolConfigs[this.segmentoActual] || null;
 
-    // Intentar leer rol del localStorage (del login real)
+    // Leer rol del localStorage
     const rolStorage = localStorage.getItem('rol');
     if (rolStorage) {
       this.rolActual = rolStorage;
@@ -126,7 +128,8 @@ export class DashboardLayoutComponent implements OnInit {
         this.router.navigate(['/especialista/inicio']);
         break;
       case 'admin':
-        this.router.navigate(['/admin/usuarios']);
+        // 👈 Corregido: redirecciona a gestion-personal
+        this.router.navigate(['/admin/gestion-personal']);
         break;
     }
   }

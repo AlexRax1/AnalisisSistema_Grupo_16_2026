@@ -4,7 +4,7 @@
       <h2 class="h3 fw-bold mb-1">Catálogo e Historial de Quejas</h2>
       <p class="text-muted mb-0">Bandeja general de monitoreo y auditoría municipal</p>
     </div>
-    <!-- Botones de Exportación (FA03) -->
+    <!-- Botones de Exportación -->
     <div class="d-flex gap-2">
       <button class="btn btn-success" (click)="exportarExcel()">
         <i class="bi bi-file-earmark-excel"></i> Exportar a Excel
@@ -15,42 +15,62 @@
     </div>
   </div>
 
-  <!-- Panel de Filtros Avanzados (RN07, RN14, RN28) -->
+  <!-- Panel de Filtros Avanzados -->
   <div class="card shadow-sm mb-4">
     <div class="card-body">
       <div class="row g-3">
+        <!-- Fecha Desde -->
         <div class="col-md-3">
           <label class="form-label fw-bold small">Fecha Desde:</label>
           <input type="date" class="form-control" [(ngModel)]="filtros.fechaDesde" />
         </div>
+
+        <!-- Fecha Hasta -->
         <div class="col-md-3">
           <label class="form-label fw-bold small">Fecha Hasta:</label>
           <input type="date" class="form-control" [(ngModel)]="filtros.fechaHasta" />
         </div>
+
+        <!-- Categoría (Se conecta con el objeto listaCategorias y envía el ID) -->
         <div class="col-md-3">
           <label class="form-label fw-bold small">Categoría:</label>
-          <select class="form-select" [(ngModel)]="filtros.categoria">
-            <option *ngFor="let cat of categoriasDisponibles" [value]="cat">{{ cat }}</option>
+          <select class="form-select" [(ngModel)]="filtros.categoriaId">
+            <option [ngValue]="null">TODAS LAS CATEGORÍAS</option>
+            <option *ngFor="let cat of listaCategorias" [ngValue]="cat.categoriaId">
+              {{ cat.nombreCategoria || cat.nombre }}
+            </option>
           </select>
         </div>
+
+        <!-- Estado -->
         <div class="col-md-3">
           <label class="form-label fw-bold small">Estado:</label>
           <select class="form-select" [(ngModel)]="filtros.estado">
             <option *ngFor="let est of estadosDisponibles" [value]="est">{{ est }}</option>
           </select>
         </div>
+
+        <!-- Prioridad Demanda -->
         <div class="col-md-3">
           <label class="form-label fw-bold small">Prioridad Demanda:</label>
           <select class="form-select" [(ngModel)]="filtros.prioridad">
             <option *ngFor="let prio of prioridadesDisponibles" [value]="prio">{{ prio }}</option>
           </select>
         </div>
+
+        <!-- Buscador (Correlativo o DPI) -->
         <div class="col-md-6">
           <label class="form-label fw-bold small">Buscador (Correlativo o DPI):</label>
-          <input type="text" class="form-control" placeholder="Ej: QUE-2026-000001 o 2410123450101" [(ngModel)]="filtros.busqueda" />
+          <input
+            type="text"
+            class="form-control"
+            placeholder="Ej: QUE-2026-000001 o 2410123450101"
+            [(ngModel)]="filtros.busqueda" />
         </div>
+
+        <!-- Botones de Acción -->
         <div class="col-md-3 d-flex align-items-end gap-2">
-          <button class="btn btn-primary w-100" (click)="paginaActual = 0; buscar()">
+          <button class="btn btn-primary w-100" (click)="aplicarFiltros()">
             <i class="bi bi-search"></i> Buscar
           </button>
           <button class="btn btn-outline-secondary w-100" (click)="limpiarFiltros()">
@@ -61,9 +81,16 @@
     </div>
   </div>
 
-  <!-- Alerta Sin Resultados (FA01) -->
+  <!-- Alerta Sin Resultados -->
   <div *ngIf="mensajeSinResultados" class="alert alert-warning text-center">
     No se encontraron registros que coincidan con los criterios de búsqueda ingresados.
+  </div>
+
+  <!-- Indicador de Carga -->
+  <div *ngIf="cargando" class="text-center py-4">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Cargando...</span>
+    </div>
   </div>
 
   <!-- Tabla Paginada Consolidada -->
@@ -84,34 +111,31 @@
         </thead>
         <tbody>
         <tr *ngFor="let q of registros">
-          <td class="fw-bold text-primary">{{ q.correlativo }}</td>
-          <td>{{ q.fechaRegistro | date:'dd/MM/yyyy' }}</td>
+          <td>{{ q.correlativo }}</td>
+          <td>{{ q.fechaRegistro || q.fechaCreacion | date:'dd/MM/yyyy' }}</td>
+          <td>{{ q.dpiCiudadano || q.dpi || 'N/A' }}</td>
+          <td>{{ q.nombreCategoria || q.categoria }}</td>
+          <td>{{ q.direccionExacta || q.direccion }}</td>
           <td>
-            <div>{{ q.nombreCiudadano }}</div>
-            <small class="text-muted">{{ q.dpiCiudadano }}</small>
+              <span [ngClass]="obtenerClasePrioridad(q.prioridadConfirmada || q.prioridad)">
+                {{ q.prioridadConfirmada || q.prioridad || 'MEDIA' }}
+              </span>
           </td>
-          <td>{{ q.categoria }}</td>
-          <td>Zona {{ q.zona }} - {{ q.direccionExacta }}</td>
-          <td>
-            <span [ngClass]="obtenerClasePrioridad(q.prioridadDemanda)">{{ q.prioridadDemanda }}</span>
-          </td>
-          <td>{{ q.inspectorAsignado || 'Sin Asignar' }}</td>
-          <td>
-            <span class="badge bg-primary">{{ q.estadoActual }}</span>
-          </td>
+          <td>{{ q.nombreInspector || 'Sin Asignar' }}</td>
+          <td><strong>{{ q.estadoActual }}</strong></td>
         </tr>
         </tbody>
       </table>
     </div>
 
-    <!-- Paginador Paginado (20 por página) -->
+    <!-- Paginador -->
     <div class="card-footer d-flex justify-content-between align-items-center py-3">
       <span class="text-muted small">
         Mostrando {{ registros.length }} de {{ totalElementos }} registros (Página {{ paginaActual + 1 }} de {{ totalPaginas }})
       </span>
       <ul class="pagination pagination-sm mb-0">
         <li class="page-item" [class.disabled]="paginaActual === 0">
-          <button class="page-page-link page-link" (click)="cambiarPagina(paginaActual - 1)">Anterior</button>
+          <button class="page-link" (click)="cambiarPagina(paginaActual - 1)">Anterior</button>
         </li>
         <li class="page-item" [class.disabled]="paginaActual + 1 >= totalPaginas">
           <button class="page-link" (click)="cambiarPagina(paginaActual + 1)">Siguiente</button>

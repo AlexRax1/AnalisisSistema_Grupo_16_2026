@@ -22,4 +22,8 @@ public class SubcategoriaQueja {
 
     @Column(name = "estado", length = 20)
     private String estado = "ACTIVO";
+
+    public String getNombreSubcategoria() {
+        return nombreSubcategoria;
+    }
 }

@@ -18,8 +18,8 @@ import { DetalleQuejaEspecialistaComponent } from './modules/operaciones-campo/p
 import { AdminUsuariosComponent } from './modules/admin/pages/admin-usuarios/admin-usuarios';
 import { AdminReportesComponent } from './modules/admin/pages/admin-reportes/admin-reportes';
 import { MiPerfilComponent } from './modules/admin/pages/mi-perfil/mi-perfil.component';
-import { CatalogoQuejasAdminComponent } from './modules/admin/catalogo-quejas/catalogo-quejas.component';
 import { GestionPersonalComponent } from './modules/admin/gestion-personal/gestion-personal.component';
+import { CatalogoQuejasComponent } from './modules/admin/catalogo-quejas/catalogo-quejas.component';
 
 export const routes: Routes = [
   // Portal público de bienvenida
@@ -32,8 +32,8 @@ export const routes: Routes = [
     children: [
       { path: 'login', component: LoginComponent },
       { path: 'registro', component: RegistroComponent },
-      { path: '', redirectTo: 'login', pathMatch: 'full' }
-    ]
+      { path: '', redirectTo: 'login', pathMatch: 'full' },
+    ],
   },
 
   // Dashboard: Ciudadano
@@ -44,8 +44,8 @@ export const routes: Routes = [
       { path: 'mis-quejas', component: MisQuejasComponent },
       { path: 'nueva-queja', component: CrearQuejaComponent },
       { path: 'perfil', component: MiPerfilComponent },
-      { path: '', redirectTo: 'mis-quejas', pathMatch: 'full' }
-    ]
+      { path: '', redirectTo: 'mis-quejas', pathMatch: 'full' },
+    ],
   },
 
   // Dashboard: Funcionario Municipal
@@ -55,8 +55,8 @@ export const routes: Routes = [
     children: [
       { path: 'bandeja', component: BandejaGestionComponent },
       { path: 'detalle-gestion/:id', component: DetalleQuejaGestionComponent },
-      { path: '', redirectTo: 'bandeja', pathMatch: 'full' }
-    ]
+      { path: '', redirectTo: 'bandeja', pathMatch: 'full' },
+    ],
   },
 
   // Dashboard: Inspector de Campo
@@ -67,8 +67,8 @@ export const routes: Routes = [
       { path: 'inicio', component: InicioInspectorComponent },
       { path: 'inspecciones', component: BandejaInspectorComponent },
       { path: 'detalle-inspector/:id', component: DetalleQuejaInspectorComponent },
-      { path: '', redirectTo: 'inicio', pathMatch: 'full' }
-    ]
+      { path: '', redirectTo: 'inicio', pathMatch: 'full' },
+    ],
   },
 
   // Dashboard: Especialista Técnico
@@ -79,8 +79,8 @@ export const routes: Routes = [
       { path: 'inicio', component: InicioEspecialistaComponent },
       { path: 'ordenes', component: BandejaEspecialistaComponent },
       { path: 'detalle-especialista/:id', component: DetalleQuejaEspecialistaComponent },
-      { path: '', redirectTo: 'inicio', pathMatch: 'full' }
-    ]
+      { path: '', redirectTo: 'inicio', pathMatch: 'full' },
+    ],
   },
 
   // Dashboard: Administrador
@@ -88,23 +88,15 @@ export const routes: Routes = [
     path: 'admin',
     component: DashboardLayoutComponent,
     children: [
-      { path: 'usuarios', component: AdminUsuariosComponent },
+      { path: '', redirectTo: 'gestion-personal', pathMatch: 'full' },
+      { path: 'gestion-personal', component: GestionPersonalComponent },
+      { path: 'catalogo-quejas', component: CatalogoQuejasComponent },
       { path: 'reportes', component: AdminReportesComponent },
-      { path: '', redirectTo: 'usuarios', pathMatch: 'full' }
-    ]
-  },
-
-  {
-    path: 'admin/catalogo-quejas',
-    component: CatalogoQuejasAdminComponent,
-    // canActivate: [RoleGuard] // Opcional: Proteger con el guard del Funcionario/Administrador
-  },
-
-  {
-    path: 'admin/gestion-personal',
-    component: GestionPersonalComponent
+      // Mantenemos 'usuarios' por compatibilidad si alguna otra parte del código aún lo llama
+      { path: 'usuarios', redirectTo: 'gestion-personal', pathMatch: 'full' },
+    ],
   },
 
   // Fallback
-  { path: '**', redirectTo: '' }
+  { path: '**', redirectTo: '' },
 ];
