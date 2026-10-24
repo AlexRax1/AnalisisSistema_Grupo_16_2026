@@ -24,13 +24,19 @@ CREATE TABLE credenciales (
 
 CREATE TABLE bitacora (
     registro_id serial PRIMARY KEY,
-    user_id int REFERENCES credenciales(user_id),
-    microservicio_afectado varchar(50),
-    endpoint varchar(150),
-    accion varchar(200),
+    user_id int REFERENCES credenciales(user_id) ON DELETE SET NULL,
+    usuario_accion varchar(200),
+    fecha_hora timestamp DEFAULT CURRENT_TIMESTAMP,
+    tabla_afectada varchar(100),
     id_afectado varchar(150),
-    fecha_hora timestamp DEFAULT CURRENT_TIMESTAMP
+    campo_afectado varchar(100),
+    accion varchar(50),
+    registro_antiguo text,
+    registro_nuevo text
 );
+
+CREATE INDEX idx_bitacora_fecha_hora ON bitacora(fecha_hora);
+CREATE INDEX idx_bitacora_tabla_afectada ON bitacora(tabla_afectada);
 
 CREATE TABLE recuperacion_password (
     recuperacion_id serial PRIMARY KEY,

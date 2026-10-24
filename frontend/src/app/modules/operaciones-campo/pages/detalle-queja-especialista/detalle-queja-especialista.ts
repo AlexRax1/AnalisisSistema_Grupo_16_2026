@@ -192,13 +192,18 @@ export class DetalleQuejaEspecialistaComponent implements OnInit {
       return false;
     }
 
+    if (this.descripcionReparacion.trim().length > 500) {
+      this.errorFormulario = 'La descripción de los trabajos ejecutados no puede superar los 500 caracteres.';
+      return false;
+    }
+
     if (!this.materialesUtilizados || !this.materialesUtilizados.trim()) {
       this.errorFormulario = 'Debe detallar los materiales y repuestos utilizados en la obra.';
       return false;
     }
 
-    if (this.horasTrabajadas === null || this.horasTrabajadas <= 0) {
-      this.errorFormulario = 'Debe indicar un número válido de horas trabajadas (ej. 2.5).';
+    if (this.horasTrabajadas === null || this.horasTrabajadas < 0.5 || this.horasTrabajadas > 24) {
+      this.errorFormulario = 'Debe indicar entre 0.5 y 24 horas trabajadas (ej. 2.5).';
       return false;
     }
 

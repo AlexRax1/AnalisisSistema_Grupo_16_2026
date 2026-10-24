@@ -80,6 +80,14 @@ public class InspectorController {
             @RequestPart(value = "fotos", required = false) List<MultipartFile> fotos,
             Authentication authentication) {
         try {
+            if (fotos == null || fotos.isEmpty() || fotos.get(0).isEmpty()) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("error", "Debe adjuntar al menos una fotografía de evidencia."));
+            }
+            if (fotos.size() > 3) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("error", "No puede adjuntar más de 3 fotografías."));
+            }
             String username = authentication.getName();
             MensajeResponse response = inspectorService.registrarInformeInspeccion(quejaId, dto, fotos, username);
             return ResponseEntity.ok(response);

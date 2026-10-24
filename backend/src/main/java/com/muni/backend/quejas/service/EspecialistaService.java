@@ -1,5 +1,6 @@
 package com.muni.backend.quejas.service;
 
+import com.muni.backend.bitacora.service.BitacoraService;
 import com.muni.backend.quejas.dto.especialista.InformeReparacionDTO;
 import com.muni.backend.quejas.dto.shared.*;
 import com.muni.backend.quejas.exception.AccesoDenegadoException;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -29,6 +31,7 @@ public class EspecialistaService {
     private final QuejaEstadoService estadoService;
     private final CatalogoService catalogoService;
     private final AsignacionAutomaticaService asignacionAutomaticaService;
+    private final BitacoraService bitacoraService;
 
     /**
      * Bandeja de quejas asignadas al especialista en estado EN REPARACIÓN TÉCNICA (resumen simple para lista).
@@ -86,16 +89,59 @@ public class EspecialistaService {
                 "Solo el especialista asignado puede registrar el informe de reparación.");
         }
 
+        if (dto == null) {
+            throw new IllegalArgumentException("Debe completar los datos del informe de reparación.");
+        }
+
+        String descripcion = dto.getDescripcion() != null ? dto.getDescripcion().trim() : "";
+        if (descripcion.length() < 20 || descripcion.length() > 500) {
+            throw new IllegalArgumentException("La descripción debe tener entre 20 y 500 caracteres.");
+        }
+
+        String materiales = dto.getMaterialesUtilizados() != null
+                ? dto.getMaterialesUtilizados().trim()
+                : "";
+        if (materiales.isEmpty()) {
+            throw new IllegalArgumentException("Debe detallar los materiales y repuestos utilizados.");
+        }
+
+        BigDecimal horas = dto.getHorasTrabajadas();
+        if (horas == null
+                || horas.compareTo(new BigDecimal("0.5")) < 0
+                || horas.compareTo(new BigDecimal("24")) > 0) {
+            throw new IllegalArgumentException("Las horas trabajadas deben estar entre 0.5 y 24.");
+        }
+
+        // El endpoint JSON alternativo envía null; el endpoint multipart exige 1 a 3 fotos.
+        if (fotos != null) {
+            if (fotos.isEmpty() || fotos.get(0).isEmpty()) {
+                throw new IllegalArgumentException("Debe adjuntar al menos una fotografía de evidencia.");
+            }
+            if (fotos.size() > 3) {
+                throw new IllegalArgumentException("No puede adjuntar más de 3 fotografías.");
+            }
+        }
+
         InformeQueja informe = new InformeQueja();
         informe.setQueja(queja);
         informe.setTipoInforme(TipoInforme.SOLUCION_TECNICA.name());
         informe.setAutor(especialista);
-        informe.setDescripcion(dto.getDescripcion().trim());
-        informe.setMaterialesUtilizados(dto.getMaterialesUtilizados());
-        informe.setHorasTrabajadas(dto.getHorasTrabajadas());
+        informe.setDescripcion(descripcion);
+        informe.setMaterialesUtilizados(materiales);
+        informe.setHorasTrabajadas(horas);
         informe.setInstruccionesCuadrilla(dto.getInstruccionesCuadrilla());
         informe.setFechaFinTrabajo(LocalDateTime.now());
         InformeQueja informeGuardado = informeQuejaRepository.save(informe);
+
+        bitacoraService.registrar(
+                username,
+                "informes_queja",
+                String.valueOf(informeGuardado.getInformeId()),
+                "registro",
+                "CREAR",
+                null,
+                "Informe de solución técnica de la queja " + queja.getCorrelativo()
+        );
 
         if (fotos != null && !fotos.isEmpty()) {
             for (MultipartFile foto : fotos) {
@@ -107,7 +153,7 @@ public class EspecialistaService {
                     evidencia.setEtapa(EtapaEvidencia.SOLUCION_TECNICA.name());
                     evidencia.setUrlArchivo(url);
                     evidencia.setNombreArchivo(foto.getOriginalFilename());
-                    evidencia.setFormato(foto.getContentType() != null && foto.getContentType().contains("png") ? "png" : "jpg");
+                    evidencia.setFormato(fileStorageService.obtenerFormato(url));
                     evidencia.setTamanioBytes(foto.getSize());
                     evidencia.setSubidoPor(especialista);
                     evidencia.setFechaSubida(LocalDateTime.now());
@@ -124,7 +170,7 @@ public class EspecialistaService {
                 : "Sin asignar";
 
         estadoService.cambiarEstado(queja, EstadoQueja.PENDIENTE_DE_CIERRE, especialista,
-                "Reparación técnica completada. Materiales: " + dto.getMaterialesUtilizados()
+                "Reparación técnica completada. Materiales: " + materiales
                 + ". Asignada automáticamente al funcionario: " + infoFuncionario + " para cierre administrativo.");
 
         return new MensajeResponse(

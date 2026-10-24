@@ -239,9 +239,10 @@
             rows="4"
             placeholder="Ej. Se desmontó la lámpara averiada, se soldó nueva línea de neutro y se instaló bombilla LED 100W..."
             [(ngModel)]="descripcionReparacion"
+            maxlength="500"
           ></textarea>
           <div class="char-counter" [class.valid-counter]="descripcionReparacion.length >= 20">
-            Caracteres: {{ descripcionReparacion.length }} / mínimo 20
+            Caracteres: {{ descripcionReparacion.length }} / 20 a 500
           </div>
         </div>
 
@@ -263,6 +264,7 @@
             type="number"
             step="0.5"
             min="0.5"
+            max="24"
             class="form-input"
             placeholder="Ej. 3.5"
             [(ngModel)]="horasTrabajadas"
@@ -297,7 +299,7 @@
             <label for="especialista-photos-input" class="file-dropzone-label">
               <span class="mat-icon dropzone-icon color-green-icon">add_a_photo</span>
               <span class="dropzone-main-text">Haga clic o arrastre aquí para subir fotografías de la reparación</span>
-              <span class="dropzone-sub-text">JPG, JPEG o PNG hasta 5 MB por archivo</span>
+              <span class="dropzone-sub-text">JPG, JPEG, PNG o WEBP hasta 5 MB por archivo</span>
             </label>
           </div>
 

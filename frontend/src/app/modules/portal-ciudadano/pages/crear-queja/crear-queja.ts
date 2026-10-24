@@ -250,10 +250,10 @@ export class CrearQuejaComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     for (const file of archivos) {
-      // FA02: Validación formato JPG, JPEG, PNG
+      // FA02: Validación formato JPG, JPEG, PNG o WEBP
       const extensionesValidas = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
       if (!extensionesValidas.includes(file.type.toLowerCase())) {
-        this.errorMensaje = 'FA02: Solo se admiten archivos de imagen en formato JPG, JPEG o PNG.';
+        this.errorMensaje = 'FA02: Solo se admiten archivos de imagen en formato JPG, JPEG, PNG o WEBP.';
         input.value = '';
         return;
       }

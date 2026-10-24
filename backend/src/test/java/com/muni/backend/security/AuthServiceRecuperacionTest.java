@@ -1,10 +1,10 @@
 package com.muni.backend.security;
 
+import com.muni.backend.bitacora.service.BitacoraService;
 import com.muni.backend.security.dto.ResetPasswordRequest;
 import com.muni.backend.security.model.Credencial;
 import com.muni.backend.security.model.RecuperacionPassword;
 import com.muni.backend.security.model.RolUser;
-import com.muni.backend.security.repository.BitacoraRepository;
 import com.muni.backend.security.repository.CredencialRepository;
 import com.muni.backend.security.repository.RecuperacionPasswordRepository;
 import com.muni.backend.security.repository.RolUserRepository;
@@ -38,7 +38,7 @@ class AuthServiceRecuperacionTest {
     @Mock
     private RolUserRepository rolUserRepository;
     @Mock
-    private BitacoraRepository bitacoraRepository;
+    private BitacoraService bitacoraService;
     @Mock
     private RecuperacionPasswordRepository recuperacionPasswordRepository;
     @Mock
@@ -165,7 +165,15 @@ class AuthServiceRecuperacionTest {
         verify(recuperacionPasswordRepository).save(rec);
 
         // Verifica auditoria en bitacora
-        verify(bitacoraRepository).save(any());
+        verify(bitacoraService).registrar(
+                eq("ciudadano@test.com"),
+                eq("credenciales"),
+                eq("10"),
+                eq("password"),
+                eq("ACTUALIZAR"),
+                anyString(),
+                anyString()
+        );
     }
 
     @Test

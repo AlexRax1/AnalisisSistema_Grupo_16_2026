@@ -72,7 +72,6 @@ export class DashboardLayoutComponent implements OnInit {
   };
 
   currentConfig: RolConfig | null = null;
-  segmentoActual: string = 'ciudadano';
 
   constructor(private router: Router) {}
 
@@ -85,52 +84,15 @@ export class DashboardLayoutComponent implements OnInit {
 
   private detectarRol() {
     const url = this.router.url;
-    const segmento = url.split('/')[1]; // ciudadano, funcionario, inspector, admin, etc.
-    this.segmentoActual = segmento || 'ciudadano';
-    this.currentConfig = this.rolConfigs[this.segmentoActual] || null;
+    const segmento = url.split('/')[1] || 'ciudadano'; // ciudadano, funcionario, inspector, admin, etc.
+    this.currentConfig = this.rolConfigs[segmento] || null;
 
     // Leer rol del localStorage
     const rolStorage = localStorage.getItem('rol');
     if (rolStorage) {
       this.rolActual = rolStorage;
     } else {
-      this.rolActual = this.segmentoActual.toUpperCase();
-    }
-  }
-
-  cambiarRolDemo(event: Event) {
-    const target = event.target as HTMLSelectElement;
-    const nuevoSegmento = target.value;
-
-    const mapaRoles: Record<string, string> = {
-      ciudadano: 'CIUDADANO',
-      funcionario: 'FUNCIONARIO',
-      inspector: 'INSPECTOR',
-      especialista: 'ESPECIALISTA',
-      admin: 'ADMINISTRADOR',
-    };
-
-    if (mapaRoles[nuevoSegmento]) {
-      localStorage.setItem('rol', mapaRoles[nuevoSegmento]);
-    }
-
-    switch (nuevoSegmento) {
-      case 'ciudadano':
-        this.router.navigate(['/ciudadano/mis-quejas']);
-        break;
-      case 'funcionario':
-        this.router.navigate(['/funcionario/bandeja']);
-        break;
-      case 'inspector':
-        this.router.navigate(['/inspector/inicio']);
-        break;
-      case 'especialista':
-        this.router.navigate(['/especialista/inicio']);
-        break;
-      case 'admin':
-        // 👈 Corregido: redirecciona a gestion-personal
-        this.router.navigate(['/admin/gestion-personal']);
-        break;
+      this.rolActual = segmento.toUpperCase();
     }
   }
 

@@ -1,5 +1,6 @@
 package com.muni.backend.quejas.service;
 
+import com.muni.backend.bitacora.service.BitacoraService;
 import com.muni.backend.quejas.dto.funcionario.*;
 import com.muni.backend.quejas.dto.shared.*;
 import com.muni.backend.quejas.exception.*;
@@ -26,6 +27,14 @@ public class FuncionarioService {
     private final QuejaEstadoService estadoService;
     private final CatalogoService catalogoService;
     private final AsignacionAutomaticaService asignacionAutomaticaService;
+    private final BitacoraService bitacoraService;
+
+    private String nombreUsuario(Usuario usuario) {
+        return usuario != null
+                ? usuario.getNombres() + " " + usuario.getApellidos()
+                    + " (id " + usuario.getUsuarioId() + ")"
+                : "Sin asignar";
+    }
 
     private String determinarFase(String estadoActual) {
         return switch (estadoActual) {
@@ -105,6 +114,16 @@ public class FuncionarioService {
             queja.setFuncionario(funcionario);
             queja.setFechaModificacion(LocalDateTime.now());
             quejaRepository.save(queja);
+
+            bitacoraService.registrar(
+                    username,
+                    "quejas",
+                    String.valueOf(queja.getQuejaId()),
+                    "funcionario_id",
+                    "ACTUALIZAR",
+                    "Sin asignar",
+                    nombreUsuario(funcionario)
+            );
         }
 
         TareaAsignadaDTO dto = new TareaAsignadaDTO();
@@ -175,6 +194,7 @@ public class FuncionarioService {
 
         // Asignación automática por carga de trabajo
         Usuario inspector = asignacionAutomaticaService.asignarInspectorAutomatico();
+        String inspectorAnterior = nombreUsuario(queja.getInspector());
         queja.setInspector(inspector);
 
         String instrucciones = dto != null ? dto.getInstrucciones() : null;
@@ -184,6 +204,16 @@ public class FuncionarioService {
                 : "Inspector " + inspector.getNombres() + " " + inspector.getApellidos()
                     + " asignado automáticamente.";
         estadoService.cambiarEstado(queja, EstadoQueja.EN_INSPECCION, funcionario, comentario);
+
+        bitacoraService.registrar(
+                username,
+                "quejas",
+                String.valueOf(queja.getQuejaId()),
+                "inspector_id",
+                "ACTUALIZAR",
+                inspectorAnterior,
+                nombreUsuario(inspector)
+        );
 
         return new MensajeResponse(
                 "Inspector " + inspector.getNombres() + " " + inspector.getApellidos()
@@ -220,6 +250,11 @@ public class FuncionarioService {
         // Asignación automática de especialista (priorizando dependencia y menor carga)
         Usuario especialista = asignacionAutomaticaService.asignarEspecialistaAutomatico(depId);
 
+        String especialistaAnterior = nombreUsuario(queja.getEspecialista());
+        String dependenciaAnterior = queja.getDependenciaAsignada() != null
+                ? queja.getDependenciaAsignada().getNombreDependencia()
+                : "Sin asignar";
+
         queja.setEspecialista(especialista);
         queja.setDependenciaAsignada(dependencia);
 
@@ -231,6 +266,26 @@ public class FuncionarioService {
                 : "Reparación autorizada. Dependencia: " + dependencia.getNombreDependencia()
                     + ". Especialista: " + especialista.getNombres() + " " + especialista.getApellidos();
         estadoService.cambiarEstado(queja, EstadoQueja.EN_REPARACION_TECNICA, funcionario, comentario);
+
+        bitacoraService.registrar(
+                username,
+                "quejas",
+                String.valueOf(queja.getQuejaId()),
+                "especialista_id",
+                "ACTUALIZAR",
+                especialistaAnterior,
+                nombreUsuario(especialista)
+        );
+
+        bitacoraService.registrar(
+                username,
+                "quejas",
+                String.valueOf(queja.getQuejaId()),
+                "dependencia_id",
+                "ACTUALIZAR",
+                dependenciaAnterior,
+                dependencia.getNombreDependencia()
+        );
 
         return new MensajeResponse(
                 "Reparación autorizada para queja " + queja.getCorrelativo()
@@ -256,9 +311,16 @@ public class FuncionarioService {
         Queja queja = estadoService.buscarQueja(targetQuejaId);
         estadoService.validarEstado(queja, EstadoQueja.PENDIENTE_DE_CIERRE);
 
-        if (dto.getDescripcionCierre() == null || dto.getDescripcionCierre().trim().length() < 20) {
+        if (dto == null) {
+            throw new EstadoInvalidoException("Debe proporcionar la resolución de cierre.");
+        }
+
+        String resolucion = dto.getDescripcionCierre() != null
+                ? dto.getDescripcionCierre().trim()
+                : "";
+        if (resolucion.length() < 20 || resolucion.length() > 500) {
             throw new EstadoInvalidoException(
-                "La descripción de cierre debe tener al menos 20 caracteres.");
+                "La resolución de cierre debe tener entre 20 y 500 caracteres.");
         }
 
         queja.setFechaCierre(LocalDateTime.now());
@@ -267,11 +329,21 @@ public class FuncionarioService {
         informe.setQueja(queja);
         informe.setTipoInforme(TipoInforme.CIERRE_ADMINISTRATIVO.name());
         informe.setAutor(funcionario);
-        informe.setDescripcion(dto.getDescripcionCierre().trim());
-        informeQuejaRepository.save(informe);
+        informe.setDescripcion(resolucion);
+        InformeQueja informeGuardado = informeQuejaRepository.save(informe);
 
         estadoService.cambiarEstado(queja, EstadoQueja.SOLUCIONADA_CERRADA, funcionario,
                 "Cierre administrativo aprobado.");
+
+        bitacoraService.registrar(
+                username,
+                "informes_queja",
+                String.valueOf(informeGuardado.getInformeId()),
+                "registro",
+                "CREAR",
+                null,
+                "Cierre administrativo de la queja " + queja.getCorrelativo()
+        );
 
         return new MensajeResponse(
                 "La queja " + queja.getCorrelativo() + " ha sido cerrada exitosamente.",
@@ -301,13 +373,46 @@ public class FuncionarioService {
                 "No se puede rechazar o devolver una queja en estado: " + estadoAnterior);
         }
 
+        if (dto == null) {
+            throw new EstadoInvalidoException(
+                "Debe proporcionar los datos del rechazo o devolución.");
+        }
+        if (dto.getEsRechazoDefinitivo() == null) {
+            throw new EstadoInvalidoException(
+                "Debe indicar si la acción es rechazo definitivo o devolución.");
+        }
+
+        String motivo = dto.getMotivoRechazo() != null ? dto.getMotivoRechazo().trim() : "";
+        if (motivo.isEmpty()) {
+            throw new EstadoInvalidoException("Debe seleccionar un motivo principal.");
+        }
+
+        String justificacion = dto.getDescripcionDetallada() != null
+                ? dto.getDescripcionDetallada().trim()
+                : "";
+        if (justificacion.length() < 20 || justificacion.length() > 500) {
+            throw new EstadoInvalidoException(
+                "La justificación debe tener entre 20 y 500 caracteres.");
+        }
+
         if (Boolean.TRUE.equals(dto.getEsRechazoDefinitivo())) {
-            queja.setMotivoRechazo(dto.getMotivoRechazo());
+            String motivoAnterior = queja.getMotivoRechazo();
+            queja.setMotivoRechazo(motivo);
             queja.setFechaCierre(LocalDateTime.now());
 
-            String comentario = "Rechazo definitivo. Motivo: " + dto.getMotivoRechazo()
-                    + ". Detalle: " + dto.getDescripcionDetallada();
+            String comentario = "Rechazo definitivo. Motivo: " + motivo
+                    + ". Detalle: " + justificacion;
             estadoService.cambiarEstado(queja, EstadoQueja.RECHAZADA, funcionario, comentario);
+
+            bitacoraService.registrar(
+                    username,
+                    "quejas",
+                    String.valueOf(queja.getQuejaId()),
+                    "motivo_rechazo",
+                    "ACTUALIZAR",
+                    motivoAnterior,
+                    motivo
+            );
 
             return new MensajeResponse(
                     "La queja " + queja.getCorrelativo() + " ha sido rechazada definitivamente.",
@@ -317,9 +422,19 @@ public class FuncionarioService {
         } else {
             EstadoQueja estadoDestino = estadoService.determinarEstadoAnterior(estadoAnterior);
 
-            String comentario = "Devolución. Motivo: " + dto.getMotivoRechazo()
-                    + ". Detalle: " + dto.getDescripcionDetallada();
+            String comentario = "Devolución. Motivo: " + motivo
+                    + ". Detalle: " + justificacion;
             estadoService.cambiarEstado(queja, estadoDestino, funcionario, comentario);
+
+            bitacoraService.registrar(
+                    username,
+                    "quejas",
+                    String.valueOf(queja.getQuejaId()),
+                    "motivo_devolucion",
+                    "ACTUALIZAR",
+                    null,
+                    motivo
+            );
 
             return new MensajeResponse(
                     "La queja " + queja.getCorrelativo() + " ha sido devuelta al estado: " + estadoDestino.getValor(),

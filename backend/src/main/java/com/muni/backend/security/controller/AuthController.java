@@ -59,12 +59,6 @@ public class AuthController {
         }
     }
 
-    @PostMapping("/bitacora/registrar")
-    public ResponseEntity<?> registrarBitacora(@RequestBody BitacoraDTO dto) {
-        authService.registrarBitacora(dto);
-        return ResponseEntity.ok().build();
-    }
-
     @PostMapping("/recuperar/solicitar-codigo")
     public ResponseEntity<?> solicitarCodigo(@RequestBody Map<String, String> request) {
         String correo = request.get("correo");

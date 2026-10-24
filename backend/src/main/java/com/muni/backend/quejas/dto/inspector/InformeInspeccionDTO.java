@@ -16,6 +16,6 @@ public class InformeInspeccionDTO {
     private String recursosSugeridos;
 
     @NotNull(message = "La descripción del hallazgo es obligatoria.")
-    @Size(min = 20, message = "La descripción debe tener al menos 20 caracteres.")
+    @Size(min = 20, max = 500, message = "La descripción debe tener entre 20 y 500 caracteres.")
     private String descripcion;
 }

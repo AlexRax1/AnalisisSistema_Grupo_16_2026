@@ -533,11 +533,12 @@
             <textarea
               class="form-textarea"
               rows="4"
+              maxlength="500"
               placeholder="Ej. Trabajo de cambio de luminaria verificado y conforme a satisfacción del vecindario..."
               [(ngModel)]="descripcionCierre"
             ></textarea>
             <div class="char-counter" [class.valid-counter]="descripcionCierre.length >= 20">
-              Caracteres: {{ descripcionCierre.length }} / mínimo 20
+              Caracteres: {{ descripcionCierre.length }} / 20 a 500
             </div>
           </div>
 
@@ -591,9 +592,13 @@
           <textarea
             class="form-textarea"
             rows="4"
+            maxlength="500"
             placeholder="Detalle los fundamentos técnicos o legales de esta decisión..."
             [(ngModel)]="descripcionDetalladaRechazo"
           ></textarea>
+          <div class="char-counter" [class.valid-counter]="descripcionDetalladaRechazo.length >= 20">
+            Caracteres: {{ descripcionDetalladaRechazo.length }} / 20 a 500
+          </div>
         </div>
 
         <!-- Radio: Rechazo Definitivo vs Devolución -->

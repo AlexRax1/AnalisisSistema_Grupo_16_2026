@@ -116,10 +116,14 @@ export class RegistroComponent implements OnInit {
 
         const msgLower = mensajeBackend.toLowerCase();
 
-        if (msgLower.includes('dpi')) {
+        if (msgLower.includes('institucional')) {
+          this.errorMsg = 'Un ciudadano no puede registrarse con un correo institucional.';
+          this.registroForm.get('correo')?.setErrors({ institucional: true });
+        } else if (msgLower.includes('dpi') && msgLower.includes('registrado')) {
           this.errorMsg = 'El número de DPI ingresado ya se encuentra registrado en el sistema.';
           this.registroForm.get('dpi')?.setErrors({ duplicado: true });
-        } else if (msgLower.includes('correo') || msgLower.includes('email')) {
+        } else if ((msgLower.includes('correo') || msgLower.includes('email'))
+            && (msgLower.includes('asociado') || msgLower.includes('registrado'))) {
           this.errorMsg = 'El correo electrónico ingresado ya está asociado a otra cuenta.';
           this.registroForm.get('correo')?.setErrors({ duplicado: true });
         } else {

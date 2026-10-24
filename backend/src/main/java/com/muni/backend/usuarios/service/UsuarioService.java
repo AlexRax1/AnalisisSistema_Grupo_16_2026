@@ -1,5 +1,6 @@
 package com.muni.backend.usuarios.service;
 
+import com.muni.backend.bitacora.service.BitacoraService;
 import com.muni.backend.quejas.dto.shared.EmpleadoDTO;
 import com.muni.backend.quejas.dto.shared.GuardarEmpleadoDTO;
 import com.muni.backend.security.model.Credencial;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import java.time.LocalDateTime;
@@ -31,6 +33,7 @@ public class UsuarioService {
     private final UsuarioRepository usuarioRepository;
     private final AuthService authService;
     private final PasswordEncoder passwordEncoder;
+    private final BitacoraService bitacoraService;
     @Autowired
     private RolUserRepository rolUserRepository;
     @Autowired
@@ -42,8 +45,41 @@ public class UsuarioService {
 
         // --- campos nulos ---
         if (dto.getDpi() == null || dto.getNombres() == null || dto.getApellidos() == null ||
-                dto.getCorreo() == null || dto.getTelefono() == null || dto.getPassword() == null) {
+                dto.getCorreo() == null || dto.getTelefono() == null ||
+                dto.getDireccion() == null || dto.getPassword() == null) {
             throw new IllegalArgumentException("Debe completar todos los campos obligatorios.");
+        }
+
+        String dpi = dto.getDpi().trim();
+        String nombres = dto.getNombres().trim();
+        String apellidos = dto.getApellidos().trim();
+        String correo = dto.getCorreo().trim().toLowerCase();
+        String telefono = dto.getTelefono().trim();
+        String direccion = dto.getDireccion().trim();
+
+        if (nombres.isEmpty() || apellidos.isEmpty() || direccion.isEmpty()) {
+            throw new IllegalArgumentException("Debe completar todos los campos obligatorios.");
+        }
+
+        // Límites de las columnas de la tabla usuarios (RN52)
+        if (nombres.length() > 100 || apellidos.length() > 100) {
+            throw new IllegalArgumentException(
+                    "Los nombres y apellidos no pueden superar los 100 caracteres.");
+        }
+        if (direccion.length() > 200) {
+            throw new IllegalArgumentException("La dirección no puede superar los 200 caracteres.");
+        }
+        if (correo.length() > 150) {
+            throw new IllegalArgumentException("El correo electrónico no puede superar los 150 caracteres.");
+        }
+
+        // Formato y ámbito del correo (RN03)
+        if (!correo.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) {
+            throw new IllegalArgumentException("El correo electrónico no tiene un formato válido.");
+        }
+        if (correo.endsWith("@muni.gob.gt")) {
+            throw new IllegalArgumentException(
+                    "Un ciudadano no puede registrarse con un correo institucional.");
         }
 
 
@@ -56,11 +92,11 @@ public class UsuarioService {
             throw new IllegalArgumentException("La contraseña debe contener al menos 6 caracteres, una letra mayúscula, un número y un carácter especial.");
         }
         // Teléfono de 8 dígitos
-        if (!dto.getTelefono().matches("^[0-9]{8}$")) {
+        if (!telefono.matches("^[0-9]{8}$")) {
             throw new IllegalArgumentException("El número telefónico debe contener exactamente 8 dígitos numéricos.");
         }
         // DPI de 13 dígitos
-        if (!dto.getDpi().matches("^[0-9]{13}$")) {
+        if (!dpi.matches("^[0-9]{13}$")) {
             throw new IllegalArgumentException("El DPI debe contener exactamente 13 dígitos numéricos.");
         }
 
@@ -68,10 +104,10 @@ public class UsuarioService {
 
 
         // --- 2. VALIDACIÓN DE DUPLICADOS (FA02, FA03) ---
-        if (usuarioRepository.existsByDpi(dto.getDpi())) {
+        if (usuarioRepository.existsByDpi(dpi)) {
             throw new IllegalArgumentException("El número de DPI ingresado ya se encuentra registrado en el sistema.");
         }
-        if (usuarioRepository.existsByCorreo(dto.getCorreo())) {
+        if (usuarioRepository.existsByCorreoIgnoreCase(correo)) {
             throw new IllegalArgumentException("El correo electrónico ingresado ya está asociado a otra cuenta.");
         }
 
@@ -83,20 +119,31 @@ public class UsuarioService {
         // --- creacion de credenciales comunicando con modulo "Security" ---
         // se asigna rol Ciudadano por defecto al registrar un usuario
         // --- 4. DELEGACIÓN A AUTH (Crea credencial, valida username y hashea contraseña) ---
-        Credencial credencialGuardada = authService.crearCredencialCiudadano(dto.getCorreo(), dto.getPassword());
+        Credencial credencialGuardada = authService.crearCredencialCiudadano(correo, dto.getPassword());
 
         // --- 5. CREACIÓN DE USUARIO (Módulo Usuarios) ---
         Usuario usuario = new Usuario();
         usuario.setCredencial(credencialGuardada);
-        usuario.setDpi(dto.getDpi());
-        usuario.setNombres(dto.getNombres());
-        usuario.setApellidos(dto.getApellidos());
-        usuario.setCorreo(dto.getCorreo());
-        usuario.setTelefono(dto.getTelefono());
-        usuario.setDireccion(dto.getDireccion());
+        usuario.setDpi(dpi);
+        usuario.setNombres(nombres);
+        usuario.setApellidos(apellidos);
+        usuario.setCorreo(correo);
+        usuario.setTelefono(telefono);
+        usuario.setDireccion(direccion);
         usuario.setUsuarioCreacion("REGISTRO_PUBLICO");
 
-        usuarioRepository.save(usuario);
+        Usuario guardado = usuarioRepository.save(usuario);
+
+        bitacoraService.registrar(
+                correo,
+                "usuarios",
+                String.valueOf(guardado.getUsuarioId()),
+                "registro",
+                "CREAR",
+                null,
+                "Ciudadano registrado: " + nombres + " " + apellidos
+                        + " (" + correo + ")"
+        );
     }
 
     @Transactional(readOnly = true)
@@ -133,13 +180,18 @@ public class UsuarioService {
                 .or(() -> usuarioRepository.findByCorreoIgnoreCase(identificadorActual))
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado en la base de datos."));
 
+        String telefonoAnterior = usuario.getTelefono();
+        String direccionAnterior = usuario.getDireccion();
+        Credencial credencialUsuario = usuario.getCredencial();
+        boolean passwordCambiada = false;
+
         // 3. Actualizar telefono y direccion (DPI, nombres y correo son inmutables)
         usuario.setTelefono(telefonoLimpio);
         usuario.setDireccion(dto.getDireccion().trim());
 
         // 4. Cambio opcional de contrasena
         if (dto.getNuevaPassword() != null && !dto.getNuevaPassword().trim().isEmpty()) {
-            Credencial credencial = usuario.getCredencial();
+            Credencial credencial = credencialUsuario;
             if (credencial == null) {
                 throw new IllegalArgumentException("No se encontró una credencial asociada a este usuario.");
             }
@@ -156,19 +208,44 @@ public class UsuarioService {
                 throw new IllegalArgumentException("La nueva contraseña y su confirmación no coinciden.");
             }
 
-            // Validar longitud minima
-            if (dto.getNuevaPassword().trim().length() < 6) {
+            // Validar longitud y complejidad de la nueva contrasena
+            String nuevaPassword = dto.getNuevaPassword().trim();
+            if (nuevaPassword.length() < 6) {
                 throw new IllegalArgumentException("La nueva contraseña debe tener al menos 6 caracteres.");
+            }
+            if (!nuevaPassword.matches("^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?]).{6,}$")) {
+                throw new IllegalArgumentException(
+                        "La nueva contraseña debe incluir al menos una letra mayúscula, un número y un carácter especial.");
             }
 
             // Encriptar y actualizar contrasena
-            credencial.setPassword(passwordEncoder.encode(dto.getNuevaPassword().trim()));
+            credencial.setPassword(passwordEncoder.encode(nuevaPassword));
+            passwordCambiada = true;
         }
 
         // 5. Guardar cambios en base de datos
         usuario.setFechaModificacion(LocalDateTime.now());
         usuario.setUsuarioModificacion(identificadorActual);
         usuarioRepository.save(usuario);
+
+        String username = credencialUsuario != null ? credencialUsuario.getUsername() : identificadorActual;
+        String idUsuario = String.valueOf(usuario.getUsuarioId());
+
+        if (!Objects.equals(telefonoAnterior, usuario.getTelefono())) {
+            bitacoraService.registrar(username, "usuarios", idUsuario, "telefono",
+                    "ACTUALIZAR", telefonoAnterior, usuario.getTelefono());
+        }
+
+        if (!Objects.equals(direccionAnterior, usuario.getDireccion())) {
+            bitacoraService.registrar(username, "usuarios", idUsuario, "direccion",
+                    "ACTUALIZAR", direccionAnterior, usuario.getDireccion());
+        }
+
+        if (passwordCambiada) {
+            bitacoraService.registrar(username, "credenciales",
+                    String.valueOf(credencialUsuario.getUserId()), "password",
+                    "ACTUALIZAR", "***", "***");
+        }
     }
 
     public Usuario buscarPorDpi(String dpi) {
@@ -222,7 +299,18 @@ public class UsuarioService {
         usuario.setEstado("ACTIVO");
         usuario.setCredencial(credencialGuardada);
 
-        usuarioRepository.save(usuario);
+        Usuario guardado = usuarioRepository.save(usuario);
+
+        bitacoraService.registrar(
+                null,
+                "usuarios",
+                String.valueOf(guardado.getUsuarioId()),
+                "registro",
+                "CREAR",
+                null,
+                "Empleado registrado: " + dto.getNombres() + " " + dto.getApellidos()
+                        + " (" + dto.getCorreoInstitucional() + "), rol=" + nombreRolBD
+        );
     }
 
     @Transactional
@@ -230,6 +318,8 @@ public class UsuarioService {
         // 1. Buscar el usuario
         Usuario usuario = usuarioRepository.findById(id.intValue())
                 .orElseThrow(() -> new RuntimeException("Empleado no encontrado con ID: " + id));
+
+        String datosAnteriores = resumenEmpleado(usuario);
 
         // 2. Actualizar datos personales
         usuario.setDpi(dto.getDpi());
@@ -252,6 +342,29 @@ public class UsuarioService {
 
         // 6. Guardar cambios
         usuarioRepository.save(usuario);
+
+        bitacoraService.registrar(
+                null,
+                "usuarios",
+                String.valueOf(usuario.getUsuarioId()),
+                "datos_empleado",
+                "ACTUALIZAR",
+                datosAnteriores,
+                resumenEmpleado(usuario)
+        );
+    }
+
+    private String resumenEmpleado(Usuario usuario) {
+        String rol = usuario.getCredencial() != null && usuario.getCredencial().getRolUser() != null
+                ? usuario.getCredencial().getRolUser().getNombreRol()
+                : "SIN_ROL";
+
+        return "nombres=" + usuario.getNombres()
+                + ", apellidos=" + usuario.getApellidos()
+                + ", dpi=" + usuario.getDpi()
+                + ", correo=" + usuario.getCorreo()
+                + ", telefono=" + usuario.getTelefono()
+                + ", rol=" + rol;
     }
 
     private String mapearNombreRolBD(String rolFormulario) {
@@ -278,8 +391,19 @@ public class UsuarioService {
         Usuario usuario = usuarioRepository.findById(id.intValue())
                 .orElseThrow(() -> new RuntimeException("Empleado no encontrado con ID: " + id));
 
+        String estadoAnterior = usuario.getEstado();
         usuario.setEstado(activo ? "ACTIVO" : "INACTIVO");
         usuarioRepository.save(usuario);
+
+        bitacoraService.registrar(
+                null,
+                "usuarios",
+                String.valueOf(usuario.getUsuarioId()),
+                "estado",
+                "ACTUALIZAR",
+                estadoAnterior,
+                usuario.getEstado()
+        );
     }
 
     public EmpleadoDTO convertirAEmpleadoDTO(Usuario usuario) {

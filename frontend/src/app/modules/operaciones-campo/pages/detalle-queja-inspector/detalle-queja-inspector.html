@@ -250,9 +250,10 @@
               rows="4"
               placeholder="Describa el diagnóstico técnico detallado encontrado en el sitio..."
               [(ngModel)]="descripcionInforme"
+              maxlength="500"
             ></textarea>
             <div class="char-counter" [class.valid-counter]="descripcionInforme.length >= 20">
-              Caracteres: {{ descripcionInforme.length }} / mínimo 20
+              Caracteres: {{ descripcionInforme.length }} / 20 a 500
             </div>
           </div>
 
@@ -283,7 +284,7 @@
               <label for="inspector-photos-input" class="file-dropzone-label">
                 <span class="mat-icon dropzone-icon">add_a_photo</span>
                 <span class="dropzone-main-text">Haga clic o arrastre aquí para subir fotografías de prueba</span>
-                <span class="dropzone-sub-text">JPG, JPEG o PNG hasta 5 MB por archivo</span>
+                <span class="dropzone-sub-text">JPG, JPEG, PNG o WEBP hasta 5 MB por archivo</span>
               </label>
             </div>
 

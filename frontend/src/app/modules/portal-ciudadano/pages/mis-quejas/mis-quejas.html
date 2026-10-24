@@ -162,13 +162,14 @@
       <textarea
         class="form-control"
         rows="4"
+        maxlength="500"
         [(ngModel)]="descripcionDerivada"
         placeholder="Describa a detalle lo sucedido..."></textarea>
     </div>
 
     <div class="mb-3">
-      <label class="form-label fw-bold small mb-1">Adjuntar Evidencias (1 a 3 imágenes JPG/PNG):</label>
-      <input type="file" class="form-control" accept="image/png, image/jpeg" multiple (change)="onSeleccionarFotos($event)">
+      <label class="form-label fw-bold small mb-1">Adjuntar Evidencias (1 a 3 imágenes JPG, JPEG, PNG o WEBP):</label>
+      <input type="file" class="form-control" accept="image/png, image/jpeg, image/jpg, image/webp" multiple (change)="onSeleccionarFotos($event)">
     </div>
 
     <div class="d-flex justify-content-end gap-2 mt-4">

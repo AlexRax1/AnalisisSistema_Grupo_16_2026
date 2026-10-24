@@ -2,11 +2,15 @@ package com.muni.backend.quejas.service;
 
 import com.muni.backend.quejas.dto.ciudadano.*;
 import com.muni.backend.quejas.dto.shared.*;
+import com.muni.backend.quejas.model.CategoriaQueja;
+import com.muni.backend.quejas.model.EstadoQueja;
 import com.muni.backend.quejas.model.EvidenciaDigital;
 import com.muni.backend.quejas.model.HistorialEstadoQueja;
 import com.muni.backend.quejas.model.Queja;
+import com.muni.backend.quejas.model.SubcategoriaQueja;
 import com.muni.backend.quejas.repository.EvidenciaDigitalRepository;
 import com.muni.backend.quejas.repository.HistorialEstadoQuejaRepository;
+import com.muni.backend.bitacora.service.BitacoraService;
 import com.muni.backend.quejas.repository.QuejaRepository;
 import com.muni.backend.shared.service.FileStorageService;
 import com.muni.backend.usuarios.model.Usuario;
@@ -39,25 +43,43 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class QuejaService {
 
+    // Límites geográficos aproximados; deben coincidir con el mapa del portal.
+    private static final double MIN_LATITUD = 14.64;
+    private static final double MAX_LATITUD = 14.81;
+    private static final double MIN_LONGITUD = -90.73;
+    private static final double MAX_LONGITUD = -90.57;
+
     private final QuejaRepository quejaRepository;
     private final EvidenciaDigitalRepository evidenciaRepository;
     private final UsuarioRepository usuarioRepository;
     private final HistorialEstadoQuejaRepository historialRepository;
     private final FileStorageService fileStorageService;
     private final AsignacionAutomaticaService asignacionAutomaticaService;
+    private final CatalogoService catalogoService;
+    private final BitacoraService bitacoraService;
 
     @Transactional
     public QuejaRegistroResponse registrarQueja(QuejaRegistroDTO dto, List<MultipartFile> fotos, String correoCiudadano) {
 
         // 1. Validaciones de Negocio
-        if (dto.getCategoriaId() == null || dto.getZona() == null ||
-                dto.getDireccionExacta() == null || dto.getDescripcion() == null ||
+        if (dto.getCategoriaId() == null || dto.getSubcategoriaId() == null ||
+                dto.getZona() == null || dto.getDireccionExacta() == null ||
+                dto.getDireccionExacta().trim().isEmpty() ||
+                dto.getDescripcion() == null ||
                 dto.getLatitud() == null || dto.getLongitud() == null) {
             throw new IllegalArgumentException("Debe completar todos los campos obligatorios.");
         }
 
         if (dto.getZona() < 1 || dto.getZona() > 25) {
             throw new IllegalArgumentException("La zona municipal debe estar entre 1 y 25.");
+        }
+
+        double latitud = dto.getLatitud().doubleValue();
+        double longitud = dto.getLongitud().doubleValue();
+        if (latitud < MIN_LATITUD || latitud > MAX_LATITUD
+                || longitud < MIN_LONGITUD || longitud > MAX_LONGITUD) {
+            throw new IllegalArgumentException(
+                    "La ubicación seleccionada está fuera del municipio de San Juan Sacatepéquez.");
         }
 
         String desc = dto.getDescripcion().trim();
@@ -72,36 +94,23 @@ public class QuejaService {
             throw new IllegalArgumentException("No puede adjuntar más de 3 fotografías.");
         }
 
-        Usuario ciudadano = usuarioRepository.findByCorreo(correoCiudadano)
+        Usuario ciudadano = usuarioRepository.findByCorreoIgnoreCase(correoCiudadano)
                 .orElseThrow(() -> new IllegalArgumentException("Ciudadano no encontrado."));
 
-        // 2. Cálculo de Prioridad por Demanda (Radio de 300 metros)
-        /*
-        int quejasSimilares = quejaRepository.contarQuejasCercanasActivas(
-                dto.getCategoriaId(),
-                dto.getZona(),
-                dto.getLatitud(),
-                dto.getLongitud(),
-                300.0
-        );
-
-        String prioridadCalculada;
-        if (quejasSimilares >= 4) {
-            prioridadCalculada = "URGENTE"; // 5 o más reportes en el área
-        } else if (quejasSimilares >= 2) {
-            prioridadCalculada = "ALTA";    // 3 a 4 reportes
-        } else if (quejasSimilares >= 1) {
-            prioridadCalculada = "MEDIA";   // 2 reportes
-        } else {
-            prioridadCalculada = "BAJA";    // Primer reporte aislado
+        CategoriaQueja categoria = catalogoService.obtenerCategoria(dto.getCategoriaId());
+        SubcategoriaQueja subcategoria = catalogoService.obtenerSubcategoria(dto.getSubcategoriaId());
+        if (subcategoria.getCategoria() == null
+                || !subcategoria.getCategoria().getCategoriaId().equals(categoria.getCategoriaId())) {
+            throw new IllegalArgumentException("La subcategoría seleccionada no pertenece a la categoría.");
         }
-        */
-        // 3. Guardado inicial de Queja
+
+        // 2. Prioridad por demanda: pendiente de reactivar.
+        // 3. Guardado inicial de queja
         Queja queja = new Queja();
         queja.setCorrelativo("TEMP-" + System.currentTimeMillis());
         queja.setCiudadano(ciudadano);
-        queja.setCategoriaId(dto.getCategoriaId());
-        queja.setSubcategoriaId(dto.getSubcategoriaId());
+        queja.setCategoria(categoria);
+        queja.setSubcategoria(subcategoria);
         queja.setZona(dto.getZona());
         queja.setDireccionExacta(dto.getDireccionExacta().trim());
         queja.setPuntoReferencia(dto.getPuntoReferencia());
@@ -133,6 +142,16 @@ public class QuejaService {
                 : "Queja registrada.");
         historialRepository.save(historial);
 
+        bitacoraService.registrar(
+                ciudadano.getCredencial().getUsername(),
+                "quejas",
+                String.valueOf(guardada.getQuejaId()),
+                "registro",
+                "CREAR",
+                null,
+                "REGISTRADA - " + correlativo
+        );
+
         // 5. Guardado de Evidencias Digitales
         for (MultipartFile foto : fotos) {
             String url = fileStorageService.guardarArchivo(foto);
@@ -141,7 +160,7 @@ public class QuejaService {
             evidencia.setQueja(guardada);
             evidencia.setUrlArchivo(url);
             evidencia.setNombreArchivo(foto.getOriginalFilename());
-            evidencia.setFormato(foto.getContentType() != null && foto.getContentType().contains("png") ? "png" : "jpg");
+            evidencia.setFormato(fileStorageService.obtenerFormato(url));
             evidencia.setTamanioBytes(foto.getSize());
             evidencia.setSubidoPor(ciudadano);
 
@@ -156,7 +175,7 @@ public class QuejaService {
 
     @Transactional(readOnly = true)
     public List<QuejaDetalleDTO> obtenerMisQuejas(String correoCiudadano) {
-        Usuario ciudadano = usuarioRepository.findByCorreo(correoCiudadano)
+        Usuario ciudadano = usuarioRepository.findByCorreoIgnoreCase(correoCiudadano)
                 .orElseThrow(() -> new IllegalArgumentException("Ciudadano no encontrado."));
 
         // Ajusta la llamada al método del repositorio según cómo tengas definido el ID de Usuario
@@ -251,8 +270,15 @@ public class QuejaService {
     public QuejaRegistroResponse registrarQuejaDerivada(QuejaDerivadaDTO dto, List<MultipartFile> fotos, String correoCiudadano) {
 
         // 1. Validaciones básicas
-        if (dto.getCorrelativoPadre() == null || dto.getDescripcion() == null || dto.getTipoDerivacion() == null) {
+        if (dto.getCorrelativoPadre() == null || dto.getCorrelativoPadre().trim().isEmpty()
+                || dto.getDescripcion() == null
+                || dto.getTipoDerivacion() == null || dto.getTipoDerivacion().trim().isEmpty()) {
             throw new IllegalArgumentException("Debe completar todos los campos obligatorios.");
+        }
+
+        String tipoDerivacion = dto.getTipoDerivacion().trim().toUpperCase();
+        if (!"AGRAVAMIENTO".equals(tipoDerivacion) && !"REINCIDENCIA".equals(tipoDerivacion)) {
+            throw new IllegalArgumentException("El tipo de reporte debe ser AGRAVAMIENTO o REINCIDENCIA.");
         }
 
         String desc = dto.getDescripcion().trim();
@@ -267,30 +293,58 @@ public class QuejaService {
             throw new IllegalArgumentException("No puede adjuntar más de 3 fotografías.");
         }
 
-        // 2. Buscar la queja original (Padre)
-        Queja quejaPadre = quejaRepository.findByCorrelativo(dto.getCorrelativoPadre())
+        // 2. Buscar la queja original (Padre) y validar que pertenezca al ciudadano
+        Queja quejaPadre = quejaRepository.findByCorrelativo(dto.getCorrelativoPadre().trim())
                 .orElseThrow(() -> new IllegalArgumentException("La queja original no existe."));
 
-        Usuario ciudadano = usuarioRepository.findByCorreo(correoCiudadano)
+        Usuario ciudadano = usuarioRepository.findByCorreoIgnoreCase(correoCiudadano)
                 .orElseThrow(() -> new IllegalArgumentException("Ciudadano no encontrado."));
 
-        // 3. Crear la nueva queja derivada
+        if (quejaPadre.getCiudadano() == null
+                || !quejaPadre.getCiudadano().getUsuarioId().equals(ciudadano.getUsuarioId())) {
+            throw new IllegalArgumentException(
+                    "Solo puede reportar agravamientos o reincidencias sobre sus propias quejas.");
+        }
+
+        String estadoPadre = quejaPadre.getEstadoActual();
+        if ("AGRAVAMIENTO".equals(tipoDerivacion)) {
+            boolean estadoPermitido = EstadoQueja.EN_INSPECCION.getValor().equals(estadoPadre)
+                    || EstadoQueja.EN_VALIDACION_REPARACION.getValor().equals(estadoPadre)
+                    || EstadoQueja.EN_REPARACION_TECNICA.getValor().equals(estadoPadre);
+            if (!estadoPermitido) {
+                throw new IllegalArgumentException(
+                        "El agravamiento solo puede reportarse sobre una queja activa (en inspección, validación o reparación).");
+            }
+        } else if (!EstadoQueja.SOLUCIONADA_CERRADA.getValor().equals(estadoPadre)) {
+            throw new IllegalArgumentException(
+                    "La reincidencia solo puede reportarse sobre una queja solucionada y cerrada.");
+        }
+
+        String prefijo = "[" + tipoDerivacion + " DE " + dto.getCorrelativoPadre().trim() + "] ";
+        if (prefijo.length() + desc.length() > 500) {
+            throw new IllegalArgumentException(
+                    "La descripción no puede superar los 500 caracteres incluyendo la referencia a la queja original.");
+        }
+
+        // 3. Crear la nueva queja derivada y vincularla al expediente original
         Queja nuevaQueja = new Queja();
         nuevaQueja.setCorrelativo("TEMP-" + System.currentTimeMillis());
         nuevaQueja.setCiudadano(ciudadano);
-        nuevaQueja.setCategoriaId(quejaPadre.getCategoriaId());
-        nuevaQueja.setSubcategoriaId(quejaPadre.getSubcategoriaId());
+        nuevaQueja.setCategoria(quejaPadre.getCategoria());
+        nuevaQueja.setSubcategoria(quejaPadre.getSubcategoria());
         nuevaQueja.setZona(quejaPadre.getZona());
         nuevaQueja.setDireccionExacta(quejaPadre.getDireccionExacta());
         nuevaQueja.setPuntoReferencia(quejaPadre.getPuntoReferencia());
         nuevaQueja.setLatitud(quejaPadre.getLatitud());
         nuevaQueja.setLongitud(quejaPadre.getLongitud());
+        nuevaQueja.setTipoRegistro(tipoDerivacion);
+        nuevaQueja.setQuejaOrigen(quejaPadre);
 
         // Incluir referencia a la queja original en la descripción
-        nuevaQueja.setDescripcion("[" + dto.getTipoDerivacion() + " DE " + dto.getCorrelativoPadre() + "] " + desc);
+        nuevaQueja.setDescripcion(prefijo + desc);
 
         // Si es Agravamiento, se asigna URGENTE automáticamente (FA05)
-        String prioridad = "AGRAVAMIENTO".equalsIgnoreCase(dto.getTipoDerivacion()) ? "URGENTE" : "ALTA";
+        String prioridad = "AGRAVAMIENTO".equals(tipoDerivacion) ? "URGENTE" : "ALTA";
         nuevaQueja.setPrioridadSugerida(prioridad);
         nuevaQueja.setPrioridadConfirmada(prioridad);
 
@@ -311,10 +365,20 @@ public class QuejaService {
         historial.setEstadoNuevo("REGISTRADA");
         historial.setCambiadoPor(ciudadano);
         historial.setComentario(guardada.getFuncionario() != null
-                ? "Reporte de " + dto.getTipoDerivacion() + " registrado. Asignado automáticamente al funcionario: "
+                ? "Reporte de " + tipoDerivacion + " registrado. Asignado automáticamente al funcionario: "
                     + guardada.getFuncionario().getNombres() + " " + guardada.getFuncionario().getApellidos()
-                : "Reporte de " + dto.getTipoDerivacion() + " registrado.");
+                : "Reporte de " + tipoDerivacion + " registrado.");
         historialRepository.save(historial);
+
+        bitacoraService.registrar(
+                ciudadano.getCredencial().getUsername(),
+                "quejas",
+                String.valueOf(guardada.getQuejaId()),
+                "registro",
+                "CREAR",
+                null,
+                "REGISTRADA - " + correlativoOficial + " (derivada de " + dto.getCorrelativoPadre().trim() + ")"
+        );
 
         // 5. Guardado de Evidencias Digitales
         for (MultipartFile foto : fotos) {
@@ -322,20 +386,21 @@ public class QuejaService {
 
             EvidenciaDigital evidencia = new EvidenciaDigital();
             evidencia.setQueja(guardada);
+            evidencia.setEtapa(tipoDerivacion);
             evidencia.setUrlArchivo(url);
             evidencia.setNombreArchivo(foto.getOriginalFilename());
-            evidencia.setFormato(foto.getContentType() != null && foto.getContentType().contains("png") ? "png" : "jpg");
+            evidencia.setFormato(fileStorageService.obtenerFormato(url));
             evidencia.setTamanioBytes(foto.getSize());
             evidencia.setSubidoPor(ciudadano);
 
             evidenciaRepository.save(evidencia);
         }
 
-        String tipoMensaje = "AGRAVAMIENTO".equalsIgnoreCase(dto.getTipoDerivacion()) ? "agravamiento" : "inconformidad";
+        String tipoMensaje = "AGRAVAMIENTO".equals(tipoDerivacion) ? "agravamiento" : "inconformidad";
         return new QuejaRegistroResponse(
                 correlativoOficial,
                 "Su reporte de " + tipoMensaje + " ha sido registrado exitosamente y vinculado al expediente "
-                        + dto.getCorrelativoPadre() + ". Se le ha asignado el nuevo correlativo " + correlativoOficial + "."
+                        + dto.getCorrelativoPadre().trim() + ". Se le ha asignado el nuevo correlativo " + correlativoOficial + "."
         );
     }
 

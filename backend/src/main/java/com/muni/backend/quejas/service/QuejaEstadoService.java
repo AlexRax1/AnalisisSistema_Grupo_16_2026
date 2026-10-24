@@ -1,5 +1,6 @@
 package com.muni.backend.quejas.service;
 
+import com.muni.backend.bitacora.service.BitacoraService;
 import com.muni.backend.quejas.dto.shared.*;
 import com.muni.backend.quejas.exception.AccesoDenegadoException;
 import com.muni.backend.quejas.exception.EstadoInvalidoException;
@@ -26,13 +27,14 @@ public class QuejaEstadoService {
     private final InformeQuejaRepository informeRepository;
     private final EvidenciaDigitalRepository evidenciaRepository;
     private final CatalogoService catalogoService;
+    private final BitacoraService bitacoraService;
 
     /**
      * Resuelve el Usuario a partir del username del token JWT.
      * Busca primero por correo, luego por credencial.username.
      */
     public Usuario resolverUsuario(String username) {
-        return usuarioRepository.findByCorreo(username)
+        return usuarioRepository.findByCorreoIgnoreCase(username)
                 .or(() -> usuarioRepository.findByCredencial_Username(username))
                 .orElseThrow(() -> new AccesoDenegadoException(
                     "No se encontró el perfil de usuario registrado para: " + username));
@@ -75,6 +77,21 @@ public class QuejaEstadoService {
         historial.setCambiadoPor(cambiadoPor);
         historial.setComentario(comentario);
         historialRepository.save(historial);
+
+        // Trazabilidad adicional en la bitácora general del sistema
+        String username = cambiadoPor != null && cambiadoPor.getCredencial() != null
+                ? cambiadoPor.getCredencial().getUsername()
+                : null;
+
+        bitacoraService.registrar(
+                username,
+                "quejas",
+                String.valueOf(queja.getQuejaId()),
+                "estado_actual",
+                "ACTUALIZAR",
+                estadoAnterior,
+                nuevoEstado.getValor()
+        );
     }
 
     /**

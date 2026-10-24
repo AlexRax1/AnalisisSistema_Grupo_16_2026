@@ -123,6 +123,14 @@ export class DetalleQuejaInspectorComponent implements OnInit {
     const archivosAProcesar = files.slice(0, espacioRestante);
 
     for (const file of archivosAProcesar) {
+      const formatosValidos = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      if (!formatosValidos.includes(file.type.toLowerCase())) {
+        this.mostrarToast(
+          `La imagen ${file.name} no tiene un formato permitido (JPG, JPEG, PNG o WEBP).`,
+          'warning'
+        );
+        continue;
+      }
       if (file.size > 5 * 1024 * 1024) {
         this.mostrarToast(`La imagen ${file.name} supera los 5MB permitidos.`, 'warning');
         continue;
@@ -146,6 +154,11 @@ export class DetalleQuejaInspectorComponent implements OnInit {
 
     if (!this.descripcionInforme || this.descripcionInforme.trim().length < 20) {
       this.errorFormulario = 'La descripción del informe de inspección debe contener al menos 20 caracteres.';
+      return false;
+    }
+
+    if (this.descripcionInforme.trim().length > 500) {
+      this.errorFormulario = 'La descripción del informe de inspección no puede superar los 500 caracteres.';
       return false;
     }
 

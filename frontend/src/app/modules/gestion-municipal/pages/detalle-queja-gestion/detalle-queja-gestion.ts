@@ -260,8 +260,9 @@ export class DetalleQuejaGestionComponent implements OnInit {
 
   confirmarCierreAdministrativo(): void {
     if (!this.quejaSeleccionada) return;
-    if (!this.descripcionCierre || this.descripcionCierre.trim().length < 20) {
-      this.mostrarToast('La resolución de cierre debe tener al menos 20 caracteres.', 'warning');
+    const resolucion = this.descripcionCierre.trim();
+    if (resolucion.length < 20 || resolucion.length > 500) {
+      this.mostrarToast('La resolución de cierre debe tener entre 20 y 500 caracteres.', 'warning');
       return;
     }
 
@@ -311,8 +312,9 @@ export class DetalleQuejaGestionComponent implements OnInit {
       this.mostrarToast('Seleccione un motivo principal.', 'warning');
       return;
     }
-    if (!this.descripcionDetalladaRechazo || !this.descripcionDetalladaRechazo.trim()) {
-      this.mostrarToast('Debe proporcionar una justificación detallada.', 'warning');
+    const justificacion = this.descripcionDetalladaRechazo.trim();
+    if (justificacion.length < 20 || justificacion.length > 500) {
+      this.mostrarToast('La justificación debe tener entre 20 y 500 caracteres.', 'warning');
       return;
     }
 

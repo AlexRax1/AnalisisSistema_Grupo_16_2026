@@ -27,4 +27,20 @@ public class CatalogoService {
                 .map(SubcategoriaQueja::getNombreSubcategoria)
                 .orElse("Subcategoría " + subcategoriaId);
     }
+
+    public CategoriaQueja obtenerCategoria(Integer categoriaId) {
+        if (categoriaId == null) {
+            throw new IllegalArgumentException("Debe seleccionar una categoría.");
+        }
+        return categoriaRepository.findById(categoriaId)
+                .orElseThrow(() -> new IllegalArgumentException("La categoría seleccionada no existe."));
+    }
+
+    public SubcategoriaQueja obtenerSubcategoria(Integer subcategoriaId) {
+        if (subcategoriaId == null) {
+            throw new IllegalArgumentException("Debe seleccionar una subcategoría.");
+        }
+        return subcategoriaRepository.findById(subcategoriaId)
+                .orElseThrow(() -> new IllegalArgumentException("La subcategoría seleccionada no existe."));
+    }
 }

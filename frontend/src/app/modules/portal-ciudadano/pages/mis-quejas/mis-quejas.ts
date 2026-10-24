@@ -172,8 +172,24 @@ export class MisQuejasComponent implements OnInit {
     const files: FileList = event.target.files;
     if (files.length > 3) {
       this.errorModal = 'Únicamente puede adjuntar un máximo de 3 fotografías.';
+      event.target.value = '';
       return;
     }
+
+    const formatosValidos = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    for (const file of Array.from(files)) {
+      if (!formatosValidos.includes(file.type.toLowerCase())) {
+        this.errorModal = 'Solo se admiten imágenes en formato JPG, JPEG, PNG o WEBP.';
+        event.target.value = '';
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        this.errorModal = 'El archivo adjunto excede el tamaño máximo permitido de 5 MB.';
+        event.target.value = '';
+        return;
+      }
+    }
+
     this.errorModal = '';
     this.fotosDerivada = Array.from(files);
   }
@@ -181,11 +197,16 @@ export class MisQuejasComponent implements OnInit {
   enviarReporteDerivado(): void {
     if (!this.quejaSeleccionada) return;
 
-    if (
-      this.descripcionDerivada.trim().length < 20 ||
-      this.descripcionDerivada.trim().length > 500
-    ) {
+    const descripcion = this.descripcionDerivada.trim();
+    if (descripcion.length < 20 || descripcion.length > 500) {
       this.errorModal = 'La descripción debe tener entre 20 y 500 caracteres.';
+      return;
+    }
+
+    const prefijo = `[${this.tipoDerivacion} DE ${this.quejaSeleccionada.correlativo}] `;
+    const maxDescripcion = 500 - prefijo.length;
+    if (descripcion.length > maxDescripcion) {
+      this.errorModal = `La descripción no puede superar los ${maxDescripcion} caracteres para incluir la referencia a la queja original.`;
       return;
     }
 

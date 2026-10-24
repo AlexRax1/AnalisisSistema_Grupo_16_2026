@@ -1,11 +1,10 @@
 package com.muni.backend.security.service;
 
+import com.muni.backend.bitacora.service.BitacoraService;
 import com.muni.backend.security.dto.*;
-import com.muni.backend.security.model.Bitacora;
 import com.muni.backend.security.model.Credencial;
 import com.muni.backend.security.model.RecuperacionPassword;
 import com.muni.backend.security.model.RolUser;
-import com.muni.backend.security.repository.BitacoraRepository;
 import com.muni.backend.security.repository.CredencialRepository;
 import com.muni.backend.security.repository.RecuperacionPasswordRepository;
 import com.muni.backend.security.repository.RolUserRepository;
@@ -32,7 +31,7 @@ public class AuthService {
 
     private final CredencialRepository credencialRepository;
     private final RolUserRepository rolUserRepository;
-    private final BitacoraRepository bitacoraRepository;
+    private final BitacoraService bitacoraService;
     private final RecuperacionPasswordRepository recuperacionPasswordRepository;
     private final UsuarioRepository usuarioRepository;
     private final EmailService emailService;
@@ -51,6 +50,17 @@ public class AuthService {
 
         String token = jwtService.generarToken(usuario);
         String rol = usuario.getRolUser() != null ? usuario.getRolUser().getNombreRol() : "CIUDADANO";
+
+        bitacoraService.registrar(
+                usuario.getUsername(),
+                "credenciales",
+                String.valueOf(usuario.getUserId()),
+                "acceso",
+                "LOGIN",
+                null,
+                "Inicio de sesión exitoso"
+        );
+
         return new AuthResponse(token, rol, usuario.getUsername());
     }
 
@@ -69,6 +79,17 @@ public class AuthService {
         credencial.setRolUser(rolUsuario);
 
         Credencial saved = credencialRepository.save(credencial);
+
+        bitacoraService.registrar(
+                request.getUsername(),
+                "credenciales",
+                String.valueOf(saved.getUserId()),
+                "registro",
+                "CREAR",
+                null,
+                "Credencial creada con rol " + rolUsuario.getNombreRol()
+        );
+
         return new RegisterResponse(saved.getUserId());
     }
 
@@ -135,6 +156,18 @@ public class AuthService {
                 .build();
         recuperacionPasswordRepository.save(recuperacion);
 
+        bitacoraService.registrar(
+                credencial.getUsername(),
+                "recuperacion_password",
+                recuperacion.getRecuperacionId() != null
+                        ? String.valueOf(recuperacion.getRecuperacionId())
+                        : null,
+                "registro",
+                "CREAR",
+                null,
+                "Código de recuperación de contraseña generado"
+        );
+
         log.info("[RECUPERACION_PASSWORD] Código OTP generado para {} (user_id {}): {}", correo, credencial.getUserId(), codigo);
 
         // Enviar notificación por correo electrónico
@@ -174,8 +207,13 @@ public class AuthService {
         if (request.getNewPassword() == null || request.getNewPassword().isBlank()) {
             throw new IllegalArgumentException("La nueva contraseña es obligatoria.");
         }
-        if (request.getNewPassword().trim().length() < 6) {
+        String nuevaPassword = request.getNewPassword().trim();
+        if (nuevaPassword.length() < 6) {
             throw new IllegalArgumentException("La contraseña debe tener al menos 6 caracteres.");
+        }
+        if (!nuevaPassword.matches("^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?]).{6,}$")) {
+            throw new IllegalArgumentException(
+                    "La contraseña debe incluir al menos una letra mayúscula, un número y un carácter especial.");
         }
 
         Credencial credencial = obtenerCredencialPorCorreo(request.getCorreo());
@@ -188,7 +226,7 @@ public class AuthService {
                 .orElseThrow(() -> new IllegalArgumentException("El código ingresado es inválido o ha expirado."));
 
         // Actualizar contraseña hasheada
-        credencial.setPassword(passwordEncoder.encode(request.getNewPassword().trim()));
+        credencial.setPassword(passwordEncoder.encode(nuevaPassword));
         credencial.setFechaModificacion(LocalDateTime.now());
         credencial.setUsuarioModificacion(request.getCorreo().trim());
         credencialRepository.save(credencial);
@@ -204,14 +242,16 @@ public class AuthService {
             recuperacionPasswordRepository.saveAll(pendientes);
         }
 
-        // Registrar acción en bitácora
-        BitacoraDTO bitacora = new BitacoraDTO();
-        bitacora.setUserId(credencial.getUserId());
-        bitacora.setMicroservicioAfectado("Seguridad");
-        bitacora.setEndpoint("/auth/recuperar/reset-password");
-        bitacora.setAccion("RESTABLECER_CONTRASENA");
-        bitacora.setIdAfectado(String.valueOf(credencial.getUserId()));
-        registrarBitacora(bitacora);
+        // Registrar acción en bitácora sin exponer el hash de la contraseña
+        bitacoraService.registrar(
+                credencial.getUsername(),
+                "credenciales",
+                String.valueOf(credencial.getUserId()),
+                "password",
+                "ACTUALIZAR",
+                "***",
+                "***"
+        );
     }
 
     @Transactional
@@ -220,23 +260,6 @@ public class AuthService {
             throw new UsernameNotFoundException("Credencial no encontrada con ID: " + userId);
         }
         credencialRepository.deleteById(userId);
-    }
-
-    @Transactional
-    public void registrarBitacora(BitacoraDTO dto) {
-        Bitacora bitacora = new Bitacora();
-
-        if (dto.getUserId() != null) {
-            credencialRepository.findById(dto.getUserId()).ifPresent(bitacora::setUsuario);
-        }
-
-        bitacora.setMicroservicioAfectado(dto.getMicroservicioAfectado());
-        bitacora.setEndpoint(dto.getEndpoint());
-        bitacora.setAccion(dto.getAccion());
-        bitacora.setIdAfectado(dto.getIdAfectado());
-        bitacora.setFechaHora(LocalDateTime.now());
-
-        bitacoraRepository.save(bitacora);
     }
 
     private IllegalArgumentException excitingIllegalArgument(String msg) {
