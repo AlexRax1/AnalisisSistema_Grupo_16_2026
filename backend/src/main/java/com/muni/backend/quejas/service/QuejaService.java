@@ -165,6 +165,17 @@ public class QuejaService {
             evidencia.setSubidoPor(ciudadano);
 
             evidenciaRepository.save(evidencia);
+
+            bitacoraService.registrar(
+                    ciudadano.getCredencial().getUsername(),
+                    "evidencias_digitales",
+                    String.valueOf(evidencia.getEvidenciaId()),
+                    "archivo",
+                    "SUBIR",
+                    null,
+                    "Queja " + correlativo + " | " + evidencia.getNombreArchivo()
+                            + " | " + evidencia.getTamanioBytes() + " bytes"
+            );
         }
 
         return new QuejaRegistroResponse(
@@ -394,6 +405,17 @@ public class QuejaService {
             evidencia.setSubidoPor(ciudadano);
 
             evidenciaRepository.save(evidencia);
+
+            bitacoraService.registrar(
+                    ciudadano.getCredencial().getUsername(),
+                    "evidencias_digitales",
+                    String.valueOf(evidencia.getEvidenciaId()),
+                    "archivo",
+                    "SUBIR",
+                    null,
+                    "Queja " + correlativoOficial + " | " + evidencia.getNombreArchivo()
+                            + " | " + evidencia.getTamanioBytes() + " bytes"
+            );
         }
 
         String tipoMensaje = "AGRAVAMIENTO".equals(tipoDerivacion) ? "agravamiento" : "inconformidad";

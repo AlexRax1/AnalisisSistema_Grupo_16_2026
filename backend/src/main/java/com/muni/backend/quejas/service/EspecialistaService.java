@@ -158,6 +158,17 @@ public class EspecialistaService {
                     evidencia.setSubidoPor(especialista);
                     evidencia.setFechaSubida(LocalDateTime.now());
                     evidenciaRepository.save(evidencia);
+
+                    bitacoraService.registrar(
+                            username,
+                            "evidencias_digitales",
+                            String.valueOf(evidencia.getEvidenciaId()),
+                            "archivo",
+                            "SUBIR",
+                            null,
+                            "Queja " + queja.getCorrelativo() + " | " + evidencia.getNombreArchivo()
+                                    + " | " + evidencia.getTamanioBytes() + " bytes"
+                    );
                 }
             }
         }

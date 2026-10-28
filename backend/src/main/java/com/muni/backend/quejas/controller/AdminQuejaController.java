@@ -1,5 +1,6 @@
 package com.muni.backend.quejas.controller;
 
+import com.muni.backend.bitacora.service.BitacoraService;
 import com.muni.backend.quejas.dto.ciudadano.QuejaDetalleDTO;
 import com.muni.backend.quejas.model.CategoriaQueja;
 import com.muni.backend.quejas.repository.CategoriaQuejaRepository;
@@ -13,6 +14,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -28,6 +30,8 @@ public class AdminQuejaController {
     private QuejaService quejaService;
     @Autowired
     private CategoriaQuejaRepository categoriaQuejaRepository;
+    @Autowired
+    private BitacoraService bitacoraService;
 
     // GET http://localhost:8080/admin/quejas/catalogo?pagina=0&tamanoPagina=20
     @GetMapping("/catalogo")
@@ -54,8 +58,18 @@ public class AdminQuejaController {
 
     // GET http://localhost:8080/admin/quejas/exportar/pdf
     @GetMapping("/exportar/pdf")
-    public ResponseEntity<byte[]> exportarPdf() {
+    public ResponseEntity<byte[]> exportarPdf(Authentication authentication) {
         byte[] pdfBytes = quejaService.generarPdfCatalogo();
+
+        bitacoraService.registrar(
+                authentication.getName(),
+                "quejas",
+                "catalogo",
+                "reporte_pdf",
+                "DESCARGAR",
+                null,
+                "Catálogo general de quejas en PDF"
+        );
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
@@ -67,8 +81,18 @@ public class AdminQuejaController {
     }
 
     @GetMapping("/exportar/excel")
-    public ResponseEntity<byte[]> exportarExcel() {
+    public ResponseEntity<byte[]> exportarExcel(Authentication authentication) {
         byte[] excelBytes = quejaService.generarExcelCatalogo();
+
+        bitacoraService.registrar(
+                authentication.getName(),
+                "quejas",
+                "catalogo",
+                "reporte_excel",
+                "DESCARGAR",
+                null,
+                "Catálogo general de quejas en Excel"
+        );
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));

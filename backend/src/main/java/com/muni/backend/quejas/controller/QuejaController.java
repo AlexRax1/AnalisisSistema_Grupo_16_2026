@@ -4,6 +4,7 @@ import com.muni.backend.quejas.dto.ciudadano.QuejaDerivadaDTO;
 import com.muni.backend.quejas.dto.ciudadano.QuejaDetalleDTO;
 import com.muni.backend.quejas.dto.ciudadano.QuejaRegistroDTO;
 import com.muni.backend.quejas.dto.ciudadano.QuejaRegistroResponse;
+import com.muni.backend.bitacora.service.BitacoraService;
 import com.muni.backend.quejas.service.PdfService;
 import com.muni.backend.quejas.service.QuejaService;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,7 @@ public class QuejaController {
 
     private final QuejaService quejaService;
     private final PdfService pdfService;
+    private final BitacoraService bitacoraService;
 
     // Registra una queja principal con sus fotografías.
     @PostMapping(value = "/registrar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -55,9 +57,21 @@ public class QuejaController {
 
     // Descarga la constancia de la queja en PDF.
     @GetMapping("/{correlativo}/constancia-pdf")
-    public ResponseEntity<byte[]> descargarConstanciaPdf(@PathVariable String correlativo) {
+    public ResponseEntity<byte[]> descargarConstanciaPdf(
+            @PathVariable String correlativo,
+            Authentication authentication) {
         QuejaDetalleDTO detalle = quejaService.obtenerPorCorrelativo(correlativo);
         byte[] pdfBytes = pdfService.generarConstanciaPdf(detalle);
+
+        bitacoraService.registrar(
+                authentication.getName(),
+                "quejas",
+                correlativo,
+                "constancia_pdf",
+                "DESCARGAR",
+                null,
+                "Constancia PDF de la queja " + correlativo
+        );
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);

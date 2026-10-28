@@ -18,6 +18,7 @@ public class BitacoraService {
 
     private final BitacoraRepository bitacoraRepository;
     private final CredencialRepository credencialRepository;
+    private final ClientIpService clientIpService;
 
     // Registra una acción con el usuario autenticado.
     @Transactional
@@ -71,6 +72,7 @@ public class BitacoraService {
         Bitacora bitacora = new Bitacora();
         bitacora.setUsuario(usuario);
         bitacora.setUsuarioAccion(username);
+        bitacora.setDireccionIp(clientIpService.obtenerIp());
         bitacora.setTablaAfectada(tablaAfectada);
         bitacora.setIdAfectado(idAfectado);
         bitacora.setCampoAfectado(campoAfectado);

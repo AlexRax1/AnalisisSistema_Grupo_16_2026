@@ -256,10 +256,20 @@ public class AuthService {
 
     @Transactional
     public void deleteCredencial(Integer userId) {
-        if (!credencialRepository.existsById(userId)) {
-            throw new UsernameNotFoundException("Credencial no encontrada con ID: " + userId);
-        }
-        credencialRepository.deleteById(userId);
+        Credencial credencial = credencialRepository.findById(userId)
+                .orElseThrow(() -> new UsernameNotFoundException("Credencial no encontrada con ID: " + userId));
+
+        bitacoraService.registrar(
+                credencial.getUsername(),
+                "credenciales",
+                String.valueOf(userId),
+                "registro",
+                "ELIMINAR",
+                "username=" + credencial.getUsername(),
+                null
+        );
+
+        credencialRepository.delete(credencial);
     }
 
     private IllegalArgumentException excitingIllegalArgument(String msg) {
@@ -282,6 +292,17 @@ public class AuthService {
         credencial.setRolUser(rolCiudadano);
         credencial.setUsuarioCreacion("REGISTRO_PUBLICO");
 
-        return credencialRepository.save(credencial);
+        Credencial guardada = credencialRepository.save(credencial);
+        bitacoraService.registrar(
+                username,
+                "credenciales",
+                String.valueOf(guardada.getUserId()),
+                "registro",
+                "CREAR",
+                null,
+                "Credencial de ciudadano creada con rol " + rolCiudadano.getNombreRol()
+        );
+
+        return guardada;
     }
 }

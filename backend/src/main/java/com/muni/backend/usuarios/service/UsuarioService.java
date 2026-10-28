@@ -289,6 +289,16 @@ public class UsuarioService {
 
         Credencial credencialGuardada = credencialRepository.save(credencial);
 
+        bitacoraService.registrar(
+                null,
+                "credenciales",
+                String.valueOf(credencialGuardada.getUserId()),
+                "rol_id",
+                "CREAR",
+                null,
+                "Usuario=" + dto.getCorreoInstitucional() + ", rol=" + nombreRolBD
+        );
+
         // 2. Luego se crea y guarda el Usuario asociando la Credencial persistida
         Usuario usuario = new Usuario();
         usuario.setDpi(dto.getDpi());
@@ -320,6 +330,7 @@ public class UsuarioService {
                 .orElseThrow(() -> new RuntimeException("Empleado no encontrado con ID: " + id));
 
         String datosAnteriores = resumenEmpleado(usuario);
+        String rolAnterior = obtenerRol(usuario);
 
         // 2. Actualizar datos personales
         usuario.setDpi(dto.getDpi());
@@ -343,6 +354,19 @@ public class UsuarioService {
         // 6. Guardar cambios
         usuarioRepository.save(usuario);
 
+        if (usuario.getCredencial() != null
+                && !Objects.equals(rolAnterior, nuevoRol.getNombreRol())) {
+            bitacoraService.registrar(
+                    null,
+                    "credenciales",
+                    String.valueOf(usuario.getCredencial().getUserId()),
+                    "rol_id",
+                    "ACTUALIZAR",
+                    rolAnterior,
+                    nuevoRol.getNombreRol()
+            );
+        }
+
         bitacoraService.registrar(
                 null,
                 "usuarios",
@@ -354,10 +378,14 @@ public class UsuarioService {
         );
     }
 
-    private String resumenEmpleado(Usuario usuario) {
-        String rol = usuario.getCredencial() != null && usuario.getCredencial().getRolUser() != null
+    private String obtenerRol(Usuario usuario) {
+        return usuario.getCredencial() != null && usuario.getCredencial().getRolUser() != null
                 ? usuario.getCredencial().getRolUser().getNombreRol()
                 : "SIN_ROL";
+    }
+
+    private String resumenEmpleado(Usuario usuario) {
+        String rol = obtenerRol(usuario);
 
         return "nombres=" + usuario.getNombres()
                 + ", apellidos=" + usuario.getApellidos()

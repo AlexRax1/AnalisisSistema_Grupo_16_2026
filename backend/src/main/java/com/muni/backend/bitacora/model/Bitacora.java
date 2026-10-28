@@ -13,7 +13,8 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "bitacora", indexes = {
         @Index(name = "idx_bitacora_fecha_hora", columnList = "fecha_hora"),
-        @Index(name = "idx_bitacora_tabla_afectada", columnList = "tabla_afectada")
+        @Index(name = "idx_bitacora_tabla_afectada", columnList = "tabla_afectada"),
+        @Index(name = "idx_bitacora_direccion_ip", columnList = "direccion_ip")
 })
 public class Bitacora {
 
@@ -29,6 +30,9 @@ public class Bitacora {
 
     @Column(name = "usuario_accion", length = 200)
     private String usuarioAccion;
+
+    @Column(name = "direccion_ip", length = 45)
+    private String direccionIp;
 
     @Column(name = "fecha_hora")
     private LocalDateTime fechaHora;
