@@ -5,12 +5,13 @@ import {
   FiltroCatalogoAdminDTO,
   RespuestaCatalogoPaginadoDTO,
 } from '../models/catalogo-admin.model';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AdminQuejasService {
-  private apiUrl = 'http://localhost:8080/admin/quejas';
+  private apiUrl = `${environment.apiUrl}/admin/quejas`;
 
   constructor(private http: HttpClient) {}
 

@@ -6,12 +6,13 @@ import {
   QuejaDetalleCompletoDTO,
   RegistrarInformeInspeccionReq,
 } from '../models/queja.model';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class InspectorService {
-  private apiUrl = 'http://localhost:8080/api/inspector';
+  private apiUrl = `${environment.apiUrl}/api/inspector`;
 
   constructor(private http: HttpClient) {}
 

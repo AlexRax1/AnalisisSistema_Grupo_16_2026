@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-catalogo-quejas',
@@ -11,7 +12,7 @@ import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
   styleUrls: ['./catalogo-quejas.component.css'],
 })
 export class CatalogoQuejasComponent implements OnInit {
-  backendUrl: string = 'http://localhost:8080';
+  backendUrl: string = environment.apiUrl;
 
   filtros = {
     fechaDesde: '',

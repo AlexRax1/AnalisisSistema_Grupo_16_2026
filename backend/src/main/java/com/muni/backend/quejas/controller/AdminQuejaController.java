@@ -23,7 +23,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/admin/quejas")
-@CrossOrigin(origins = "*")
 public class AdminQuejaController {
 
     @Autowired

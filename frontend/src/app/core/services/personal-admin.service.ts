@@ -2,12 +2,13 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { EmpleadoDTO, GuardarEmpleadoDTO } from '../models/personal-admin.model';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class PersonalAdminService {
-  private apiUrl = 'http://localhost:8080/admin/usuarios-internos';
+  private apiUrl = `${environment.apiUrl}/admin/usuarios-internos`;
 
   constructor(private http: HttpClient) {}
 

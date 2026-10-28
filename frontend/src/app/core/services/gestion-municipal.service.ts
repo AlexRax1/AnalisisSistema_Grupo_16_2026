@@ -10,12 +10,13 @@ import {
   CierreAdministrativoActionReq,
   RechazarDevolverActionReq,
 } from '../models/queja.model';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class GestionMunicipalService {
-  private apiFuncionarioUrl = 'http://localhost:8080/api/funcionario';
+  private apiFuncionarioUrl = `${environment.apiUrl}/api/funcionario`;
 
   constructor(private http: HttpClient) {}
 

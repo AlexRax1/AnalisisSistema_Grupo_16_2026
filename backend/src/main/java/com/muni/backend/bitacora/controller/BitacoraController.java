@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/admin/bitacora")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class BitacoraController {
 
     private final BitacoraService bitacoraService;

@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 // Exportación de interfaces para evitar errores TS2305
 export interface Usuario {
@@ -29,7 +30,7 @@ export interface ResetPasswordReq {
   providedIn: 'root',
 })
 export class AuthService {
-  private BASE_URL = 'http://localhost:8080';
+  private BASE_URL = environment.apiUrl;
 
   constructor(private http: HttpClient) {}
 
@@ -54,7 +55,7 @@ export class AuthService {
     return this.http.post(`${this.BASE_URL}/auth/recuperar/validar-codigo`, { correo, codigo });
   }
 
-  // PUT: http://localhost:8080/auth/reset-password
+  // PUT: /auth/reset-password
   restablecerPassword(correo: string, newPassword: string): Observable<string> {
     const body = {
       correo: correo,

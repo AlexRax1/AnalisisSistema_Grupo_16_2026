@@ -5,6 +5,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -22,6 +23,7 @@ import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
@@ -44,12 +46,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         final String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
 
-        // 1. Ver qué header está llegando
-        System.out.println(">>> REQUEST URI: " + request.getRequestURI());
-        System.out.println(">>> AUTH HEADER RECIBIDO: " + authHeader);
-
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            System.out.println(">>> No hay Bearer token, dejando pasar sin autenticación");
+            log.debug("Sin token Bearer para {}", request.getRequestURI());
             filterChain.doFilter(request, response);
             return;
         }
@@ -61,7 +59,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String username = jwtService.getUsernameFromToken(token);
                 List<String> roles = jwtService.getRolesFromToken(token);
 
-                System.out.println(">>> TOKEN VÁLIDO. Usuario: " + username + " | Roles: " + roles);
+                log.debug("JWT válido para usuario {} con roles {}", username, roles);
 
                 if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                     List<SimpleGrantedAuthority> authorities = obtenerAutoridadesConPrefijo(roles);
@@ -74,11 +72,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             } else {
-                System.out.println(">>> EL TOKEN NO ES VÁLIDO SEGÚN jwtService.isTokenValid()");
+                log.debug("Token JWT inválido para {}", request.getRequestURI());
             }
         } catch (Exception e) {
-            System.err.println(">>> EXCEPCIÓN EN FILTRO JWT: " + e.getMessage());
-            e.printStackTrace(); // Muestra el stacktrace exacto en la consola de Spring Boot
+            log.warn("Error validando JWT para {}: {}", request.getRequestURI(), e.getMessage());
         }
 
         filterChain.doFilter(request, response);

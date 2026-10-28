@@ -4,6 +4,8 @@
 
 .env
 .env.*
+!.env.vm.example
+!.env.example
 env
 env.*
 *.env

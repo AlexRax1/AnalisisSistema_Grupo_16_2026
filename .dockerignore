@@ -1,0 +1,6 @@
+# Contexto mínimo para construir la imagen de PostgreSQL (db/Dockerfile).
+*
+!sql/
+!sql/**
+!db/
+!db/**

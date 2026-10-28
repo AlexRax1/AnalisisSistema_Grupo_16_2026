@@ -1,9 +1,11 @@
 package com.muni.backend.security.config;
 
 import com.muni.backend.security.service.JwtAuthenticationFilter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -14,15 +16,19 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.filter.CorsFilter;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @Value("${CORS_ALLOWED_ORIGINS:http://localhost:4200}")
+    private String allowedOrigins;
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
@@ -35,13 +41,23 @@ public class SecurityConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
+        List<String> origins = Arrays.stream(allowedOrigins.split(","))
+                .map(String::trim)
+                .filter(origin -> !origin.isBlank())
+                .toList();
+
+        if (origins.isEmpty()) {
+            origins = List.of("http://localhost:4200");
+        }
+
         CorsConfiguration configuration = new CorsConfiguration();
-        // Permite la conexión desde Angular (localhost:4200) y cualquier origen de prueba
-        configuration.setAllowedOriginPatterns(List.of("*"));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+        configuration.setAllowedOrigins(origins);
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setExposedHeaders(List.of("Authorization", "Content-Disposition"));
-        configuration.setAllowCredentials(true);
+        // El frontend usa JWT en Authorization, no cookies de sesión.
+        configuration.setAllowCredentials(false);
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
@@ -51,30 +67,28 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // Habilita la configuración CORS nativa de Spring
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // 1. Opciones preflight siempre permitidas
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-
-                        // 2. Rutas totalmente públicas
-                        .requestMatchers("/auth/**", "/api/auth/**", "/usuarios/registro-ciudadano", "/api/usuarios/registro-ciudadano").permitAll()
+                        // Rutas públicas
+                        .requestMatchers("/auth/**", "/api/auth/**",
+                                "/usuarios/registro-ciudadano", "/api/usuarios/registro-ciudadano").permitAll()
                         .requestMatchers("/subidas/**", "/subidas/evidencias/**").permitAll()
-
-                        // Permite la entrada completa a los controladores de admin quejas
-                        .requestMatchers("/admin/quejas/**", "/admin/quejas").permitAll()
-
-                        // 3. Rutas con restricción de roles
+                        .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                        .requestMatchers("/error").permitAll()
+                        // API de negocio
+                        .requestMatchers(
+                                "/quejas/**", "/api/quejas/**",
+                                "/api/funcionario/**", "/api/inspector/**", "/api/especialista/**",
+                                "/usuarios/**", "/api/usuarios/**"
+                        ).authenticated()
+                        // Administración
                         .requestMatchers("/admin/usuarios-internos/**").hasAuthority("ADMINISTRADOR")
-                        .requestMatchers("/admin/**").hasAnyAuthority("ADMINISTRADOR", "ROLE_ADMINISTRADOR", "EMPLEADO", "ROLE_EMPLEADO")
-
-                        // 4. Resto de peticiones autenticadas
+                        .requestMatchers("/admin/**").hasAnyAuthority("ADMINISTRADOR", "ROLE_ADMINISTRADOR")
                         .anyRequest().authenticated()
                 )
-                // 👈 Agrega el filtro CORS nativo antes de la autenticación
-                .addFilterBefore(new CorsFilter(corsConfigurationSource()), UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

@@ -2,13 +2,14 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { QuejaDetalleDTO, RespuestaRegistroQueja } from '../models/queja.model';
+import { environment } from '../../../environments/environment';
 
 
 @Injectable({
   providedIn: 'root',
 })
 export class QuejaService {
-  private apiUrl = 'http://localhost:8080/quejas';
+  private apiUrl = `${environment.apiUrl}/quejas`;
 
   constructor(private http: HttpClient) {}
 
