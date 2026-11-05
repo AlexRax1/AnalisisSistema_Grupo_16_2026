@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { QuejaService } from '../../../../core/services/queja.service';
-import { QuejaDetalleDTO } from '../../../../core/models/queja.model';
+import { EvidenciaDTO, QuejaDetalleDTO } from '../../../../core/models/queja.model';
 
 const ESTADO_COLORS: { [key: string]: string } = {
   REGISTRADA: 'badge-info',
@@ -22,7 +22,6 @@ const ESTADO_COLORS: { [key: string]: string } = {
   styleUrl: './mis-quejas.css',
 })
 export class MisQuejasComponent implements OnInit {
-  backendUrl: string = 'http://localhost:8080';
   quejasOriginales: QuejaDetalleDTO[] = [];
   quejas: QuejaDetalleDTO[] = [];
   quejaSeleccionada?: QuejaDetalleDTO;
@@ -117,13 +116,22 @@ export class MisQuejasComponent implements OnInit {
     this.quejaSeleccionada = queja;
   }
 
-  getUrlEvidencia(ev: any): string {
-    if (!ev) return '';
-    const url = typeof ev === 'string' ? ev : ev.urlArchivo;
-    if (!url) return '';
-    if (url.startsWith('http://') || url.startsWith('https://')) return url;
-    if (url.startsWith('/')) return `${this.backendUrl}${url}`;
-    return `${this.backendUrl}/${url}`;
+  descargarEvidencia(ev: EvidenciaDTO): void {
+    if (!this.quejaSeleccionada || !ev.evidenciaId) return;
+
+    this.quejaService
+      .descargarEvidencia(this.quejaSeleccionada.correlativo, ev.evidenciaId)
+      .subscribe({
+        next: (blob) => {
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = ev.nombreArchivo || `Evidencia_${ev.evidenciaId}`;
+          a.click();
+          window.URL.revokeObjectURL(url);
+        },
+        error: (err) => console.error('Error al descargar la evidencia:', err),
+      });
   }
 
   obtenerClaseBadge(estado: string): string {

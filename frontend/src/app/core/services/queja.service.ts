@@ -63,6 +63,14 @@ export class QuejaService {
     });
   }
 
+  // Descarga una evidencia con autenticación para que el backend la audite.
+  descargarEvidencia(correlativo: string, evidenciaId: number): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/${correlativo}/evidencias/${evidenciaId}/descargar`, {
+      headers: this.getAuthHeaders(),
+      responseType: 'blob',
+    });
+  }
+
   registrarQuejaDerivada(
     datos: { correlativoPadre: string; tipoDerivacion: string; descripcion: string },
     fotos: File[],

@@ -1,62 +1,203 @@
 <div class="admin-page animate-fade-in">
   <div class="page-header">
     <div>
-      <h1 class="page-title">Reportería Gerencial</h1>
-      <p class="page-subtitle">Métricas y estadísticas del sistema de quejas</p>
+      <h1 class="page-title">Reportería de quejas</h1>
+      <p class="page-subtitle">Reporte de muestra para consulta y exportación</p>
     </div>
-    <button class="btn btn-outline">
-      <span class="mat-icon">download</span>
-      Exportar Datos
-    </button>
+    <div class="page-actions">
+      <button class="btn btn-outline" type="button" [disabled]="cargando() || !reporte()" (click)="exportar('excel')">
+        <span class="mat-icon">table_view</span> Excel
+      </button>
+      <button class="btn btn-primary" type="button" [disabled]="cargando() || !reporte()" (click)="exportar('pdf')">
+        <span class="mat-icon">picture_as_pdf</span> PDF
+      </button>
+    </div>
   </div>
 
-  <!-- Métricas -->
-  <div class="metrics-grid">
-    <div class="metric-card card" *ngFor="let m of metricas">
-      <div class="card-body">
-        <div class="metric-top">
-          <span class="mat-icon metric-icon">{{ m.icon }}</span>
-          <span class="metric-change" [class.positive]="m.positivo">{{ m.variacion }}</span>
+  <div class="card filtros-card">
+    <form [formGroup]="filtrosForm" (ngSubmit)="consultar()">
+      <div class="filtros-grid">
+        <div class="form-group">
+          <label class="form-label" for="fechaDesde">Fecha desde</label>
+          <input id="fechaDesde" type="date" class="form-input" formControlName="fechaDesde" />
         </div>
-        <div class="metric-value">{{ m.valor }}</div>
-        <div class="metric-label">{{ m.label }}</div>
+
+        <div class="form-group">
+          <label class="form-label" for="fechaHasta">Fecha hasta</label>
+          <input id="fechaHasta" type="date" class="form-input" formControlName="fechaHasta" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="categoriaId">Categoría</label>
+          <select id="categoriaId" class="form-select" formControlName="categoriaId">
+            <option [ngValue]="null">Todas</option>
+            @for (categoria of opciones()?.categorias ?? []; track categoria.id) {
+              <option [ngValue]="categoria.id">{{ categoria.nombre }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="estado">Estado</label>
+          <select id="estado" class="form-select" formControlName="estado">
+            <option value="TODAS">Todas</option>
+            @for (estado of opciones()?.estados ?? []; track estado) {
+              <option [value]="estado">{{ estado }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="prioridad">Prioridad</label>
+          <select id="prioridad" class="form-select" formControlName="prioridad">
+            <option value="TODAS">Todas</option>
+            @for (prioridad of opciones()?.prioridades ?? []; track prioridad) {
+              <option [value]="prioridad">{{ prioridad }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="agrupacion">Agrupar por</label>
+          <select id="agrupacion" class="form-select" formControlName="agrupacion">
+            @for (agrupacion of opciones()?.agrupaciones ?? ['CATEGORIA']; track agrupacion) {
+              <option [value]="agrupacion">{{ etiquetaAgrupacion(agrupacion) }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <div class="filtros-acciones">
+        <button class="btn btn-primary" type="submit" [disabled]="cargando()">Consultar</button>
+        <button class="btn btn-outline" type="button" [disabled]="cargando()" (click)="limpiar()">Limpiar</button>
+      </div>
+    </form>
+  </div>
+
+  @if (error()) {
+    <div class="alert alert-error">{{ error() }}</div>
+  }
+
+  @if (cargando()) {
+    <div class="cargando">Cargando reporte...</div>
+  }
+
+  @if (reporte(); as data) {
+    <div class="reporte-encabezado">
+      <div>
+        <h2>{{ data.titulo }}</h2>
+        <p>{{ data.subtitulo }}</p>
+      </div>
+      <span class="badge badge-neutral">Detalle: {{ data.detalle.length }} de {{ data.totalDetalle }}</span>
+    </div>
+
+    <div class="metrics-grid">
+      @for (kpi of data.kpis; track kpi.etiqueta) {
+        <div class="card kpi-card" [ngClass]="'tono-' + kpi.tono">
+          <div class="card-body">
+            <div class="kpi-top">
+              <span class="mat-icon kpi-icon">{{ kpi.icono }}</span>
+            </div>
+            <div class="kpi-valor">{{ kpi.valor }}</div>
+            <div class="kpi-etiqueta">{{ kpi.etiqueta }}</div>
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="graficos-grid">
+      <div class="card">
+        <div class="card-header">
+          <h3>Distribución por {{ etiquetaAgrupacion(data.filtrosAplicados['Agrupación']).toLowerCase() }}</h3>
+        </div>
+        <div class="card-body">
+          <app-grafico-barras [series]="data.series" />
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Participación porcentual</h3>
+        </div>
+        <div class="card-body">
+          <app-grafico-pastel [series]="data.series" />
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- Tabla Resumen por Categoría -->
-  <div class="card" style="margin-top: 1.5rem;">
-    <div class="card-header">
-      <h3 style="margin: 0; font-size: var(--font-md); font-weight: 700; color: var(--slate-900);">Resumen por Categoría</h3>
+    <div class="card tabla-card">
+      <div class="card-header">
+        <h3>{{ data.tabla.titulo }}</h3>
+      </div>
+      <div class="tabla-scroll">
+        <table class="data-table">
+          <thead>
+            <tr>
+              @for (columna of data.tabla.columnas; track columna) {
+                <th>{{ columna }}</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (fila of data.tabla.filas; track fila.etiqueta) {
+              <tr>
+                <td class="negrita">{{ fila.etiqueta }}</td>
+                <td>{{ fila.total }}</td>
+                <td>{{ fila.cerradas }}</td>
+                <td>{{ fila.enProceso }}</td>
+                <td>{{ fila.rechazadas }}</td>
+                <td>{{ fila.porcentaje.toFixed(1) }}%</td>
+              </tr>
+            } @empty {
+              <tr>
+                <td [attr.colspan]="data.tabla.columnas.length" class="tabla-vacia">Sin datos para los filtros seleccionados.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
     </div>
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th>Categoría</th>
-          <th>Total</th>
-          <th>Resueltas</th>
-          <th>Efectividad</th>
-          <th>Progreso</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let r of resumenPorCategoria" style="cursor: default;">
-          <td style="font-weight: 600;">{{ r.categoria }}</td>
-          <td>{{ r.total }}</td>
-          <td>{{ r.resueltas }}</td>
-          <td>
-            <span class="badge" [ngClass]="r.porcentaje >= 85 ? 'badge-success' : 'badge-warning'">
-              {{ r.porcentaje }}%
-            </span>
-          </td>
-          <td>
-            <div class="progress-bar-container">
-              <div class="progress-bar-fill" [style.width.%]="r.porcentaje"
-                   [style.background]="r.porcentaje >= 85 ? 'var(--success-500)' : 'var(--warning-500)'"></div>
-            </div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+
+    <div class="card tabla-card">
+      <div class="card-header">
+        <h3>Detalle de quejas</h3>
+      </div>
+      <div class="tabla-scroll">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Correlativo</th>
+              <th>Fecha</th>
+              <th>Ciudadano</th>
+              <th>Categoría</th>
+              <th>Estado</th>
+              <th>Prioridad</th>
+              <th>Inspector</th>
+              <th>Especialista</th>
+              <th>Dependencia</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (fila of data.detalle; track fila.quejaId) {
+              <tr>
+                <td class="negrita">{{ fila.correlativo }}</td>
+                <td>{{ fila.fechaRegistro | date: 'dd/MM/yyyy' }}</td>
+                <td>{{ fila.ciudadano }}</td>
+                <td>{{ fila.categoria }}</td>
+                <td><span class="badge badge-neutral">{{ fila.estadoActual }}</span></td>
+                <td>{{ fila.prioridad }}</td>
+                <td>{{ fila.inspector }}</td>
+                <td>{{ fila.especialista }}</td>
+                <td>{{ fila.dependencia }}</td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="9" class="tabla-vacia">Sin detalle para los filtros seleccionados.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
 </div>

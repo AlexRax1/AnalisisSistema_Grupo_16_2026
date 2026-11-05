@@ -5,6 +5,8 @@ import com.muni.backend.security.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -25,6 +27,17 @@ public class AuthController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
         }
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(Authentication authentication) {
+        if (authentication == null || authentication instanceof AnonymousAuthenticationToken) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("mensaje", "No hay una sesión autenticada para cerrar."));
+        }
+
+        authService.logout(authentication.getName());
+        return ResponseEntity.ok(Map.of("mensaje", "Sesión cerrada correctamente."));
     }
 
     @PostMapping("/register")

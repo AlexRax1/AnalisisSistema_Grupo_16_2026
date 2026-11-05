@@ -1,92 +1,175 @@
 .admin-page {
-  max-width: 1100px;
+  max-width: 1280px;
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
 }
 
-.page-header {
+.page-header,
+.reporte-encabezado {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 1.25rem;
+  gap: 1rem;
   flex-wrap: wrap;
+}
+
+.page-title,
+.reporte-encabezado h2 {
+  margin: 0;
+  font-size: var(--font-xl);
+  font-weight: 800;
+  color: var(--slate-900);
+}
+
+.page-subtitle,
+.reporte-encabezado p {
+  margin: 0.25rem 0 0;
+  font-size: var(--font-sm);
+  color: var(--slate-500);
+}
+
+.page-actions,
+.filtros-acciones {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.filtros-card .card-body,
+.filtros-card form {
+  padding: 1.25rem;
+}
+
+.filtros-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 1rem;
 }
 
-.page-title {
-  font-size: var(--font-xl);
-  font-weight: 700;
-  color: var(--slate-900);
-  margin: 0;
+.filtros-grid .form-group {
+  margin-bottom: 0;
 }
 
-.page-subtitle {
-  font-size: var(--font-sm);
+.filtros-acciones {
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.cargando {
+  padding: 1rem;
+  text-align: center;
   color: var(--slate-500);
-  margin: 0.25rem 0 0 0;
+  font-size: var(--font-sm);
+}
+
+.reporte-encabezado {
+  padding: 0.25rem 0;
 }
 
 .metrics-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 1rem;
 }
 
-@media (max-width: 768px) {
-  .metrics-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+.kpi-card .card-body {
+  padding: 1rem;
 }
 
-.metric-card .card-body {
-  padding: 1.25rem;
-}
-
-.metric-top {
+.kpi-top {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  margin-bottom: 0.75rem;
+  align-items: center;
+  margin-bottom: 0.5rem;
 }
 
-.metric-icon {
-  font-size: 24px !important;
-  color: var(--primary-400);
+.kpi-icon {
+  font-size: 22px !important;
+  color: var(--primary-500);
 }
 
-.metric-change {
-  font-size: var(--font-xs);
-  font-weight: 600;
-  color: var(--slate-500);
-}
-
-.metric-change.positive {
-  color: var(--success-600);
-}
-
-.metric-value {
+.kpi-valor {
   font-size: var(--font-2xl);
   font-weight: 800;
   color: var(--slate-900);
   letter-spacing: -0.02em;
 }
 
-.metric-label {
-  font-size: var(--font-xs);
-  color: var(--slate-500);
-  font-weight: 500;
+.kpi-etiqueta {
   margin-top: 0.15rem;
+  font-size: var(--font-xs);
+  font-weight: 600;
+  color: var(--slate-500);
 }
 
-.progress-bar-container {
-  width: 100%;
-  height: 6px;
-  background: var(--slate-200);
-  border-radius: var(--radius-full);
+.kpi-card.tono-success .kpi-icon { color: var(--success-600); }
+.kpi-card.tono-warning .kpi-icon { color: var(--warning-600); }
+.kpi-card.tono-danger .kpi-icon { color: var(--danger-600); }
+.kpi-card.tono-info .kpi-icon { color: var(--info-600); }
+.kpi-card.tono-neutral .kpi-icon { color: var(--slate-500); }
+
+.graficos-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.graficos-grid .card-header h3,
+.tabla-card .card-header h3 {
+  margin: 0;
+  font-size: var(--font-md);
+  color: var(--slate-900);
+}
+
+.tabla-card {
   overflow: hidden;
 }
 
-.progress-bar-fill {
-  height: 100%;
-  border-radius: var(--radius-full);
-  transition: width 0.5s ease;
+.tabla-scroll {
+  overflow-x: auto;
+}
+
+.tabla-scroll .data-table {
+  min-width: 900px;
+}
+
+.negrita {
+  font-weight: 700;
+  color: var(--slate-800);
+}
+
+.tabla-vacia {
+  padding: 2rem !important;
+  text-align: center;
+  color: var(--slate-500);
+}
+
+@media (max-width: 1100px) {
+  .filtros-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .metrics-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .filtros-grid,
+  .metrics-grid,
+  .graficos-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .page-actions,
+  .filtros-acciones {
+    justify-content: stretch;
+  }
+
+  .page-actions .btn,
+  .filtros-acciones .btn {
+    flex: 1;
+  }
 }

@@ -1,0 +1,17 @@
+@if (series.length === 0) {
+  <div class="grafico-vacio">Sin datos para graficar</div>
+} @else {
+  <div class="barras">
+    @for (item of series; track item.etiqueta) {
+      <div class="barra-item">
+        <div class="barra-cabecera">
+          <span class="barra-etiqueta">{{ item.etiqueta }}</span>
+          <span class="barra-valor">{{ item.valor }} · {{ item.porcentaje.toFixed(1) }}%</span>
+        </div>
+        <div class="barra-track">
+          <div class="barra-fill" [style.width.%]="ancho(item.valor)"></div>
+        </div>
+      </div>
+    }
+  </div>
+}

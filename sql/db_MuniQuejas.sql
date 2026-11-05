@@ -22,9 +22,11 @@ CREATE TABLE credenciales (
     usuario_modificacion varchar(150)
 );
 
+-- Auditoría inmutable. user_id se guarda como número, sin FK, para que el
+-- borrado de una credencial no modifique el histórico.
 CREATE TABLE bitacora (
     registro_id serial PRIMARY KEY,
-    user_id int REFERENCES credenciales(user_id) ON DELETE SET NULL,
+    user_id int,
     usuario_accion varchar(200),
     direccion_ip varchar(45),
     fecha_hora timestamp DEFAULT CURRENT_TIMESTAMP,
@@ -32,6 +34,7 @@ CREATE TABLE bitacora (
     id_afectado varchar(150),
     campo_afectado varchar(100),
     accion varchar(50),
+    descripcion varchar(500),
     registro_antiguo text,
     registro_nuevo text
 );
@@ -39,6 +42,24 @@ CREATE TABLE bitacora (
 CREATE INDEX idx_bitacora_fecha_hora ON bitacora(fecha_hora);
 CREATE INDEX idx_bitacora_tabla_afectada ON bitacora(tabla_afectada);
 CREATE INDEX idx_bitacora_direccion_ip ON bitacora(direccion_ip);
+CREATE INDEX idx_bitacora_id_afectado ON bitacora(id_afectado);
+CREATE INDEX idx_bitacora_campo_afectado ON bitacora(campo_afectado);
+
+-- La bitácora sólo admite INSERT: se bloquean UPDATE, DELETE y TRUNCATE.
+CREATE OR REPLACE FUNCTION fn_bitacora_inmutable()
+RETURNS trigger AS $$
+BEGIN
+    RAISE EXCEPTION 'La bitacora es inmutable: no se permite % en %.', TG_OP, TG_TABLE_NAME;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_bitacora_sin_update_delete
+BEFORE UPDATE OR DELETE ON bitacora
+FOR EACH ROW EXECUTE FUNCTION fn_bitacora_inmutable();
+
+CREATE TRIGGER trg_bitacora_sin_truncate
+BEFORE TRUNCATE ON bitacora
+FOR EACH STATEMENT EXECUTE FUNCTION fn_bitacora_inmutable();
 
 CREATE TABLE recuperacion_password (
     recuperacion_id serial PRIMARY KEY,

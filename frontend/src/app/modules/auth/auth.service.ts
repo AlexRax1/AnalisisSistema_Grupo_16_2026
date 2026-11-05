@@ -38,6 +38,11 @@ export class AuthService {
     return this.http.post<Usuario>(`${this.BASE_URL}/auth/login`, { username: correo, password });
   }
 
+  // Cierre de sesión auditado en el backend antes de descartar el token.
+  logout(): Observable<any> {
+    return this.http.post(`${this.BASE_URL}/auth/logout`, {});
+  }
+
   // CU01: Registro de usuario ciudadano
   registrarCiudadano(datos: RegistroCiudadanoReq): Observable<string> {
     return this.http.post(`${this.BASE_URL}/usuarios/registro-ciudadano`, datos, {

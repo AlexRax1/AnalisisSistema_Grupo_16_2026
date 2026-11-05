@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterOutlet, RouterLink, RouterLinkActive, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { GestionPersonalComponent } from '../../../modules/admin/gestion-personal/gestion-personal.component';
+import { AuthService } from '../../../modules/auth/auth.service';
 
 interface NavItem {
   label: string;
@@ -73,7 +74,10 @@ export class DashboardLayoutComponent implements OnInit {
 
   currentConfig: RolConfig | null = null;
 
-  constructor(private router: Router) {}
+  constructor(
+    private router: Router,
+    private authService: AuthService,
+  ) {}
 
   ngOnInit() {
     this.detectarRol();
@@ -101,6 +105,13 @@ export class DashboardLayoutComponent implements OnInit {
   }
 
   cerrarSesion() {
+    this.authService.logout().subscribe({
+      next: () => this.limpiarSesion(),
+      error: () => this.limpiarSesion(),
+    });
+  }
+
+  private limpiarSesion() {
     localStorage.removeItem('token');
     localStorage.removeItem('rol');
     this.router.navigate(['/auth/login']);

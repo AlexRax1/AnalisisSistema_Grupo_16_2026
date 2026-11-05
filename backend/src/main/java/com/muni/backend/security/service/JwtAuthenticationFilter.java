@@ -31,8 +31,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
         // Ignora peticiones preflight (OPTIONS)
         return "OPTIONS".equalsIgnoreCase(request.getMethod())
-                || path.startsWith("/subidas/")
-                || path.startsWith("/auth/");
+                || path.startsWith("/subidas/");
     }
 
     @Override

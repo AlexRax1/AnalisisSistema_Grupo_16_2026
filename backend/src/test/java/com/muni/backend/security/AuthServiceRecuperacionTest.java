@@ -177,6 +177,24 @@ class AuthServiceRecuperacionTest {
     }
 
     @Test
+    void testLogoutRegistraCierreDeSesion() {
+        when(credencialRepository.findByUsernameIgnoreCase("ciudadano@test.com"))
+                .thenReturn(Optional.of(mockCredencial));
+
+        authService.logout("ciudadano@test.com");
+
+        verify(bitacoraService).registrar(
+                "ciudadano@test.com",
+                "credenciales",
+                "10",
+                "acceso",
+                "CERRAR_SESION",
+                null,
+                "Cierre de sesión"
+        );
+    }
+
+    @Test
     void testResetPassword_SinSolicitudActiva() {
         when(usuarioRepository.findByCorreoIgnoreCase("ciudadano@test.com")).thenReturn(Optional.of(mockUsuario));
         when(recuperacionPasswordRepository.findTopByCredencial_UserIdAndUtilizadoFalseAndFechaExpiracionAfterOrderByFechaCreacionDesc(

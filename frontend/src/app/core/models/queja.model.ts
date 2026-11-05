@@ -1,5 +1,6 @@
 // DTOs para comunicación con Spring Boot (Portal Ciudadano)
 export interface EvidenciaDTO {
+  evidenciaId?: number;
   urlArchivo: string;
   nombreArchivo: string;
 }

@@ -4,13 +4,19 @@ import com.muni.backend.quejas.dto.ciudadano.QuejaDerivadaDTO;
 import com.muni.backend.quejas.dto.ciudadano.QuejaDetalleDTO;
 import com.muni.backend.quejas.dto.ciudadano.QuejaRegistroDTO;
 import com.muni.backend.quejas.dto.ciudadano.QuejaRegistroResponse;
+import com.muni.backend.quejas.model.EvidenciaDigital;
 import com.muni.backend.bitacora.service.BitacoraService;
 import com.muni.backend.quejas.service.PdfService;
 import com.muni.backend.quejas.service.QuejaService;
+import com.muni.backend.shared.service.FileStorageService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.MediaTypeFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,6 +28,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.List;
 
 @RestController
@@ -32,6 +40,7 @@ public class QuejaController {
     private final QuejaService quejaService;
     private final PdfService pdfService;
     private final BitacoraService bitacoraService;
+    private final FileStorageService fileStorageService;
 
     // Registra una queja principal con sus fotografías.
     @PostMapping(value = "/registrar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -66,7 +75,7 @@ public class QuejaController {
         bitacoraService.registrar(
                 authentication.getName(),
                 "quejas",
-                correlativo,
+                String.valueOf(detalle.getQuejaId()),
                 "constancia_pdf",
                 "DESCARGAR",
                 null,
@@ -80,6 +89,46 @@ public class QuejaController {
         return ResponseEntity.ok()
                 .headers(headers)
                 .body(pdfBytes);
+    }
+
+    // Descarga una evidencia autenticada y deja rastro en la bitácora.
+    @GetMapping("/{correlativo}/evidencias/{evidenciaId}/descargar")
+    public ResponseEntity<Resource> descargarEvidencia(
+            @PathVariable String correlativo,
+            @PathVariable Integer evidenciaId,
+            Authentication authentication) {
+
+        EvidenciaDigital evidencia = quejaService.obtenerEvidencia(correlativo, evidenciaId);
+        Path archivo = fileStorageService.resolverArchivo(evidencia.getUrlArchivo());
+        FileSystemResource resource = new FileSystemResource(archivo);
+
+        String nombreArchivo = evidencia.getNombreArchivo();
+        if (nombreArchivo == null || nombreArchivo.isBlank()) {
+            String formato = evidencia.getFormato() != null ? evidencia.getFormato() : "jpg";
+            nombreArchivo = "evidencia-" + evidenciaId + "." + formato;
+        }
+
+        bitacoraService.registrar(
+                authentication.getName(),
+                "evidencias_digitales",
+                String.valueOf(evidenciaId),
+                "archivo",
+                "DESCARGAR",
+                null,
+                "Queja " + correlativo + " | " + nombreArchivo
+        );
+
+        MediaType tipo = MediaTypeFactory.getMediaType(resource)
+                .orElse(MediaType.APPLICATION_OCTET_STREAM);
+
+        return ResponseEntity.ok()
+                .contentType(tipo)
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment()
+                                .filename(nombreArchivo, StandardCharsets.UTF_8)
+                                .build()
+                                .toString())
+                .body(resource);
     }
 
     // Registra un agravamiento o reincidencia.

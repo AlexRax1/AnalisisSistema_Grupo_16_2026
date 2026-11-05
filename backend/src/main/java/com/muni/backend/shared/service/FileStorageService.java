@@ -40,6 +40,21 @@ public class FileStorageService {
         return url.substring(punto + 1).toLowerCase();
     }
 
+    // Resuelve una URL de evidencia a un archivo real dentro de la carpeta de subidas.
+    public Path resolverArchivo(String urlArchivo) {
+        if (urlArchivo == null || !urlArchivo.startsWith("/subidas/evidencias/")) {
+            throw new IllegalArgumentException("La ruta de la evidencia no es válida.");
+        }
+
+        String nombreArchivo = Paths.get(urlArchivo).getFileName().toString();
+        Path archivo = uploadPath.resolve(nombreArchivo).normalize();
+
+        if (!archivo.startsWith(uploadPath) || !Files.isRegularFile(archivo)) {
+            throw new IllegalArgumentException("El archivo de la evidencia no existe.");
+        }
+        return archivo;
+    }
+
     public String guardarArchivo(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("El archivo adjunto está vacío.");

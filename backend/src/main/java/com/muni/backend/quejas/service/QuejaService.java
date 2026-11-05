@@ -2,6 +2,7 @@ package com.muni.backend.quejas.service;
 
 import com.muni.backend.quejas.dto.ciudadano.*;
 import com.muni.backend.quejas.dto.shared.*;
+import com.muni.backend.quejas.exception.QuejaNoEncontradaException;
 import com.muni.backend.quejas.model.CategoriaQueja;
 import com.muni.backend.quejas.model.EstadoQueja;
 import com.muni.backend.quejas.model.EvidenciaDigital;
@@ -205,6 +206,25 @@ public class QuejaService {
         return convertirADetalleDTO(queja);
     }
 
+    // Busca una evidencia y valida que pertenezca a la queja indicada.
+    @Transactional(readOnly = true)
+    public EvidenciaDigital obtenerEvidencia(String correlativo, Integer evidenciaId) {
+        Queja queja = quejaRepository.findByCorrelativo(correlativo)
+                .orElseThrow(() -> new QuejaNoEncontradaException(
+                        "No se encontró la queja con correlativo: " + correlativo));
+
+        EvidenciaDigital evidencia = evidenciaRepository.findById(evidenciaId)
+                .orElseThrow(() -> new QuejaNoEncontradaException(
+                        "No se encontró la evidencia con ID: " + evidenciaId));
+
+        if (evidencia.getQueja() == null
+                || !queja.getQuejaId().equals(evidencia.getQueja().getQuejaId())) {
+            throw new QuejaNoEncontradaException(
+                    "La evidencia no pertenece a la queja indicada.");
+        }
+        return evidencia;
+    }
+
     private QuejaDetalleDTO convertirADetalleDTO(Queja queja) {
         QuejaDetalleDTO dto = new QuejaDetalleDTO();
 
@@ -266,6 +286,7 @@ public class QuejaService {
             if (evidencias != null && !evidencias.isEmpty()) {
                 List<EvidenciaDTO> evidenciasDTO = evidencias.stream().map(e -> {
                     EvidenciaDTO evDto = new EvidenciaDTO();
+                    evDto.setEvidenciaId(e.getEvidenciaId());
                     evDto.setUrlArchivo(e.getUrlArchivo());
                     evDto.setNombreArchivo(e.getNombreArchivo());
                     return evDto;

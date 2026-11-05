@@ -64,6 +64,25 @@ public class AuthService {
         return new AuthResponse(token, rol, usuario.getUsername());
     }
 
+    // El JWT es stateless: cerrar sesión consiste en registrar el evento y que el
+    // frontend descarte el token. La bitácora conserva usuario, fecha, hora e IP.
+    @Transactional
+    public void logout(String username) {
+        Credencial credencial = username != null
+                ? credencialRepository.findByUsernameIgnoreCase(username).orElse(null)
+                : null;
+
+        bitacoraService.registrar(
+                username,
+                "credenciales",
+                credencial != null ? String.valueOf(credencial.getUserId()) : null,
+                "acceso",
+                "CERRAR_SESION",
+                null,
+                "Cierre de sesión"
+        );
+    }
+
     // Para otros roles (funcionario, inspector, etc.)
     @Transactional
     public RegisterResponse register(RegisterRequest request) {

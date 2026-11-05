@@ -1,0 +1,16 @@
+@if (series.length === 0) {
+  <div class="grafico-vacio">Sin datos para graficar</div>
+} @else {
+  <div class="pastel-contenedor">
+    <div class="pastel" [style.background]="gradiente"></div>
+    <div class="leyenda">
+      @for (item of datos; track item.etiqueta; let i = $index) {
+        <div class="leyenda-item">
+          <span class="punto" [style.background]="color(i)"></span>
+          <span class="leyenda-nombre">{{ item.etiqueta }}</span>
+          <span class="leyenda-valor">{{ item.valor }} · {{ item.porcentaje.toFixed(1) }}%</span>
+        </div>
+      }
+    </div>
+  </div>
+}

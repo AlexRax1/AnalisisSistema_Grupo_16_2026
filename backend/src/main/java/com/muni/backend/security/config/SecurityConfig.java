@@ -62,12 +62,16 @@ public class SecurityConfig {
                         // 2. Rutas totalmente públicas
                         .requestMatchers("/auth/**", "/api/auth/**", "/usuarios/registro-ciudadano", "/api/usuarios/registro-ciudadano").permitAll()
                         .requestMatchers("/subidas/**", "/subidas/evidencias/**").permitAll()
+                        // Permite que los errores conserven su código real (404, 400, etc.)
+                        // en lugar de convertirse en 403 al reenviarse a /error.
+                        .requestMatchers("/error").permitAll()
 
                         // Permite la entrada completa a los controladores de admin quejas
                         .requestMatchers("/admin/quejas/**", "/admin/quejas").permitAll()
 
                         // 3. Rutas con restricción de roles
                         .requestMatchers("/admin/usuarios-internos/**").hasAuthority("ADMINISTRADOR")
+                        .requestMatchers("/admin/reportes/**").hasAnyAuthority("ADMINISTRADOR", "ROLE_ADMINISTRADOR")
                         .requestMatchers("/admin/**").hasAnyAuthority("ADMINISTRADOR", "ROLE_ADMINISTRADOR", "EMPLEADO", "ROLE_EMPLEADO")
 
                         // 4. Resto de peticiones autenticadas

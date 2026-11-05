@@ -83,12 +83,17 @@ public class QuejaEstadoService {
                 ? cambiadoPor.getCredencial().getUsername()
                 : null;
 
+        String accion = (nuevoEstado == EstadoQueja.SOLUCIONADA_CERRADA
+                || nuevoEstado == EstadoQueja.RECHAZADA)
+                ? "CERRAR"
+                : "ACTUALIZAR";
+
         bitacoraService.registrar(
                 username,
                 "quejas",
                 String.valueOf(queja.getQuejaId()),
                 "estado_actual",
-                "ACTUALIZAR",
+                accion,
                 estadoAnterior,
                 nuevoEstado.getValor()
         );
