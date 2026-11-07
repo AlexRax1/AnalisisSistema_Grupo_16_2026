@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { estiloEstado as estiloEstadoQueja } from '../../../core/models/estado-queja.util';
 
 @Component({
   selector: 'app-catalogo-quejas',
@@ -220,5 +221,9 @@ export class CatalogoQuejasComponent implements OnInit {
       default:
         return 'badge bg-light text-dark';
     }
+  }
+
+  estiloEstado(estado: string): Record<string, string> {
+    return estiloEstadoQueja(estado);
   }
 }

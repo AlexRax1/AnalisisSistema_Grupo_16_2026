@@ -1,6 +1,7 @@
 package com.muni.backend.reportes.repository;
 
 import com.muni.backend.quejas.model.Queja;
+import com.muni.backend.reportes.repository.proyeccion.DashboardEstadoProjection;
 import com.muni.backend.reportes.repository.proyeccion.ReporteAgrupadoProjection;
 import com.muni.backend.reportes.repository.proyeccion.ReporteKpiProjection;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -84,4 +85,13 @@ public interface ReporteQuejaRepository extends JpaRepository<Queja, Integer> {
             @Param("categoriaId") Integer categoriaId,
             @Param("prioridad") String prioridad
     );
+
+    @Query(value = """
+            SELECT
+                q.estado_actual AS "estado",
+                COUNT(*) AS "total"
+            FROM quejas q
+            GROUP BY q.estado_actual
+            """, nativeQuery = true)
+    List<DashboardEstadoProjection> contarPorEstado();
 }

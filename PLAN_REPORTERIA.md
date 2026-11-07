@@ -9,11 +9,11 @@
 
 ## Estado Actual
 
-- **Avance global:** `87.5%` — `70 de 80 casillas` (Fases 0–7 completas; plantilla congelada y exportaciones con gráficos; quedan las tareas de adaptación al tema real).
-- **Fases completadas:** `Fase 0 — Verificación previa`, `Fase 1 — Bitácora`, `Fase 2 — Verificación de bitácora`, `Fase 3 — Contrato`, `Fase 4 — SQL/opciones`, `Fase 5 — Backend/exportaciones`, `Fase 6 — Frontend/gráficos`, `Fase 7 — Página admin y pruebas`, `Fase 8.1 — Plantilla congelada`.
+- **Avance global:** `88%` — `76 de 86 casillas` (Fases 0–7 completas; plantilla congelada y exportaciones con gráficos; dashboard en tiempo real agregado; quedan las tareas de adaptación al tema real).
+- **Fases completadas:** `Fase 0 — Verificación previa`, `Fase 1 — Bitácora`, `Fase 2 — Verificación de bitácora`, `Fase 3 — Contrato`, `Fase 4 — SQL/opciones`, `Fase 5 — Backend/exportaciones`, `Fase 6 — Frontend/gráficos`, `Fase 7 — Página admin y pruebas`, `Fase 8.1 — Plantilla congelada`, `Fase 8.2 — Dashboard en tiempo real`.
 - **Fase en curso:** ninguna; `Fase 8 — Adaptación al tema real` queda lista para ejecutarse cuando se conozca el reporte solicitado.
 - **Pendientes:** sólo la adaptación al tema real y las tareas opcionales de la Fase 8.
-- **Estado:** MVP completo y verificado con PostgreSQL. Backend y frontend arrancan; `POST /admin/reportes/quejas/consultar` devuelve KPIs, series, tabla y detalle; Excel/PDF son válidos e incluyen gráficos de barras y pastel; la pantalla muestra barras, pastel y barras apiladas; B1–B11 pasan; cada consulta/exportación deja fila en `bitacora`. Se corrigió un bug real de la consulta de bitácora con parámetros nulos.
+- **Estado:** MVP completo y verificado con PostgreSQL. Backend y frontend arrancan; `POST /admin/reportes/quejas/consultar` devuelve KPIs, series, tabla y detalle; Excel/PDF son válidos e incluyen gráficos de barras y pastel; la pantalla muestra barras, pastel y barras apiladas; B1–B11 pasan; cada consulta/exportación deja fila en `bitacora`. Se corrigió un bug real de la consulta de bitácora con parámetros nulos. Se agregó `/admin/dashboard` con contadores en vivo, distribución por estado y código de colores.
 - **Plantilla congelada:** el reporte de quejas queda como **ejemplo canónico**. Para un reporte nuevo se edita el dataset/filtros, no se duplica la pantalla ni los exportadores. Ver sección 7.
 - **Última actualización:** `2026-11-07`.
 - **Tiempo objetivo del MVP:** `90 min` (sin contar la Fase 1, ya implementada).
@@ -462,6 +462,46 @@ Cuando el reporte consulte o exporte, debe dejar una fila en `bitacora`:
 
 Esto permite verificar después quién consultó o descargó un reporte y con qué filtros.
 
+### 4.6 Dashboard en tiempo real
+
+```http
+GET /admin/reportes/dashboard?limiteRecientes=10
+Authorization: Bearer <token>
+```
+
+Devuelve una foto del estado actual de todas las quejas. No audita en `bitacora` porque el frontend lo consulta cada 15 segundos y llenaría la tabla de ruido.
+
+```json
+{
+  "fechaActualizacion": "2026-11-07T11:45:00",
+  "total": 16,
+  "contadores": [
+    { "clave": "NUEVOS", "etiqueta": "Nuevos", "valor": 5, "porcentaje": 31.3, "icono": "fiber_new" },
+    { "clave": "EN_PROCESO", "etiqueta": "En proceso", "valor": 6, "porcentaje": 37.5, "icono": "autorenew" },
+    { "clave": "PENDIENTES", "etiqueta": "Pendientes", "valor": 1, "porcentaje": 6.3, "icono": "pending_actions" },
+    { "clave": "RESUELTOS", "etiqueta": "Resueltos", "valor": 2, "porcentaje": 12.5, "icono": "check_circle" },
+    { "clave": "RECHAZADOS", "etiqueta": "Rechazadas", "valor": 2, "porcentaje": 12.5, "icono": "cancel" }
+  ],
+  "estados": [
+    { "estado": "REGISTRADA", "grupo": "NUEVOS", "total": 5, "porcentaje": 31.3 },
+    { "estado": "EN INSPECCIÓN", "grupo": "EN_PROCESO", "total": 2, "porcentaje": 12.5 }
+  ],
+  "recientes": []
+}
+```
+
+Agrupación de estados usada por el dashboard:
+
+| Grupo | Estados incluidos | Color |
+|---|---|---|
+| `NUEVOS` | `REGISTRADA` | Amarillo |
+| `EN_PROCESO` | `EN INSPECCIÓN`, `EN REPARACIÓN TÉCNICA`, `EN VALIDACIÓN DE REPARACIÓN` | Naranja |
+| `PENDIENTES` | `PENDIENTE DE CIERRE` | Rojo |
+| `RESUELTOS` | `SOLUCIONADA / CERRADA` | Verde |
+| `RECHAZADOS` | `RECHAZADA` | Rojo oscuro |
+
+La pantalla reutiliza `app-grafico-pastel` pasando los colores del código de estados. El mismo código de colores se aplica a las quejas recientes del dashboard, al catálogo de quejas y al detalle del reporte.
+
 ---
 
 ## 5. Fases de implementación
@@ -657,6 +697,11 @@ La bitácora no es la fuente principal del reporte de quejas: el reporte lee de 
 **Tiempo:** variable. **Depende de:** Fase 7. **Salida:** reporte definitivo sin rehacer la base.
 
 - [x] **Fase 8.1 — Plantilla congelada:** reporte de quejas documentado como ejemplo canónico, con barras, pastel, apilado y PDF/Excel con gráficos.
+- [x] **Fase 8.2 — Dashboard en tiempo real:** agregar `GET /admin/reportes/dashboard` con contadores por grupo (nuevos, en proceso, pendientes, resueltos y rechazados), distribución por estado y quejas recientes.
+- [x] Crear el código de colores compartido (`estado-queja.util.ts`): amarillo para nuevos, naranja para en proceso, rojo para pendientes/rechazadas y verde para resueltos.
+- [x] Crear la página `/admin/dashboard` con autoactualización cada 15 segundos, actualización manual, KPIs, pastel y detalle por estado.
+- [x] Aplicar el mismo código de colores al catálogo de quejas y al detalle del reporte.
+- [x] Agregar prueba unitaria del dashboard y validar `ReporteQuejaServiceTest` + build de desarrollo del frontend.
 - [ ] Reemplazar el título “Reporte de quejas por categoría” por el tema real solicitado.
 - [ ] Elegir el dataset y las dimensiones: si sigue siendo quejas, cambiar el valor por defecto de `agrupacion`, el título y los filtros visibles; si es otro dataset, crear un método/repositorio nuevo y reutilizar DTOs, gráficos y pantalla.
 - [ ] Ajustar `/admin/reportes/opciones` para que devuelva sólo los filtros que use el tema real.
@@ -939,6 +984,10 @@ export class GraficoLineaComponent {
 | 16 | Exportar Excel con gráficos | El `.xlsx` incluye la hoja “Gráficos” con las dos imágenes |
 | 17 | Gráfico apilado | La pantalla muestra la composición resueltas/en proceso/rechazadas |
 | 18 | Reporte sin series | PDF/Excel generan una imagen “Sin datos” sin fallar |
+| 19 | `GET /admin/reportes/dashboard` | Responde total, contadores, estados y recientes sin auditar |
+| 20 | Dashboard con datos | Los 5 contadores cuadran con la suma de estados |
+| 21 | Autoactualización | La pantalla vuelve a consultar cada 15 s y actualiza la hora |
+| 22 | Código de colores | Nuevos amarillo, en proceso naranja, pendientes rojo y resueltos verde en dashboard, catálogo y reporte |
 
 ---
 
@@ -1000,6 +1049,8 @@ export class GraficoLineaComponent {
 | 2026-11-07 | 8.1 | Tercer gráfico de ejemplo | Completado | `app-grafico-apilado` reutiliza las filas de la tabla |
 | 2026-11-07 | 8.1 | Plantilla documentada | Completado | Sección 7 ampliada con archivos, checklist, contrato, recetas y respuestas de demo |
 | 2026-11-07 | 8.1 | Pruebas de exportación | Completado | `ReporteChartServiceTest` y `ReporteExportServiceTest` pasan |
+| 2026-11-07 | 8.2 | Dashboard en tiempo real | Completado | `GET /admin/reportes/dashboard`, página `/admin/dashboard`, autoactualización cada 15 s y código de colores compartido |
+| 2026-11-07 | 8.2 | Verificación | Completado | `ReporteQuejaServiceTest` (3 pruebas) y `npm run build -- --configuration development` sin errores nuevos |
 |  |  |  |  |  |
 
 ---

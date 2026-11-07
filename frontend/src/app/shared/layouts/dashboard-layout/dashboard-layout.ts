@@ -64,7 +64,7 @@ export class DashboardLayoutComponent implements OnInit {
       titulo: 'Administrador',
       badgeClass: 'badge-danger',
       items: [
-        // 👈 La ruta del menú apunta correctamente a gestion-personal
+        { label: 'Dashboard', icon: 'dashboard', route: '/admin/dashboard' },
         { label: 'Gestión de Personal', icon: 'people', route: '/admin/gestion-personal' },
         { label: 'Catálogo de Quejas', icon: 'assessment', route: '/admin/catalogo-quejas' },
         { label: 'Reportes', icon: 'bar_chart', route: '/admin/reportes' },

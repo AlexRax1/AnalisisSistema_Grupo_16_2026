@@ -16,6 +16,7 @@ import { BandejaEspecialistaComponent } from './modules/operaciones-campo/pages/
 import { InicioEspecialistaComponent } from './modules/operaciones-campo/pages/inicio-especialista/inicio-especialista';
 import { DetalleQuejaEspecialistaComponent } from './modules/operaciones-campo/pages/detalle-queja-especialista/detalle-queja-especialista';
 import { AdminUsuariosComponent } from './modules/admin/pages/admin-usuarios/admin-usuarios';
+import { AdminDashboardComponent } from './modules/admin/pages/admin-dashboard/admin-dashboard';
 import { AdminReportesComponent } from './modules/admin/pages/admin-reportes/admin-reportes';
 import { MiPerfilComponent } from './modules/admin/pages/mi-perfil/mi-perfil.component';
 import { GestionPersonalComponent } from './modules/admin/gestion-personal/gestion-personal.component';
@@ -88,7 +89,8 @@ export const routes: Routes = [
     path: 'admin',
     component: DashboardLayoutComponent,
     children: [
-      { path: '', redirectTo: 'gestion-personal', pathMatch: 'full' },
+      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+      { path: 'dashboard', component: AdminDashboardComponent },
       { path: 'gestion-personal', component: GestionPersonalComponent },
       { path: 'catalogo-quejas', component: CatalogoQuejasComponent },
       { path: 'reportes', component: AdminReportesComponent },

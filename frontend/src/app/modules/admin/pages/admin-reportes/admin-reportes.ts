@@ -10,6 +10,7 @@ import {
 import { GraficoBarrasComponent } from '../../components/grafico-barras/grafico-barras';
 import { GraficoPastelComponent } from '../../components/grafico-pastel/grafico-pastel';
 import { GraficoApiladoComponent } from '../../components/grafico-apilado/grafico-apilado';
+import { estiloEstado as estiloEstadoQueja } from '../../../../core/models/estado-queja.util';
 
 @Component({
   selector: 'app-admin-reportes',
@@ -119,6 +120,10 @@ export class AdminReportesComponent implements OnInit {
       INSPECTOR: 'Inspector',
     };
     return etiquetas[valor] ?? valor;
+  }
+
+  estiloEstado(estado: string): Record<string, string> {
+    return estiloEstadoQueja(estado);
   }
 
   private obtenerFiltros(): ReporteFiltro {

@@ -1,0 +1,161 @@
+<div class="admin-page animate-fade-in">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Dashboard de quejas</h1>
+      <p class="page-subtitle">Vista en tiempo real del estado general de los casos municipales</p>
+    </div>
+
+    <div class="live-controles">
+      <span class="live-indicador">
+        <span class="live-dot"></span>
+        En vivo
+      </span>
+
+      @if (dashboard()?.fechaActualizacion; as fecha) {
+        <span class="ultima-actualizacion">Actualizado {{ fecha | date: 'HH:mm:ss' }}</span>
+      }
+
+      <label class="auto-toggle">
+        <input
+          type="checkbox"
+          [checked]="autoActualizar()"
+          (change)="cambiarAutoActualizacion($any($event.target).checked)"
+        />
+        Cada {{ SEGUNDOS_ACTUALIZACION }} s
+      </label>
+
+      <button
+        class="btn btn-outline btn-sm"
+        type="button"
+        [disabled]="cargando()"
+        (click)="cargar()"
+      >
+        <span class="mat-icon">refresh</span>
+        Actualizar
+      </button>
+    </div>
+  </div>
+
+  @if (error()) {
+    <div class="alert alert-error">{{ error() }}</div>
+  }
+
+  @if (cargando() && !dashboard()) {
+    <div class="cargando">Cargando dashboard...</div>
+  }
+
+  @if (dashboard(); as data) {
+    <div class="metrics-grid">
+      @for (contador of data.contadores; track contador.clave) {
+        <div class="card contador-card" [style.border-top-color]="colorGrupo(contador.clave)">
+          <div class="contador-top">
+            <span class="mat-icon contador-icono" [style.color]="colorGrupo(contador.clave)">
+              {{ contador.icono }}
+            </span>
+            <span class="contador-porcentaje">{{ contador.porcentaje.toFixed(1) }}%</span>
+          </div>
+          <div class="contador-valor">{{ contador.valor }}</div>
+          <div class="contador-etiqueta">{{ contador.etiqueta }}</div>
+        </div>
+      }
+    </div>
+
+    <div class="paneles-grid">
+      <div class="card">
+        <div class="card-header panel-header">
+          <div>
+            <h3>Distribución general</h3>
+            <p>Participación de cada estado sobre {{ data.total }} quejas registradas.</p>
+          </div>
+          <span class="badge badge-neutral">Total: {{ data.total }}</span>
+        </div>
+        <div class="card-body">
+          <app-grafico-pastel [series]="series()" [colores]="colores()" />
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header panel-header">
+          <div>
+            <h3>Quejas por estado</h3>
+            <p>
+              Código de colores: amarillo nuevo, naranja en proceso, rojo pendiente y verde
+              resuelto.
+            </p>
+          </div>
+        </div>
+        <div class="card-body estados-lista">
+          @for (estado of data.estados; track estado.estado) {
+            <div class="estado-item">
+              <div class="estado-fila">
+                <span class="estado-punto" [style.background]="colorEstado(estado.estado)"></span>
+                <span class="estado-nombre">{{ estado.estado }}</span>
+                <span class="estado-total">{{ estado.total }}</span>
+                <span class="estado-porcentaje">{{ estado.porcentaje.toFixed(1) }}%</span>
+              </div>
+              <div class="estado-barra">
+                <span
+                  [style.width.%]="estado.porcentaje"
+                  [style.background]="colorEstado(estado.estado)"
+                >
+                </span>
+              </div>
+            </div>
+          } @empty {
+            <div class="tabla-vacia">Todavía no hay quejas registradas.</div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="card tabla-card">
+      <div class="card-header panel-header">
+        <div>
+          <h3>Quejas recientes</h3>
+          <p>Últimos casos registrados, con el color correspondiente a su estado actual.</p>
+        </div>
+        <span class="badge badge-neutral">{{ data.recientes.length }} casos</span>
+      </div>
+      <div class="tabla-scroll">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Correlativo</th>
+              <th>Fecha</th>
+              <th>Ciudadano</th>
+              <th>Categoría</th>
+              <th>Estado</th>
+              <th>Prioridad</th>
+              <th>Dependencia</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (queja of data.recientes; track queja.quejaId) {
+              <tr>
+                <td class="negrita">{{ queja.correlativo }}</td>
+                <td>{{ queja.fechaRegistro | date: 'dd/MM/yyyy HH:mm' }}</td>
+                <td>{{ queja.ciudadano }}</td>
+                <td>{{ queja.categoria }}</td>
+                <td>
+                  <span
+                    class="badge estado-badge"
+                    [style.background-color]="colorEstado(queja.estadoActual)"
+                    [style.color]="'#ffffff'"
+                  >
+                    {{ queja.estadoActual }}
+                  </span>
+                </td>
+                <td>{{ queja.prioridad }}</td>
+                <td>{{ queja.dependencia }}</td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="7" class="tabla-vacia">Todavía no hay quejas registradas.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+</div>

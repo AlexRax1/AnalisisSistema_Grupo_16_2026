@@ -8,7 +8,7 @@ import { ReporteSerie } from '../../../../core/models/reporte-queja.model';
   styleUrl: './grafico-pastel.css',
 })
 export class GraficoPastelComponent {
-  private readonly colores = [
+  private readonly coloresBase = [
     '#2563eb',
     '#10b981',
     '#f59e0b',
@@ -19,6 +19,9 @@ export class GraficoPastelComponent {
   ];
 
   @Input() series: ReporteSerie[] = [];
+
+  /** Colores opcionales alineados con `series`; si no se envían, usa la paleta base. */
+  @Input() colores: string[] = [];
 
   get datos(): ReporteSerie[] {
     if (this.series.length <= 7) {
@@ -52,6 +55,6 @@ export class GraficoPastelComponent {
   }
 
   color(indice: number): string {
-    return this.colores[indice % this.colores.length];
+    return this.colores[indice] ?? this.coloresBase[indice % this.coloresBase.length];
   }
 }

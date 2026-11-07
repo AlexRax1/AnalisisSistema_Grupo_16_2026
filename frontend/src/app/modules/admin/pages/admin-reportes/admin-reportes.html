@@ -193,7 +193,7 @@
                 <td>{{ fila.fechaRegistro | date: 'dd/MM/yyyy' }}</td>
                 <td>{{ fila.ciudadano }}</td>
                 <td>{{ fila.categoria }}</td>
-                <td><span class="badge badge-neutral">{{ fila.estadoActual }}</span></td>
+                <td><span class="badge" [ngStyle]="estiloEstado(fila.estadoActual)">{{ fila.estadoActual }}</span></td>
                 <td>{{ fila.prioridad }}</td>
                 <td>{{ fila.inspector }}</td>
                 <td>{{ fila.especialista }}</td>

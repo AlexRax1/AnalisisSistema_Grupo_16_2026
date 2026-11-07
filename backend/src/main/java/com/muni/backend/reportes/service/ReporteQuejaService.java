@@ -7,6 +7,9 @@ import com.muni.backend.quejas.repository.CategoriaQuejaRepository;
 import com.muni.backend.quejas.repository.DependenciaRepository;
 import com.muni.backend.quejas.repository.QuejaRepository;
 import com.muni.backend.quejas.repository.SubcategoriaQuejaRepository;
+import com.muni.backend.reportes.dto.DashboardContadorDTO;
+import com.muni.backend.reportes.dto.DashboardEstadoDTO;
+import com.muni.backend.reportes.dto.DashboardResponseDTO;
 import com.muni.backend.reportes.dto.OpcionDTO;
 import com.muni.backend.reportes.dto.ReporteDetalleDTO;
 import com.muni.backend.reportes.dto.ReporteFilaDTO;
@@ -16,8 +19,10 @@ import com.muni.backend.reportes.dto.ReporteOpcionesDTO;
 import com.muni.backend.reportes.dto.ReporteResponseDTO;
 import com.muni.backend.reportes.dto.ReporteSerieDTO;
 import com.muni.backend.reportes.dto.ReporteTablaDTO;
+import com.muni.backend.reportes.model.GrupoEstadoDashboard;
 import com.muni.backend.reportes.model.ReporteAgrupacion;
 import com.muni.backend.reportes.repository.ReporteQuejaRepository;
+import com.muni.backend.reportes.repository.proyeccion.DashboardEstadoProjection;
 import com.muni.backend.reportes.repository.proyeccion.ReporteAgrupadoProjection;
 import com.muni.backend.reportes.repository.proyeccion.ReporteKpiProjection;
 import com.muni.backend.usuarios.repository.UsuarioRepository;
@@ -31,11 +36,14 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -44,6 +52,16 @@ public class ReporteQuejaService {
     private static final DateTimeFormatter FECHA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final int LIMITE_DETALLE_DEFECTO = 100;
     private static final int LIMITE_DETALLE_MAXIMO = 10000;
+    private static final int LIMITE_RECIENTES_MAXIMO = 50;
+    private static final List<EstadoQueja> ORDEN_ESTADOS = List.of(
+            EstadoQueja.REGISTRADA,
+            EstadoQueja.EN_INSPECCION,
+            EstadoQueja.EN_REPARACION_TECNICA,
+            EstadoQueja.EN_VALIDACION_REPARACION,
+            EstadoQueja.PENDIENTE_DE_CIERRE,
+            EstadoQueja.SOLUCIONADA_CERRADA,
+            EstadoQueja.RECHAZADA
+    );
 
     private final ReporteQuejaRepository reporteRepository;
     private final QuejaRepository quejaRepository;
@@ -102,6 +120,77 @@ public class ReporteQuejaService {
                 estados,
                 List.of("BAJA", "MEDIA", "ALTA", "URGENTE"),
                 Arrays.stream(ReporteAgrupacion.values()).map(Enum::name).toList()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public DashboardResponseDTO obtenerDashboard(int limiteRecientes) {
+        int limite = Math.min(Math.max(limiteRecientes, 1), LIMITE_RECIENTES_MAXIMO);
+
+        List<DashboardEstadoProjection> crudos = reporteRepository.contarPorEstado();
+        Map<String, Long> porEstado = crudos.stream()
+                .filter(fila -> fila.getEstado() != null)
+                .collect(Collectors.toMap(
+                        DashboardEstadoProjection::getEstado,
+                        fila -> valor(fila.getTotal()),
+                        Long::sum
+                ));
+
+        long total = porEstado.values().stream().mapToLong(Long::longValue).sum();
+
+        List<DashboardEstadoDTO> estados = new ArrayList<>();
+        Map<GrupoEstadoDashboard, Long> porGrupo = new EnumMap<>(GrupoEstadoDashboard.class);
+
+        for (EstadoQueja estado : ORDEN_ESTADOS) {
+            long cantidad = porEstado.getOrDefault(estado.getValor(), 0L);
+            GrupoEstadoDashboard grupo = GrupoEstadoDashboard.desdeEstado(estado.getValor());
+            porGrupo.merge(grupo, cantidad, Long::sum);
+            estados.add(new DashboardEstadoDTO(
+                    estado.getValor(),
+                    grupo.name(),
+                    cantidad,
+                    porcentaje(cantidad, total)
+            ));
+        }
+
+        // Si existiera un estado histórico no reconocido, se agrupa con las rechazadas
+        // para que la suma de los contadores siempre coincida con el total.
+        long clasificados = estados.stream().mapToLong(DashboardEstadoDTO::total).sum();
+        if (total > clasificados) {
+            porGrupo.merge(GrupoEstadoDashboard.RECHAZADOS, total - clasificados, Long::sum);
+        }
+
+        List<DashboardContadorDTO> contadores = Arrays.stream(GrupoEstadoDashboard.values())
+                .map(grupo -> {
+                    long cantidad = porGrupo.getOrDefault(grupo, 0L);
+                    return new DashboardContadorDTO(
+                            grupo.name(),
+                            grupo.getEtiqueta(),
+                            cantidad,
+                            porcentaje(cantidad, total),
+                            grupo.getIcono()
+                    );
+                })
+                .toList();
+
+        List<ReporteDetalleDTO> recientes = quejaRepository.buscarCatalogoConFiltros(
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        PageRequest.of(0, limite)
+                ).getContent().stream()
+                .map(this::mapearDetalle)
+                .toList();
+
+        return new DashboardResponseDTO(
+                LocalDateTime.now(),
+                total,
+                contadores,
+                estados,
+                recientes
         );
     }
 
@@ -339,6 +428,13 @@ public class ReporteQuejaService {
             return porcentaje.doubleValue();
         }
         return total > 0 ? valor * 100.0 / total : 0;
+    }
+
+    private double porcentaje(long valor, long total) {
+        if (total <= 0) {
+            return 0;
+        }
+        return Math.round(valor * 1000.0 / total) / 10.0;
     }
 
     private String formatearEntero(long valor) {
