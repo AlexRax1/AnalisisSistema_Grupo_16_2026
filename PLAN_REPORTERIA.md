@@ -9,12 +9,13 @@
 
 ## Estado Actual
 
-- **Avance global:** `87%` — `62 de 71 casillas` (Fases 0–7 completas; Fase 8 opcional pendiente).
-- **Fases completadas:** `Fase 0 — Verificación previa`, `Fase 1 — Bitácora`, `Fase 2 — Verificación de bitácora`, `Fase 3 — Contrato`, `Fase 4 — SQL/opciones`, `Fase 5 — Backend/exportaciones`, `Fase 6 — Frontend/gráficos`, `Fase 7 — Página admin y pruebas`.
-- **Fase en curso:** ninguna; `Fase 8 — Adaptación al tema real` queda opcional hasta conocer el tema.
-- **Pendientes:** sólo Fase 8 (adaptación y tareas opcionales).
-- **Estado:** MVP completo y verificado con PostgreSQL. Backend y frontend arrancan; `POST /admin/reportes/quejas/consultar` devuelve KPIs, series, tabla y detalle; Excel/PDF son válidos; B1–B11 pasan; cada consulta/exportación deja fila en `bitacora`. Se corrigió un bug real de la consulta de bitácora con parámetros nulos.
-- **Última actualización:** `2026-11-04`.
+- **Avance global:** `87.5%` — `70 de 80 casillas` (Fases 0–7 completas; plantilla congelada y exportaciones con gráficos; quedan las tareas de adaptación al tema real).
+- **Fases completadas:** `Fase 0 — Verificación previa`, `Fase 1 — Bitácora`, `Fase 2 — Verificación de bitácora`, `Fase 3 — Contrato`, `Fase 4 — SQL/opciones`, `Fase 5 — Backend/exportaciones`, `Fase 6 — Frontend/gráficos`, `Fase 7 — Página admin y pruebas`, `Fase 8.1 — Plantilla congelada`.
+- **Fase en curso:** ninguna; `Fase 8 — Adaptación al tema real` queda lista para ejecutarse cuando se conozca el reporte solicitado.
+- **Pendientes:** sólo la adaptación al tema real y las tareas opcionales de la Fase 8.
+- **Estado:** MVP completo y verificado con PostgreSQL. Backend y frontend arrancan; `POST /admin/reportes/quejas/consultar` devuelve KPIs, series, tabla y detalle; Excel/PDF son válidos e incluyen gráficos de barras y pastel; la pantalla muestra barras, pastel y barras apiladas; B1–B11 pasan; cada consulta/exportación deja fila en `bitacora`. Se corrigió un bug real de la consulta de bitácora con parámetros nulos.
+- **Plantilla congelada:** el reporte de quejas queda como **ejemplo canónico**. Para un reporte nuevo se edita el dataset/filtros, no se duplica la pantalla ni los exportadores. Ver sección 7.
+- **Última actualización:** `2026-11-07`.
 - **Tiempo objetivo del MVP:** `90 min` (sin contar la Fase 1, ya implementada).
 - **Regla de persistencia:** al terminar cada tarea, marcar `[x]`, actualizar este bloque y guardar el archivo. Si se interrumpe, se retoma desde la primera casilla sin marcar.
 
@@ -77,8 +78,11 @@ La bitácora actual registra correctamente las acciones críticas del negocio:
 | Informe de inspección | `informes_queja` | Sí | Creación |
 | Informe de solución técnica | `informes_queja` | Sí | Creación |
 | Cierre administrativo | `informes_queja` | Sí | Creación |
+| Cierre de sesión | `credenciales` | Sí | `accion = CERRAR_SESION`; el frontend llama a `POST /auth/logout` |
 | Descarga de constancia | `quejas` | Sí | `accion = DESCARGAR` |
 | Exportación de catálogo | `quejas` | Sí | PDF y Excel |
+| Exportación de reportes | `reportes` | Sí | PDF/Excel con `accion = DESCARGAR` |
+| Gráficos de reporte | — | No aplica | Son representaciones de los datos; no generan fila propia |
 
 ### 1.2 Qué falta o está débil
 
@@ -90,7 +94,8 @@ La bitácora actual registra correctamente las acciones críticas del negocio:
 | No hay verificación explícita de cobertura | No se sabe si la bitácora alcanza para el reporte real | **Fase 2 — B1 a B11** |
 | No hay catálogo documentado de acciones | Dificulta filtros y reportes de auditoría | **Anexo A** |
 | No se registran intentos fallidos ni resultado éxito/fallo | Fuera del alcance actual | **No se implementa** |
-| No se registra logout | No se mide duración de sesión | **Fuera de alcance** |
+| El logout ya se registra; no se calcula duración de sesión | No se mide tiempo conectado | **Fuera de alcance** |
+| Las exportaciones no incluían los gráficos | El PDF/Excel perdía la lectura visual de la pantalla | **Corregido:** se incrustan barras y pastel en PDF y Excel |
 | `BitacoraService.registrar` puede revertirse con la transacción principal | Pérdida de auditoría si falla el negocio | Se acepta en el MVP; se evalúa `registrarSeguro` sólo si aparece el problema |
 
 ### 1.3 Datos disponibles para reportes
@@ -140,9 +145,9 @@ La bitácora actual registra correctamente las acciones críticas del negocio:
 2. **Un solo reporte de muestra** que responde a “Quejas por categoría” y permite cambiar la agrupación:
    - Es una sola página y un solo endpoint; el selector de agrupación no crea reportes separados.
    - Filtros: rango de fechas, estado, categoría, prioridad y agrupación.
-   - Salida: KPIs, gráfico de barras, gráfico de pastel, tabla agrupada y detalle.
-   - Exportación: PDF y Excel.
-3. **Sin Chart.js.** Los gráficos se hacen con HTML/CSS (barras) y `conic-gradient` (pastel). Menos dependencias, más fácil de explicar.
+   - Salida: KPIs, gráfico de barras, gráfico de pastel, gráfico de barras apiladas, tabla agrupada y detalle.
+   - Exportación: PDF y Excel con barras y pastel incrustados.
+3. **Sin Chart.js.** Los gráficos se hacen con HTML/CSS (barras y apilado) y `conic-gradient` (pastel). Las exportaciones usan Java2D para generar PNG sin dependencias externas.
 4. **Sin tabla nueva de reportes.** La auditoría de consultas/exportaciones usa la bitácora existente.
 5. **Una consulta SQL genérica con `CASE`** para agrupar por dimensión. Evita SQL dinámico y facilita la explicación.
 6. **Reutilización del catálogo de quejas** para el detalle, en lugar de duplicar filtros.
@@ -228,7 +233,8 @@ backend/src/main/java/com/muni/backend/
     │       └── ReporteKpiProjection.java
     ├── service/
     │   ├── ReporteQuejaService.java
-    │   └── ReporteExportService.java
+    │   ├── ReporteChartService.java                (genera PNG de barras/pastel con Java2D)
+    │   └── ReporteExportService.java               (PDF/Excel con gráficos incrustados)
     └── exception/
         └── ReporteExceptionHandler.java
 ```
@@ -249,10 +255,14 @@ frontend/src/app/
 │   │   │   ├── grafico-barras.ts
 │   │   │   ├── grafico-barras.html
 │   │   │   └── grafico-barras.css
-│   │   └── grafico-pastel/
-│   │       ├── grafico-pastel.ts
-│   │       ├── grafico-pastel.html
-│   │       └── grafico-pastel.css
+│   │   ├── grafico-pastel/
+│   │   │   ├── grafico-pastel.ts
+│   │   │   ├── grafico-pastel.html
+│   │   │   └── grafico-pastel.css
+│   │   └── grafico-apilado/
+│   │       ├── grafico-apilado.ts
+│   │       ├── grafico-apilado.html
+│   │       └── grafico-apilado.css
 │   └── pages/admin-reportes/
 │       ├── admin-reportes.ts                       (reemplazar placeholder)
 │       ├── admin-reportes.html                     (reemplazar placeholder)
@@ -577,8 +587,9 @@ La bitácora no es la fuente principal del reporte de quejas: el reporte lee de 
   - Construir KPIs formateados (`1,247`, `87.3%`, `4.2 días`).
   - Construir `series` y `tabla.filas`.
   - Cargar el detalle con `QuejaRepository.buscarCatalogoConFiltros(estado, categoriaId, prioridad, null, inicio, fin, PageRequest.of(0, limiteDetalle))`.
-- [x] Crear `ReporteExportService.generarExcel(ReporteResponseDTO)` con hojas `Resumen`, `Agrupado` y `Detalle`.
-- [x] Crear `ReporteExportService.generarPdf(ReporteResponseDTO)` con título, periodo, filtros, KPIs, tabla agrupada y primeras 100 filas de detalle.
+- [x] Crear `ReporteExportService.generarExcel(ReporteResponseDTO)` con hojas `Resumen`, `Agrupado`, `Detalle` y `Gráficos` (imágenes PNG incrustadas).
+- [x] Crear `ReporteExportService.generarPdf(ReporteResponseDTO)` con título, periodo, filtros, KPIs, gráficos de barras/pastel, tabla agrupada y primeras 100 filas de detalle.
+- [x] Crear `ReporteChartService` con Java2D para generar las imágenes de barras y pastel sin dependencias externas.
 - [x] Crear `ReporteQuejaController`:
   - `POST /admin/reportes/quejas/consultar`
   - `GET /admin/reportes/opciones`
@@ -593,7 +604,7 @@ La bitácora no es la fuente principal del reporte de quejas: el reporte lee de 
 **Verificación:**
 - `POST /admin/reportes/quejas/consultar` devuelve KPIs, series, tabla y detalle.
 - `GET /admin/reportes/opciones` devuelve catálogos.
-- Ambas exportaciones descargan archivos válidos.
+- Ambas exportaciones descargan archivos válidos e incluyen los gráficos de barras y pastel.
 - Cada consulta/exportación crea una fila en `bitacora`.
 
 ---
@@ -611,7 +622,8 @@ La bitácora no es la fuente principal del reporte de quejas: el reporte lee de 
   - Descarga del blob con un helper simple.
 - [x] Crear `GraficoBarrasComponent` con barras horizontales CSS, etiqueta, valor y porcentaje.
 - [x] Crear `GraficoPastelComponent` con `conic-gradient`, leyenda y agregación de “Otros” cuando hay más de 6 categorías.
-- [x] Verificar que ambos componentes muestran un estado vacío cuando no hay datos.
+- [x] Crear `GraficoApiladoComponent` con la composición resueltas/en proceso/rechazadas por dimensión.
+- [x] Verificar que los tres componentes muestran un estado vacío cuando no hay datos.
 
 **Verificación:** los componentes se pueden importar en una página de prueba y renderizan datos simulados.
 
@@ -625,7 +637,7 @@ La bitácora no es la fuente principal del reporte de quejas: el reporte lee de 
 - [x] Usar `ReactiveFormsModule` y `signal()` para `reporte`, `opciones`, `cargando` y `error`.
 - [x] Formulario de filtros: fecha desde, fecha hasta, categoría, estado, prioridad y agrupación; botones `Consultar`, `Limpiar`, `Exportar PDF` y `Exportar Excel`.
 - [x] Al iniciar: cargar opciones y consultar con el rango por defecto.
-- [x] Mostrar 6 tarjetas KPI, gráfico de barras, pastel, tabla agrupada y tabla de detalle; incluir estado vacío y mensaje de error.
+- [x] Mostrar 6 tarjetas KPI, gráfico de barras, pastel, barras apiladas, tabla agrupada y tabla de detalle; incluir estado vacío y mensaje de error.
 - [x] Mantener la ruta `/admin/reportes` y el menú actual; no tocar `/funcionario/**`.
 - [x] Agregar `ReporteQuejaServiceTest` con: rango inválido, valores por defecto y resultado vacío.
 - [x] Ejecutar `./mvnw -q -Dtest=ReporteQuejaServiceTest test` y `npm run build`; anotar si hay fallos preexistentes.
@@ -644,6 +656,7 @@ La bitácora no es la fuente principal del reporte de quejas: el reporte lee de 
 
 **Tiempo:** variable. **Depende de:** Fase 7. **Salida:** reporte definitivo sin rehacer la base.
 
+- [x] **Fase 8.1 — Plantilla congelada:** reporte de quejas documentado como ejemplo canónico, con barras, pastel, apilado y PDF/Excel con gráficos.
 - [ ] Reemplazar el título “Reporte de quejas por categoría” por el tema real solicitado.
 - [ ] Elegir el dataset y las dimensiones: si sigue siendo quejas, cambiar el valor por defecto de `agrupacion`, el título y los filtros visibles; si es otro dataset, crear un método/repositorio nuevo y reutilizar DTOs, gráficos y pantalla.
 - [ ] Ajustar `/admin/reportes/opciones` para que devuelva sólo los filtros que use el tema real.
@@ -653,6 +666,8 @@ La bitácora no es la fuente principal del reporte de quejas: el reporte lee de 
 - [ ] **Opcional:** índices mínimos sólo si una consulta se vuelve lenta; medir antes.
 - [ ] **Opcional:** normalización de roles (`FUNCIONARIO_MUNICIPAL` → `FUNCIONARIO`) si se necesita login de funcionario.
 - [ ] **Opcional:** localidades por coordenadas, en un módulo aparte, sólo si se pide; no usar `zona`.
+
+> **Atajo para el día de la solicitud:** abrir la sección 7, seguir el checklist 7.2 y usar el contrato 7.3. Si el reporte es de otro dataset, copiar la consulta SQL de 6.1 y cambiar el `FROM`/`JOIN`/`WHERE`; no tocar la pantalla ni los exportadores.
 
 > **No se aborda en la base:** materiales normalizados, inventario, auditoría de acciones fallidas, dictamen de conformidad, reportes programados ni zonas. Requieren cambios de alcance que no pertenecen al reporte de muestra.
 
@@ -761,22 +776,144 @@ ORDER BY fecha_hora DESC;
 
 ## 7. Guía para adaptar la plantilla a un reporte nuevo (10–15 min)
 
+> **Regla de oro:** el reporte de quejas es la **plantilla viva**. No se crea otro módulo de reportes ni se duplica la pantalla. Se edita el dataset, los filtros y los textos; los DTOs, los gráficos, la auditoría y los exportadores se reutilizan tal cual.
+
+### 7.1 Archivos que forman la plantilla
+
+| Capa | Archivo | ¿Se toca al adaptar? |
+|---|---|---|
+| Contrato de respuesta | `reportes/dto/ReporteResponseDTO.java` y DTOs de KPIs/series/tabla/detalle | Sólo si el reporte necesita una columna nueva |
+| Filtros | `reportes/dto/ReporteFiltroDTO.java` | Sí, si el reporte pide filtros distintos |
+| Agrupaciones | `reportes/model/ReporteAgrupacion.java` | Sí, si el reporte pide dimensiones nuevas |
+| Consulta SQL | `reportes/repository/ReporteQuejaRepository.java` | Sí: es el corazón del cambio de dataset |
+| Servicio | `reportes/service/ReporteQuejaService.java` | Sí: mapear filas, KPIs, títulos y filtros |
+| Gráficos de exportación | `reportes/service/ReporteChartService.java` | Casi nunca; ya genera barras y pastel |
+| Exportadores | `reportes/service/ReporteExportService.java` | Casi nunca; ya genera PDF/Excel con gráficos |
+| Controller | `reportes/controller/ReporteQuejaController.java` | Sólo si cambia la ruta o el método |
+| Frontend: modelos | `core/models/reporte-queja.model.ts` | Sí, si cambian filtros/columnas |
+| Frontend: servicio | `core/services/reporte-queja.service.ts` | Casi nunca; reutiliza el mismo contrato |
+| Frontend: página | `modules/admin/pages/admin-reportes/*` | Sí: textos y campos de filtro |
+| Frontend: gráficos | `modules/admin/components/grafico-barras`, `grafico-pastel`, `grafico-apilado` | No; se reutilizan |
+
+### 7.2 Checklist de adaptación
+
 1. **Elegir la dimensión.** Si el reporte sólo cambia la agrupación (“por estado”, “por categoría”, “por dependencia” o “por especialista”), no se toca el backend: sólo se cambia el valor por defecto de `agrupacion` y el título en el frontend.
 2. **Agregar una dimensión nueva.** Agregar el valor al enum `ReporteAgrupacion` y un `WHEN` en la consulta SQL. No usar concatenación dinámica de SQL. No agregar `ZONA`: si se pide localidad, se resuelve con coordenadas en un módulo aparte.
 3. **Agregar un KPI.** Calcularlo en `ReporteQuejaService` a partir de las proyecciones o de una consulta adicional; agregarlo a la lista `kpis` con icono y tono.
-4. **Agregar un filtro.** Agregar el campo al DTO, al `WHERE` de las consultas, al formulario Angular y al cuerpo JSON del `POST`. Mantener el filtro opcional con `CAST(:param AS tipo) IS NULL`.
-5. **Cambiar el dataset.** Si el reporte no es de quejas (por ejemplo, usuarios), crear un repositorio y un método nuevo que reutilice los mismos DTOs de respuesta, gráficos y tabla. No duplicar la pantalla.
-6. **Exportaciones.** No hace falta tocar los exportadores si el nuevo reporte devuelve el mismo `ReporteResponseDTO`; se mantiene el `POST` con el mismo cuerpo.
+4. **Agregar un filtro.** Agregar el campo al `ReporteFiltroDTO`, al `WHERE` de las consultas, al formulario Angular y al cuerpo JSON del `POST`. Mantener el filtro opcional con `CAST(:param AS tipo) IS NULL`.
+5. **Cambiar el dataset.** Si el reporte no es de quejas (por ejemplo, usuarios), crear un repositorio y un método nuevo que devuelva las mismas proyecciones (`etiqueta`, `total`, `porcentaje`, etc.) y reutilizar `ReporteResponseDTO`, los gráficos y la pantalla. No duplicar el exportador.
+6. **Exportaciones.** No hace falta tocar `ReporteExportService` si el nuevo reporte devuelve el mismo `ReporteResponseDTO`: PDF y Excel ya incluyen KPIs, filtros, tabla, detalle y gráficos.
 7. **Auditoría.** El controller debe seguir registrando `CONSULTAR`/`DESCARGAR` con el nombre del reporte en `registroNuevo`.
 8. **Rendimiento.** No agregar índices preventivamente; probar con datos reales y medir antes de crear uno.
 
-### Ejemplo: reporte de usuarios registrados
+### 7.3 Contrato mínimo que debe devolver cualquier reporte
+
+```json
+{
+  "titulo": "Reporte de ...",
+  "subtitulo": "Periodo: ...",
+  "fechaEmision": "2026-11-07T10:00:00",
+  "filtrosAplicados": { "Fecha desde": "01/11/2026", "Agrupación": "Categoría" },
+  "kpis": [
+    { "etiqueta": "Total", "valor": "120", "icono": "description", "tono": "primary" }
+  ],
+  "series": [
+    { "etiqueta": "Categoría A", "valor": 70, "porcentaje": 58.3 }
+  ],
+  "tabla": {
+    "titulo": "Resumen por categoría",
+    "columnas": ["Dimensión", "Total", "Resueltas", "En proceso", "Rechazadas", "%"],
+    "filas": [
+      { "etiqueta": "Categoría A", "total": 70, "cerradas": 40, "enProceso": 20, "rechazadas": 10, "porcentaje": 58.3 }
+    ]
+  },
+  "detalle": [],
+  "totalDetalle": 0,
+  "limiteDetalle": 100
+}
+```
+
+Si el reporte nuevo no tiene “cerradas / en proceso / rechazadas”, se dejan en `0` y se adaptan los encabezados de la tabla y del gráfico apilado. Los gráficos de barras y pastel sólo necesitan `series`.
+
+### 7.4 Recetas de gráficos (para copiar sin internet)
+
+| Gráfico | Componente/servicio | Cuándo usarlo |
+|---|---|---|
+| Barras horizontales | `app-grafico-barras` + `ReporteChartService.generarBarras` | Comparar totales entre categorías |
+| Pastel | `app-grafico-pastel` + `ReporteChartService.generarPastel` | Ver participación porcentual |
+| Barras apiladas | `app-grafico-apilado` | Ver composición por estado dentro de cada categoría |
+| Línea / tendencia | Receta de la sección 7.5 | Evolución por mes/día; requiere serie temporal |
+
+**Regla para gráficos de línea:** el contrato actual (`series` con etiqueta/valor/porcentaje) sirve si las etiquetas son meses o días. No hace falta cambiar el backend; se agrega un componente `app-grafico-linea` que reciba `ReporteSerie[]` y dibuje un SVG con los puntos normalizados. Si el eje necesita fechas reales, agregar `fecha` a `ReporteSerieDTO` y ajustar el componente.
+
+### 7.5 Receta de gráfico de línea (copiable)
+
+```ts
+// frontend/src/app/modules/admin/components/grafico-linea/grafico-linea.ts
+import { Component, Input } from '@angular/core';
+import { ReporteSerie } from '../../../../core/models/reporte-queja.model';
+
+@Component({
+  selector: 'app-grafico-linea',
+  standalone: true,
+  templateUrl: './grafico-linea.html',
+  styleUrl: './grafico-linea.css',
+})
+export class GraficoLineaComponent {
+  @Input() series: ReporteSerie[] = [];
+
+  get puntos(): string {
+    if (this.series.length === 0) return '';
+    const max = Math.max(...this.series.map((s) => s.valor), 1);
+    return this.series
+      .map((s, i) => {
+        const x = this.series.length === 1 ? 50 : (i / (this.series.length - 1)) * 100;
+        const y = 100 - (s.valor / max) * 100;
+        return `${x},${y}`;
+      })
+      .join(' ');
+  }
+}
+```
+
+```html
+<!-- grafico-linea.html -->
+@if (series.length === 0) {
+  <div class="grafico-vacio">Sin datos para graficar</div>
+} @else {
+  <svg viewBox="0 0 100 100" preserveAspectRatio="none" class="linea">
+    <polyline [attr.points]="puntos" fill="none" stroke="var(--primary-500)" stroke-width="2" />
+  </svg>
+  <div class="leyenda">
+    @for (serie of series; track serie.etiqueta) {
+      <span>{{ serie.etiqueta }}: {{ serie.valor }}</span>
+    }
+  </div>
+}
+```
+
+> Esta receta queda documentada, no implementada, para no agregar un cuarto gráfico que el reporte de muestra no necesita. Si el reporte solicitado es temporal, se crea el componente y se usa igual que los otros tres.
+
+### 7.6 Ejemplo: reporte de usuarios registrados
 
 - Fuente: `usuarios` + `credenciales` + `rol_user` + `dependencias`.
 - Agrupación: rol, estado o dependencia.
 - Filtros: rango de fechas de `usuarios.fecha_creacion`, rol, estado.
 - KPIs: total, activos, inactivos, nuevos del periodo.
+- Gráficos: barras por rol, pastel por estado, apilado por rol/estado.
 - Limitación: no hay localidad normalizada; si se pide, usar coordenadas en un módulo aparte. No se agrega `zona` al MVP.
+
+### 7.7 Respuestas rápidas para la demo
+
+| Pregunta probable | Dónde está la respuesta |
+|---|---|
+| ¿Cuántos registros hay en el periodo? | KPI “Total” |
+| ¿Cuántos están resueltos / en proceso / rechazados? | KPIs y gráfico apilado |
+| ¿Qué categoría concentra más casos? | Primera fila de la tabla y barra más larga |
+| ¿Qué porcentaje representa cada categoría? | Pastel y columna “%” |
+| ¿Cuál es la tasa de resolución? | KPI “Tasa de resolución” |
+| ¿Cuánto tarda el cierre? | KPI “Días promedio de cierre” |
+| ¿Quién consultó o exportó el reporte? | `GET /admin/bitacora?tabla=reportes` |
 
 ---
 
@@ -790,7 +927,7 @@ ORDER BY fecha_hora DESC;
 | 4 | Categoría específica | Totales sólo de esa categoría |
 | 5 | Estado específico | Totales sólo de ese estado |
 | 6 | Agrupación `DEPENDENCIA` | Una fila por dependencia, “Sin dependencia” si aplica |
-| 7 | Exportar Excel | Archivo `.xlsx` con 3 hojas y datos |
+| 7 | Exportar Excel | Archivo `.xlsx` con 4 hojas (`Resumen`, `Agrupado`, `Detalle`, `Gráficos`) y datos |
 | 8 | Exportar PDF | Archivo `.pdf` con título, KPIs y tabla |
 | 9 | Consulta/exportación | Fila en `bitacora` con `tabla_afectada='reportes'` |
 | 10 | `GET /admin/bitacora` | Página con filtros y `totalElements` correcto |
@@ -798,6 +935,10 @@ ORDER BY fecha_hora DESC;
 | 12 | Pantalla responsive | KPIs y gráficos se apilan en móvil |
 | 13 | Consulta por `POST` | Los filtros no aparecen en la URL; HTTP 200 |
 | 14 | Opciones de filtros | `GET /admin/reportes/opciones` devuelve catálogos |
+| 15 | Exportar PDF con gráficos | El `.pdf` incluye barras y pastel además de KPIs/tabla |
+| 16 | Exportar Excel con gráficos | El `.xlsx` incluye la hoja “Gráficos” con las dos imágenes |
+| 17 | Gráfico apilado | La pantalla muestra la composición resueltas/en proceso/rechazadas |
+| 18 | Reporte sin series | PDF/Excel generan una imagen “Sin datos” sin fallar |
 
 ---
 
@@ -825,11 +966,14 @@ ORDER BY fecha_hora DESC;
 - [x] `POST /admin/reportes/quejas/consultar` responde con el contrato de la sección 4: KPIs, series, tabla y detalle verificados con 8 agrupaciones y filtros de estado/categoría/prioridad.
 - [x] La pantalla `/admin/reportes` muestra KPIs, barras, pastel, tabla y detalle.
 - [x] Los filtros de fecha, estado, categoría, prioridad y agrupación funcionan.
-- [x] Las exportaciones PDF y Excel descargan archivos válidos: `.xlsx` con 3 hojas y `.pdf` de 2 páginas con KPIs, tabla y detalle.
+- [x] Las exportaciones PDF y Excel descargan archivos válidos: `.xlsx` con 4 hojas y `.pdf` de 2 páginas con KPIs, gráficos, tabla y detalle.
+- [x] Las exportaciones incluyen los gráficos de barras y pastel; Excel agrega la hoja “Gráficos”.
+- [x] La pantalla incluye un tercer gráfico de barras apiladas por estado.
+- [x] La plantilla está documentada en la sección 7 con contrato, checklist y recetas de gráficos.
 - [x] Cada consulta/exportación queda en `bitacora`: B11 verificado con `tabla=reportes`, `CONSULTAR` y `DESCARGAR`.
 - [x] No hay arreglos hardcodeados de métricas en el componente; todo viene de la API.
 - [x] No se agregaron índices, migraciones, zonas, cuadrillas ni normalización de materiales.
-- [x] `Estado Actual` refleja el MVP completo (`87%` global) y el Registro de ejecución tiene la fila final; la Fase 8 queda opcional.
+- [x] `Estado Actual` refleja la plantilla congelada (`87.5%` global) y el Registro de ejecución tiene las filas de la Fase 8.1; la adaptación al tema real queda pendiente.
 - [x] El plan está guardado en `PLAN_REPORTERIA.md` en la raíz del proyecto.
 
 ---
@@ -852,6 +996,10 @@ ORDER BY fecha_hora DESC;
 | 2026-11-04 | 5, 7 | Reporte y exportaciones reales | Completado | 8 agrupaciones y filtros; `.xlsx` válido con 3 hojas; `.pdf` válido de 2 páginas; auditoría B11 verificada |
 | 2026-11-04 | 7 | Arranque frontend y ruta `/admin/reportes` | Completado | `npm start` responde HTTP 200; ruta servida; no se automatizó navegador |
 | 2026-11-04 | 2 | Hallazgo histórico | Sin cambios | 2 filas antiguas de restablecimiento sin usuario/tabla y 8 informes previos sin auditoría; las acciones nuevas sí quedan completas |
+| 2026-11-07 | 8.1 | Exportaciones con gráficos | Completado | `ReporteChartService` genera PNG de barras/pastel sin dependencias nuevas; PDF y Excel los incrustan |
+| 2026-11-07 | 8.1 | Tercer gráfico de ejemplo | Completado | `app-grafico-apilado` reutiliza las filas de la tabla |
+| 2026-11-07 | 8.1 | Plantilla documentada | Completado | Sección 7 ampliada con archivos, checklist, contrato, recetas y respuestas de demo |
+| 2026-11-07 | 8.1 | Pruebas de exportación | Completado | `ReporteChartServiceTest` y `ReporteExportServiceTest` pasan |
 |  |  |  |  |  |
 
 ---
@@ -864,11 +1012,12 @@ ORDER BY fecha_hora DESC;
 | `ACTUALIZAR` | Modificación de campo |
 | `ELIMINAR` | Baja lógica o física |
 | `LOGIN` | Inicio de sesión exitoso |
+| `CERRAR_SESION` | Cierre de sesión desde `POST /auth/logout` |
 | `SUBIR` | Carga de evidencia |
 | `DESCARGAR` | Exportación o constancia |
 | `CONSULTAR` | Consulta de reporte |
 
-> No se implementan `LOGIN_FALLIDO` ni `CERRAR_SESION`. Tampoco se registra un campo `resultado` de éxito/fallo; la bitácora actual registra acciones completadas.
+> Sí se implementa `CERRAR_SESION`. No se implementan `LOGIN_FALLIDO` ni un campo `resultado` de éxito/fallo; la bitácora actual registra acciones completadas.
 
 ## Anexo B — Fuera de alcance explícito
 
@@ -881,8 +1030,67 @@ ORDER BY fecha_hora DESC;
 | Entidad “cuadrilla” | No se modeló; se usó texto/dependencia | Reportar por dependencia o especialista |
 | Materiales normalizados / inventario | Requiere un módulo completo | No se implementa |
 | Dictamen de conformidad | El flujo actual no lo registra | Sólo si se solicita y se amplía el flujo |
-| Logout / duración de sesión | No se registra | No se implementa |
+| Duración de sesión | El logout se registra, pero no se calcula tiempo conectado | No se implementa |
 
 ---
+
+## Anexo C — Chuleta de adaptación (1 página)
+
+**Cuando te pidan el reporte real, haz esto en orden:**
+
+1. **Define la salida:** título, periodo, 4–6 KPIs, una dimensión principal y si necesita detalle.
+2. **Elige el dataset:** si es `quejas`, reutiliza `ReporteQuejaRepository`; si es otro, crea un método nuevo con las mismas proyecciones.
+3. **Ajusta el SQL:** cambia `FROM`, `JOIN`, `WHERE` y el `CASE` de agrupación. Mantén los filtros opcionales con `CAST(:param AS tipo) IS NULL`.
+4. **Ajusta el servicio:** títulos, etiquetas de KPIs, `filtrosAplicados` y mapeo de filas/detalle.
+5. **Ajusta el frontend:** labels de filtros, opciones y textos. No dupliques componentes ni exportadores.
+6. **Prueba:** consulta, PDF, Excel, sin datos y auditoría en `bitacora`.
+7. **Actualiza este plan:** marca la Fase 8 y anota el reporte implementado.
+
+**Archivos que casi nunca se tocan:**
+
+- `ReporteResponseDTO` y DTOs de series/tabla (si el contrato alcanza).
+- `ReporteChartService` (barras y pastel ya resueltos).
+- `ReporteExportService` (PDF/Excel ya resueltos).
+- `grafico-barras`, `grafico-pastel`, `grafico-apilado`.
+- `reporte-queja.service.ts` (misma API).
+
+**Comandos útiles:**
+
+```bash
+# Backend: compilar y probar sólo reportes
+cd backend
+./mvnw -q -DskipTests package
+./mvnw -q -Dtest=ReporteQuejaServiceTest,ReporteChartServiceTest,ReporteExportServiceTest test
+
+# Frontend: compilar
+cd frontend
+npm run build
+```
+
+**Criterio de “listo”:** el reporte responde con datos reales, los tres gráficos se ven en pantalla, PDF y Excel descargan con gráficos, y queda una fila `CONSULTAR`/`DESCARGAR` en `bitacora` con `tabla_afectada = 'reportes'`.
+
+---
+
+## Anexo D — Pantalla de bitácora (receta, no implementada)
+
+Si más adelante piden “ver la bitácora”, **no hace falta backend nuevo**: ya existe y es inmutable.
+
+**Endpoints disponibles:**
+
+| Uso | Endpoint |
+|---|---|
+| Consulta paginada | `GET /admin/bitacora?usuario=&tabla=&accion=&idAfectado=&campoAfectado=&fechaInicio=&fechaFin=&pagina=0&tamanoPagina=20` |
+| Exportar PDF | `GET /admin/bitacora/exportar/pdf` con los mismos filtros |
+| Exportar Excel | `GET /admin/bitacora/exportar/excel` con los mismos filtros |
+
+**Pantalla sugerida:**
+
+1. Ruta nueva `/admin/bitacora` en `app.routes.ts` y opción “Bitácora” en el menú de administrador.
+2. Filtros: usuario, tabla, acción, rango de fechas y página.
+3. Tabla con columnas: fecha/hora, usuario, IP, tabla, acción, ID afectado, campo y descripción.
+4. Botones PDF/Excel que llamen a los endpoints de exportación.
+5. No agregar botones de editar ni eliminar: la bitácora es de sólo lectura y la BD bloquea `UPDATE`/`DELETE`/`TRUNCATE`.
+
+> Esta pantalla queda como receta para no agregar una opción de menú que todavía no se pidió.
 
 > **Fin del plan.** Si se retoma después de una interrupción: leer `Estado Actual`, buscar la primera tarea sin marcar y continuar desde ahí. No rehacer fases ya verificadas.

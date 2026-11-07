@@ -4,6 +4,7 @@ import com.lowagie.text.Document;
 import com.lowagie.text.Element;
 import com.lowagie.text.Font;
 import com.lowagie.text.FontFactory;
+import com.lowagie.text.Image;
 import com.lowagie.text.PageSize;
 import com.lowagie.text.Paragraph;
 import com.lowagie.text.Phrase;
@@ -16,9 +17,13 @@ import com.muni.backend.reportes.dto.ReporteKpiDTO;
 import com.muni.backend.reportes.dto.ReporteResponseDTO;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.ClientAnchor;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFClientAnchor;
+import org.apache.poi.xssf.usermodel.XSSFDrawing;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 
@@ -27,13 +32,27 @@ import java.io.ByteArrayOutputStream;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+/**
+ * Exportador reutilizable de la plantilla de reportes.
+ *
+ * Cualquier reporte nuevo que devuelva un {@link ReporteResponseDTO} obtiene
+ * PDF y Excel con KPIs, tablas, detalle y los gráficos de barras/pastel sin
+ * tocar este archivo. Si se agrega un gráfico nuevo, se genera la imagen en
+ * {@link ReporteChartService} y se incrusta aquí.
+ */
 @Service
 public class ReporteExportService {
 
     private static final DateTimeFormatter FECHA = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
+    private final ReporteChartService chartService;
+
+    public ReporteExportService(ReporteChartService chartService) {
+        this.chartService = chartService;
+    }
+
     public byte[] generarExcel(ReporteResponseDTO reporte) {
-        try (Workbook workbook = new XSSFWorkbook();
+        try (XSSFWorkbook workbook = new XSSFWorkbook();
              ByteArrayOutputStream out = new ByteArrayOutputStream()) {
 
             CellStyle titulo = estiloTitulo(workbook);
@@ -106,6 +125,12 @@ public class ReporteExportService {
                 row.createCell(9).setCellValue(texto(detalleDto.dependencia()));
             }
 
+            // Hoja de gráficos: mismas imágenes que se muestran en pantalla.
+            // Si el reporte nuevo no tiene series, se genera una imagen "Sin datos".
+            XSSFSheet graficos = workbook.createSheet("Gráficos");
+            agregarImagen(graficos, workbook, chartService.generarBarras(reporte.series()), 0, 0, 15, 28);
+            agregarImagen(graficos, workbook, chartService.generarPastel(reporte.series()), 15, 0, 30, 28);
+
             for (int i = 0; i < columnasAgrupado.length; i++) {
                 agrupado.autoSizeColumn(i);
             }
@@ -152,6 +177,35 @@ public class ReporteExportService {
                 kpis.addCell(cell);
             }
             document.add(kpis);
+
+            document.add(new Paragraph("Gráficos", seccion));
+            document.add(new Paragraph(" ", subtitulo));
+
+            PdfPTable graficos = new PdfPTable(2);
+            graficos.setWidthPercentage(100);
+            graficos.setWidths(new float[]{1, 1});
+
+            PdfPCell celdaBarras = new PdfPCell();
+            celdaBarras.setBorder(PdfPCell.NO_BORDER);
+            celdaBarras.setPadding(6);
+            celdaBarras.addElement(new Paragraph("Distribución por dimensión", subtitulo));
+            Image imagenBarras = Image.getInstance(chartService.generarBarras(reporte.series()));
+            imagenBarras.scaleToFit(380, 220);
+            imagenBarras.setAlignment(Element.ALIGN_CENTER);
+            celdaBarras.addElement(imagenBarras);
+            graficos.addCell(celdaBarras);
+
+            PdfPCell celdaPastel = new PdfPCell();
+            celdaPastel.setBorder(PdfPCell.NO_BORDER);
+            celdaPastel.setPadding(6);
+            celdaPastel.addElement(new Paragraph("Participación porcentual", subtitulo));
+            Image imagenPastel = Image.getInstance(chartService.generarPastel(reporte.series()));
+            imagenPastel.scaleToFit(380, 220);
+            imagenPastel.setAlignment(Element.ALIGN_CENTER);
+            celdaPastel.addElement(imagenPastel);
+            graficos.addCell(celdaPastel);
+
+            document.add(graficos);
 
             Paragraph filtros = new Paragraph("Filtros aplicados: " + reporte.filtrosAplicados(), subtitulo);
             filtros.setSpacingBefore(10);
@@ -218,6 +272,28 @@ public class ReporteExportService {
         PdfPCell cell = new PdfPCell(new Phrase(valor != null ? valor : "", font));
         cell.setPadding(4);
         tabla.addCell(cell);
+    }
+
+    /**
+     * Ancla una imagen PNG en una hoja de Excel. Las coordenadas son
+     * (columna, fila) inicial y final; Excel escala la imagen al rango.
+     */
+    private void agregarImagen(XSSFSheet hoja,
+                               XSSFWorkbook workbook,
+                               byte[] imagen,
+                               int columnaInicio,
+                               int filaInicio,
+                               int columnaFin,
+                               int filaFin) {
+        int indice = workbook.addPicture(imagen, Workbook.PICTURE_TYPE_PNG);
+        XSSFDrawing dibujo = hoja.createDrawingPatriarch();
+        XSSFClientAnchor ancla = workbook.getCreationHelper().createClientAnchor();
+        ancla.setCol1(columnaInicio);
+        ancla.setRow1(filaInicio);
+        ancla.setCol2(columnaFin);
+        ancla.setRow2(filaFin);
+        ancla.setAnchorType(ClientAnchor.AnchorType.MOVE_AND_RESIZE);
+        dibujo.createPicture(ancla, indice);
     }
 
     private CellStyle estiloTitulo(Workbook workbook) {

@@ -1,0 +1,43 @@
+@if (filas.length === 0) {
+  <div class="grafico-vacio">Sin datos para graficar</div>
+} @else {
+  <div class="apilado">
+    <div class="leyenda">
+      <span class="leyenda-item"><span class="punto resueltas"></span>Resueltas</span>
+      <span class="leyenda-item"><span class="punto en-proceso"></span>En proceso</span>
+      <span class="leyenda-item"><span class="punto rechazadas"></span>Rechazadas</span>
+    </div>
+
+    @for (fila of filas; track fila.etiqueta) {
+      <div class="fila">
+        <div class="fila-cabecera">
+          <span class="fila-etiqueta">{{ fila.etiqueta }}</span>
+          <span class="fila-total">{{ fila.total }} registros</span>
+        </div>
+        <div class="track" [attr.aria-label]="'Composición de ' + fila.etiqueta">
+          @if (fila.cerradas > 0) {
+            <div
+              class="segmento resueltas"
+              [style.width.%]="ancho(fila.cerradas, fila)"
+              [title]="'Resueltas: ' + fila.cerradas"
+            ></div>
+          }
+          @if (fila.enProceso > 0) {
+            <div
+              class="segmento en-proceso"
+              [style.width.%]="ancho(fila.enProceso, fila)"
+              [title]="'En proceso: ' + fila.enProceso"
+            ></div>
+          }
+          @if (fila.rechazadas > 0) {
+            <div
+              class="segmento rechazadas"
+              [style.width.%]="ancho(fila.rechazadas, fila)"
+              [title]="'Rechazadas: ' + fila.rechazadas"
+            ></div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+}

@@ -9,6 +9,7 @@ import {
 } from '../../../../core/models/reporte-queja.model';
 import { GraficoBarrasComponent } from '../../components/grafico-barras/grafico-barras';
 import { GraficoPastelComponent } from '../../components/grafico-pastel/grafico-pastel';
+import { GraficoApiladoComponent } from '../../components/grafico-apilado/grafico-apilado';
 
 @Component({
   selector: 'app-admin-reportes',
@@ -19,6 +20,7 @@ import { GraficoPastelComponent } from '../../components/grafico-pastel/grafico-
     ReactiveFormsModule,
     GraficoBarrasComponent,
     GraficoPastelComponent,
+    GraficoApiladoComponent,
   ],
   templateUrl: './admin-reportes.html',
   styleUrl: './admin-reportes.css',
