@@ -1,0 +1,23 @@
+@if (series.length === 0) {
+  <div class="grafico-vacio">Sin datos para graficar</div>
+} @else {
+  <div class="distribucion-contenedor">
+    <div class="dona">
+      <div class="dona-grafico" [style.background]="gradiente"></div>
+      <div class="dona-centro">
+        <span class="dona-total">{{ total }}</span>
+        <span class="dona-etiqueta">quejas</span>
+      </div>
+    </div>
+
+    <div class="leyenda">
+      @for (item of series; track item.etiqueta; let i = $index) {
+        <div class="leyenda-item">
+          <span class="punto" [style.background]="color(i)"></span>
+          <span class="leyenda-nombre">{{ item.etiqueta }}</span>
+          <span class="leyenda-valor">{{ item.valor }} · {{ item.porcentaje.toFixed(1) }}%</span>
+        </div>
+      }
+    </div>
+  </div>
+}

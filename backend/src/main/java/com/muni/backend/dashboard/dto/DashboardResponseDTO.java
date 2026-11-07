@@ -1,4 +1,4 @@
-package com.muni.backend.reportes.dto;
+package com.muni.backend.dashboard.dto;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -8,6 +8,6 @@ public record DashboardResponseDTO(
         long total,
         List<DashboardContadorDTO> contadores,
         List<DashboardEstadoDTO> estados,
-        List<ReporteDetalleDTO> recientes
+        List<DashboardQuejaDTO> recientes
 ) {
 }

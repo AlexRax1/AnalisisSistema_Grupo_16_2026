@@ -33,6 +33,26 @@
         <span class="mat-icon">refresh</span>
         Actualizar
       </button>
+
+      <button
+        class="btn btn-outline btn-sm"
+        type="button"
+        [disabled]="exportando() !== null || !dashboard()"
+        (click)="exportar('pdf')"
+      >
+        <span class="mat-icon">picture_as_pdf</span>
+        {{ exportando() === 'pdf' ? 'Generando...' : 'PDF' }}
+      </button>
+
+      <button
+        class="btn btn-outline btn-sm"
+        type="button"
+        [disabled]="exportando() !== null || !dashboard()"
+        (click)="exportar('excel')"
+      >
+        <span class="mat-icon">table_view</span>
+        {{ exportando() === 'excel' ? 'Generando...' : 'Excel' }}
+      </button>
     </div>
   </div>
 
@@ -70,7 +90,7 @@
           <span class="badge badge-neutral">Total: {{ data.total }}</span>
         </div>
         <div class="card-body">
-          <app-grafico-pastel [series]="series()" [colores]="colores()" />
+          <app-grafico-distribucion [series]="series()" [colores]="colores()" />
         </div>
       </div>
 

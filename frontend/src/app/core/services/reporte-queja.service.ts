@@ -2,7 +2,6 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ReporteFiltro, ReporteOpciones, ReporteResponse } from '../models/reporte-queja.model';
-import { DashboardResponse } from '../models/dashboard-queja.model';
 
 @Injectable({
   providedIn: 'root',
@@ -28,13 +27,6 @@ export class ReporteQuejaService {
   obtenerOpciones(): Observable<ReporteOpciones> {
     return this.http.get<ReporteOpciones>(`${this.apiUrl}/opciones`, {
       headers: this.getAuthHeaders(),
-    });
-  }
-
-  obtenerDashboard(limiteRecientes = 10): Observable<DashboardResponse> {
-    return this.http.get<DashboardResponse>(`${this.apiUrl}/dashboard`, {
-      headers: this.getAuthHeaders(),
-      params: { limiteRecientes: String(limiteRecientes) },
     });
   }
 

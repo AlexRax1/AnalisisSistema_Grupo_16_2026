@@ -1,9 +1,8 @@
-package com.muni.backend.reportes.model;
+package com.muni.backend.dashboard.model;
 
 /**
- * Agrupa los estados operativos de la queja en los cuatro bloques que muestra
- * el dashboard: nuevos, en proceso, pendientes y resueltos. Las quejas
- * rechazadas se exponen aparte para que el total cuadre.
+ * Agrupa los estados operativos de la queja en los bloques que muestra el
+ * dashboard. Cada grupo tiene un color asignado en el frontend.
  */
 public enum GrupoEstadoDashboard {
     NUEVOS("Nuevos", "fiber_new"),

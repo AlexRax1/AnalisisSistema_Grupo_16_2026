@@ -1,5 +1,3 @@
-import { ReporteDetalle } from './reporte-queja.model';
-
 export interface DashboardContador {
   clave: string;
   etiqueta: string;
@@ -15,10 +13,27 @@ export interface DashboardEstado {
   porcentaje: number;
 }
 
+export interface DashboardQueja {
+  quejaId: number;
+  correlativo: string;
+  fechaRegistro: string | null;
+  ciudadano: string;
+  categoria: string;
+  estadoActual: string;
+  prioridad: string;
+  dependencia: string;
+}
+
+export interface DashboardSerie {
+  etiqueta: string;
+  valor: number;
+  porcentaje: number;
+}
+
 export interface DashboardResponse {
   fechaActualizacion: string;
   total: number;
   contadores: DashboardContador[];
   estados: DashboardEstado[];
-  recientes: ReporteDetalle[];
+  recientes: DashboardQueja[];
 }

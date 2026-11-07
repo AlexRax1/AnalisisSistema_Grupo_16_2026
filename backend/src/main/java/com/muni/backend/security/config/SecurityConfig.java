@@ -72,6 +72,7 @@ public class SecurityConfig {
                         // 3. Rutas con restricción de roles
                         .requestMatchers("/admin/usuarios-internos/**").hasAuthority("ADMINISTRADOR")
                         .requestMatchers("/admin/reportes/**").hasAnyAuthority("ADMINISTRADOR", "ROLE_ADMINISTRADOR")
+                        .requestMatchers("/admin/dashboard/**", "/admin/dashboard").hasAnyAuthority("ADMINISTRADOR", "ROLE_ADMINISTRADOR")
                         .requestMatchers("/admin/**").hasAnyAuthority("ADMINISTRADOR", "ROLE_ADMINISTRADOR", "EMPLEADO", "ROLE_EMPLEADO")
 
                         // 4. Resto de peticiones autenticadas

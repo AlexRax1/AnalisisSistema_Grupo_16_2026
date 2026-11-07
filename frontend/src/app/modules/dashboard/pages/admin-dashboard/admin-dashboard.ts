@@ -1,20 +1,19 @@
 import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { ReporteQuejaService } from '../../../../core/services/reporte-queja.service';
-import { DashboardResponse } from '../../../../core/models/dashboard-queja.model';
-import { ReporteSerie } from '../../../../core/models/reporte-queja.model';
+import { DashboardService } from '../../services/dashboard.service';
+import { DashboardResponse, DashboardSerie } from '../../models/dashboard.model';
 import { colorEstado, colorGrupo } from '../../../../core/models/estado-queja.util';
-import { GraficoPastelComponent } from '../../components/grafico-pastel/grafico-pastel';
+import { GraficoDistribucionComponent } from '../../components/grafico-distribucion/grafico-distribucion';
 
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [DatePipe, GraficoPastelComponent],
+  imports: [DatePipe, GraficoDistribucionComponent],
   templateUrl: './admin-dashboard.html',
   styleUrl: './admin-dashboard.css',
 })
 export class AdminDashboardComponent implements OnInit, OnDestroy {
-  private readonly reporteService = inject(ReporteQuejaService);
+  private readonly dashboardService = inject(DashboardService);
   private intervalo?: ReturnType<typeof setInterval>;
 
   readonly SEGUNDOS_ACTUALIZACION = 15;
@@ -22,8 +21,9 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   readonly cargando = signal(false);
   readonly error = signal('');
   readonly autoActualizar = signal(true);
+  readonly exportando = signal<'pdf' | 'excel' | null>(null);
 
-  readonly series = computed<ReporteSerie[]>(() =>
+  readonly series = computed<DashboardSerie[]>(() =>
     (this.dashboard()?.estados ?? []).map((estado) => ({
       etiqueta: estado.estado,
       valor: estado.total,
@@ -51,7 +51,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     this.cargando.set(true);
     this.error.set('');
 
-    this.reporteService.obtenerDashboard().subscribe({
+    this.dashboardService.obtenerDashboard().subscribe({
       next: (dashboard) => {
         this.dashboard.set(dashboard);
         this.cargando.set(false);
@@ -71,6 +71,34 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     } else {
       this.detenerIntervalo();
     }
+  }
+
+  exportar(formato: 'pdf' | 'excel'): void {
+    if (this.exportando()) {
+      return;
+    }
+    this.exportando.set(formato);
+    this.error.set('');
+
+    const peticion =
+      formato === 'pdf'
+        ? this.dashboardService.exportarPdf()
+        : this.dashboardService.exportarExcel();
+
+    peticion.subscribe({
+      next: (blob) => {
+        const fecha = new Date().toISOString().slice(0, 10);
+        this.dashboardService.descargar(
+          blob,
+          `Dashboard_Quejas_${fecha}.${formato === 'pdf' ? 'pdf' : 'xlsx'}`,
+        );
+        this.exportando.set(null);
+      },
+      error: () => {
+        this.error.set('No se pudo generar la exportación del dashboard.');
+        this.exportando.set(null);
+      },
+    });
   }
 
   colorEstado = colorEstado;

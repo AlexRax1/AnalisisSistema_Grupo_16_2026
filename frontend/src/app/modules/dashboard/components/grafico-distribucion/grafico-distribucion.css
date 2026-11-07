@@ -1,0 +1,86 @@
+.grafico-vacio {
+  padding: 2rem;
+  text-align: center;
+  color: var(--slate-500);
+  font-size: var(--font-sm);
+}
+
+.distribucion-contenedor {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.dona {
+  position: relative;
+  width: 190px;
+  height: 190px;
+  flex: 0 0 auto;
+}
+
+.dona-grafico {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08);
+}
+
+.dona-centro {
+  position: absolute;
+  inset: 24%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1rem;
+  border-radius: 50%;
+  background: var(--white, #ffffff);
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12);
+}
+
+.dona-total {
+  font-size: var(--font-xl);
+  font-weight: 800;
+  line-height: 1;
+  color: var(--slate-900);
+}
+
+.dona-etiqueta {
+  font-size: var(--font-xs);
+  color: var(--slate-500);
+}
+
+.leyenda {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  min-width: 200px;
+  flex: 1;
+}
+
+.leyenda-item {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: var(--font-sm);
+}
+
+.punto {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.leyenda-nombre {
+  color: var(--slate-700);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.leyenda-valor {
+  color: var(--slate-500);
+  white-space: nowrap;
+}

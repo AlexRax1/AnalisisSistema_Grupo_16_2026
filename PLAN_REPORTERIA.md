@@ -13,7 +13,7 @@
 - **Fases completadas:** `Fase 0 — Verificación previa`, `Fase 1 — Bitácora`, `Fase 2 — Verificación de bitácora`, `Fase 3 — Contrato`, `Fase 4 — SQL/opciones`, `Fase 5 — Backend/exportaciones`, `Fase 6 — Frontend/gráficos`, `Fase 7 — Página admin y pruebas`, `Fase 8.1 — Plantilla congelada`, `Fase 8.2 — Dashboard en tiempo real`.
 - **Fase en curso:** ninguna; `Fase 8 — Adaptación al tema real` queda lista para ejecutarse cuando se conozca el reporte solicitado.
 - **Pendientes:** sólo la adaptación al tema real y las tareas opcionales de la Fase 8.
-- **Estado:** MVP completo y verificado con PostgreSQL. Backend y frontend arrancan; `POST /admin/reportes/quejas/consultar` devuelve KPIs, series, tabla y detalle; Excel/PDF son válidos e incluyen gráficos de barras y pastel; la pantalla muestra barras, pastel y barras apiladas; B1–B11 pasan; cada consulta/exportación deja fila en `bitacora`. Se corrigió un bug real de la consulta de bitácora con parámetros nulos. Se agregó `/admin/dashboard` con contadores en vivo, distribución por estado y código de colores.
+- **Estado:** MVP completo y verificado con PostgreSQL. Backend y frontend arrancan; `POST /admin/reportes/quejas/consultar` devuelve KPIs, series, tabla y detalle; Excel/PDF son válidos e incluyen gráficos de barras y pastel; la pantalla muestra barras, pastel y barras apiladas; B1–B11 pasan; cada consulta/exportación deja fila en `bitacora`. Se corrigió un bug real de la consulta de bitácora con parámetros nulos. El dashboard quedó como módulo independiente (`com.muni.backend.dashboard` y `modules/dashboard`) con `GET /admin/dashboard`, exportación PDF/Excel auditada, contadores en vivo, dona de distribución y código de colores.
 - **Plantilla congelada:** el reporte de quejas queda como **ejemplo canónico**. Para un reporte nuevo se edita el dataset/filtros, no se duplica la pantalla ni los exportadores. Ver sección 7.
 - **Última actualización:** `2026-11-07`.
 - **Tiempo objetivo del MVP:** `90 min` (sin contar la Fase 1, ya implementada).
@@ -202,7 +202,7 @@ backend/src/main/java/com/muni/backend/
 │
 ├── security/
 │   └── config/
-│       └── SecurityConfig.java                     (modificar: regla para /admin/reportes/**)
+│       └── SecurityConfig.java                     (modificar: reglas para /admin/reportes/** y /admin/dashboard/**)
 │
 ├── usuarios/                                       (existente; se reutiliza para opciones)
 │   ├── controller/
@@ -210,6 +210,24 @@ backend/src/main/java/com/muni/backend/
 │   ├── model/
 │   ├── repository/
 │   └── service/
+│
+├── dashboard/                                      (nuevo módulo independiente del dashboard)
+│   ├── controller/
+│   │   └── DashboardController.java                (GET dashboard + exportar PDF/Excel)
+│   ├── dto/
+│   │   ├── DashboardContadorDTO.java
+│   │   ├── DashboardEstadoDTO.java
+│   │   ├── DashboardQuejaDTO.java
+│   │   └── DashboardResponseDTO.java
+│   ├── model/
+│   │   └── GrupoEstadoDashboard.java
+│   ├── repository/
+│   │   ├── DashboardRepository.java
+│   │   └── proyeccion/
+│   │       └── DashboardEstadoProjection.java
+│   └── service/
+│       ├── DashboardService.java                   (agrupación, porcentajes y recientes)
+│       └── DashboardExportService.java             (PDF/Excel simples, sin depender de reportes)
 │
 └── reportes/                                       (nuevo, un solo reporte de muestra)
     ├── controller/
@@ -268,9 +286,24 @@ frontend/src/app/
 │       ├── admin-reportes.html                     (reemplazar placeholder)
 │       └── admin-reportes.css                      (reemplazar placeholder)
 │
-├── app.routes.ts                                   (ya tiene /admin/reportes; no crear ruta nueva)
+├── modules/dashboard/                              (nuevo módulo independiente del dashboard)
+│   ├── components/grafico-distribucion/
+│   │   ├── grafico-distribucion.ts                 (dona con conic-gradient y leyenda)
+│   │   ├── grafico-distribucion.html
+│   │   └── grafico-distribucion.css
+│   ├── models/
+│   │   └── dashboard.model.ts
+│   ├── pages/admin-dashboard/
+│   │   ├── admin-dashboard.ts                      (polling 15 s, exportaciones)
+│   │   ├── admin-dashboard.html
+│   │   └── admin-dashboard.css
+│   ├── services/
+│   │   └── dashboard.service.ts                    (GET + PDF + Excel)
+│   └── dashboard.routes.ts                         (rutas lazy del módulo)
+│
+├── app.routes.ts                                   (/admin/reportes y /admin/dashboard lazy)
 └── shared/layouts/dashboard-layout/dashboard-layout.ts
-                                                    (ya tiene el menú Reportes; no tocar)
+                                                    (ya tiene los menús Reportes y Dashboard; no tocar)
 ```
 
 ### 3.3 Persistencia
@@ -465,11 +498,19 @@ Esto permite verificar después quién consultó o descargó un reporte y con qu
 ### 4.6 Dashboard en tiempo real
 
 ```http
-GET /admin/reportes/dashboard?limiteRecientes=10
+GET /admin/dashboard?limiteRecientes=10
+GET /admin/dashboard/exportar/pdf
+GET /admin/dashboard/exportar/excel
 Authorization: Bearer <token>
 ```
 
-Devuelve una foto del estado actual de todas las quejas. No audita en `bitacora` porque el frontend lo consulta cada 15 segundos y llenaría la tabla de ruido.
+El dashboard vive en un módulo propio (`com.muni.backend.dashboard` en backend y
+`frontend/src/app/modules/dashboard` en frontend) para no mezclarlo con el reporte de muestra.
+Comparte únicamente el código de colores `estado-queja.util.ts`.
+
+`GET /admin/dashboard` devuelve una foto del estado actual de todas las quejas. No audita en
+`bitacora` porque el frontend lo consulta cada 15 segundos y llenaría la tabla de ruido.
+Las exportaciones sí se auditan con `tablaAfectada = dashboard`, `accion = DESCARGAR`.
 
 ```json
 {
@@ -500,7 +541,16 @@ Agrupación de estados usada por el dashboard:
 | `RESUELTOS` | `SOLUCIONADA / CERRADA` | Verde |
 | `RECHAZADOS` | `RECHAZADA` | Rojo oscuro |
 
-La pantalla reutiliza `app-grafico-pastel` pasando los colores del código de estados. El mismo código de colores se aplica a las quejas recientes del dashboard, al catálogo de quejas y al detalle del reporte.
+La pantalla usa su propio `app-grafico-distribucion` (dona con `conic-gradient`) y los colores del código de estados. El mismo código de colores se aplica a las quejas recientes del dashboard, al catálogo de quejas y al detalle del reporte.
+
+Exportaciones simples del dashboard:
+
+| Formato | Contenido |
+|---|---|
+| PDF | Título, fecha, total, tabla de contadores, tabla por estado con color y quejas recientes |
+| Excel | Hojas `Resumen`, `Estados` (con color por grupo) y `Recientes` |
+
+El PDF/Excel del dashboard no reutiliza `ReporteExportService` ni incluye imágenes de gráficos: es una exportación rápida del estado actual. Si más adelante se necesita el gráfico incrustado, se puede adaptar el mismo patrón del módulo de reportes.
 
 ---
 
@@ -697,11 +747,13 @@ La bitácora no es la fuente principal del reporte de quejas: el reporte lee de 
 **Tiempo:** variable. **Depende de:** Fase 7. **Salida:** reporte definitivo sin rehacer la base.
 
 - [x] **Fase 8.1 — Plantilla congelada:** reporte de quejas documentado como ejemplo canónico, con barras, pastel, apilado y PDF/Excel con gráficos.
-- [x] **Fase 8.2 — Dashboard en tiempo real:** agregar `GET /admin/reportes/dashboard` con contadores por grupo (nuevos, en proceso, pendientes, resueltos y rechazados), distribución por estado y quejas recientes.
+- [x] **Fase 8.2 — Dashboard en tiempo real:** agregar `GET /admin/dashboard` con contadores por grupo (nuevos, en proceso, pendientes, resueltos y rechazados), distribución por estado y quejas recientes.
+- [x] Separar el dashboard en su propio módulo backend (`com.muni.backend.dashboard`) y frontend (`modules/dashboard`), sin depender del módulo de reportes.
+- [x] Agregar exportación simple a PDF y Excel del dashboard (`GET /admin/dashboard/exportar/pdf` y `/excel`), auditada en `bitacora`.
 - [x] Crear el código de colores compartido (`estado-queja.util.ts`): amarillo para nuevos, naranja para en proceso, rojo para pendientes/rechazadas y verde para resueltos.
-- [x] Crear la página `/admin/dashboard` con autoactualización cada 15 segundos, actualización manual, KPIs, pastel y detalle por estado.
+- [x] Crear la página `/admin/dashboard` con autoactualización cada 15 segundos, actualización manual, KPIs, dona de distribución y detalle por estado.
 - [x] Aplicar el mismo código de colores al catálogo de quejas y al detalle del reporte.
-- [x] Agregar prueba unitaria del dashboard y validar `ReporteQuejaServiceTest` + build de desarrollo del frontend.
+- [x] Agregar pruebas unitarias del dashboard (`DashboardServiceTest` y `DashboardExportServiceTest`) y build de desarrollo del frontend.
 - [ ] Reemplazar el título “Reporte de quejas por categoría” por el tema real solicitado.
 - [ ] Elegir el dataset y las dimensiones: si sigue siendo quejas, cambiar el valor por defecto de `agrupacion`, el título y los filtros visibles; si es otro dataset, crear un método/repositorio nuevo y reutilizar DTOs, gráficos y pantalla.
 - [ ] Ajustar `/admin/reportes/opciones` para que devuelva sólo los filtros que use el tema real.
@@ -984,10 +1036,13 @@ export class GraficoLineaComponent {
 | 16 | Exportar Excel con gráficos | El `.xlsx` incluye la hoja “Gráficos” con las dos imágenes |
 | 17 | Gráfico apilado | La pantalla muestra la composición resueltas/en proceso/rechazadas |
 | 18 | Reporte sin series | PDF/Excel generan una imagen “Sin datos” sin fallar |
-| 19 | `GET /admin/reportes/dashboard` | Responde total, contadores, estados y recientes sin auditar |
+| 19 | `GET /admin/dashboard` | Responde total, contadores, estados y recientes sin auditar |
 | 20 | Dashboard con datos | Los 5 contadores cuadran con la suma de estados |
 | 21 | Autoactualización | La pantalla vuelve a consultar cada 15 s y actualiza la hora |
 | 22 | Código de colores | Nuevos amarillo, en proceso naranja, pendientes rojo y resueltos verde en dashboard, catálogo y reporte |
+| 23 | Exportar dashboard PDF | El `.pdf` contiene total, contadores, estados y quejas recientes |
+| 24 | Exportar dashboard Excel | El `.xlsx` contiene las hojas `Resumen`, `Estados` y `Recientes` |
+| 25 | Auditoría del dashboard | Cada exportación deja fila `tabla=dashboard`, `accion=DESCARGAR` |
 
 ---
 
@@ -1049,7 +1104,7 @@ export class GraficoLineaComponent {
 | 2026-11-07 | 8.1 | Tercer gráfico de ejemplo | Completado | `app-grafico-apilado` reutiliza las filas de la tabla |
 | 2026-11-07 | 8.1 | Plantilla documentada | Completado | Sección 7 ampliada con archivos, checklist, contrato, recetas y respuestas de demo |
 | 2026-11-07 | 8.1 | Pruebas de exportación | Completado | `ReporteChartServiceTest` y `ReporteExportServiceTest` pasan |
-| 2026-11-07 | 8.2 | Dashboard en tiempo real | Completado | `GET /admin/reportes/dashboard`, página `/admin/dashboard`, autoactualización cada 15 s y código de colores compartido |
+| 2026-11-07 | 8.2 | Dashboard en tiempo real | Completado | Módulo propio `dashboard` (backend/frontend), `GET /admin/dashboard`, exportación PDF/Excel auditada, página `/admin/dashboard`, autoactualización cada 15 s y código de colores compartido |
 | 2026-11-07 | 8.2 | Verificación | Completado | `ReporteQuejaServiceTest` (3 pruebas) y `npm run build -- --configuration development` sin errores nuevos |
 |  |  |  |  |  |
 

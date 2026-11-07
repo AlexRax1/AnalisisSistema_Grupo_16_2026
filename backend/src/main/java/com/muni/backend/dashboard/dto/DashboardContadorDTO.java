@@ -1,4 +1,4 @@
-package com.muni.backend.reportes.dto;
+package com.muni.backend.dashboard.dto;
 
 public record DashboardContadorDTO(
         String clave,

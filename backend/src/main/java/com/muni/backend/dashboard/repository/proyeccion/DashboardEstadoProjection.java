@@ -1,4 +1,4 @@
-package com.muni.backend.reportes.repository.proyeccion;
+package com.muni.backend.dashboard.repository.proyeccion;
 
 public interface DashboardEstadoProjection {
     String getEstado();

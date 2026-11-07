@@ -20,9 +20,6 @@ export class GraficoPastelComponent {
 
   @Input() series: ReporteSerie[] = [];
 
-  /** Colores opcionales alineados con `series`; si no se envían, usa la paleta base. */
-  @Input() colores: string[] = [];
-
   get datos(): ReporteSerie[] {
     if (this.series.length <= 7) {
       return this.series;
@@ -55,6 +52,6 @@ export class GraficoPastelComponent {
   }
 
   color(indice: number): string {
-    return this.colores[indice] ?? this.coloresBase[indice % this.coloresBase.length];
+    return this.coloresBase[indice % this.coloresBase.length];
   }
 }
