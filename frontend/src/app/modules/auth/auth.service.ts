@@ -1,12 +1,50 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
+
+export type RolUsuario =
+  'CIUDADANO' | 'FUNCIONARIO' | 'INSPECTOR' | 'ESPECIALISTA' | 'ADMINISTRADOR';
 
 // Exportación de interfaces para evitar errores TS2305
 export interface Usuario {
   token?: string;
-  rol?: 'CIUDADANO' | 'FUNCIONARIO' | 'INSPECTOR' | 'ESPECIALISTA' | 'ADMINISTRADOR';
+  rol?: RolUsuario;
   correo?: string;
+}
+
+interface LoginResponse {
+  token?: string;
+  rol?: string;
+  correo?: string;
+}
+
+// El backend devuelve roles con nombres largos (p. ej. INSPECTOR_CAMPO),
+// mientras que la navegación del frontend usa nombres cortos.
+export function normalizarRol(rol?: string): RolUsuario | undefined {
+  if (!rol) return undefined;
+
+  const rolLimpio = rol
+    .trim()
+    .toUpperCase()
+    .replace(/^ROLE_/, '');
+
+  switch (rolLimpio) {
+    case 'CIUDADANO':
+      return 'CIUDADANO';
+    case 'FUNCIONARIO':
+    case 'FUNCIONARIO_MUNICIPAL':
+      return 'FUNCIONARIO';
+    case 'INSPECTOR':
+    case 'INSPECTOR_CAMPO':
+      return 'INSPECTOR';
+    case 'ESPECIALISTA':
+    case 'ESPECIALISTA_TECNICO':
+      return 'ESPECIALISTA';
+    case 'ADMINISTRADOR':
+      return 'ADMINISTRADOR';
+    default:
+      return undefined;
+  }
 }
 
 export interface RegistroCiudadanoReq {
@@ -35,7 +73,15 @@ export class AuthService {
 
   // CU02: Login
   login(correo: string, password: string): Observable<Usuario> {
-    return this.http.post<Usuario>(`${this.BASE_URL}/auth/login`, { username: correo, password });
+    return this.http
+      .post<LoginResponse>(`${this.BASE_URL}/auth/login`, { username: correo, password })
+      .pipe(
+        map((res) => ({
+          token: res.token,
+          rol: normalizarRol(res.rol),
+          correo: res.correo,
+        })),
+      );
   }
 
   // Cierre de sesión auditado en el backend antes de descartar el token.

@@ -58,7 +58,7 @@ MuniQuejas is a municipal complaint system: `backend/` is Spring Boot 4.1.1 on J
 
 - The frontend hardcodes `http://localhost:8080` in every `core/services/*.ts`, `auth.service.ts`, and several evidence-URL helpers. There is no `environment.ts`; search for `localhost:8080` before changing the API host.
 - `proxy.conf.json` only proxies `/quejas` and `/api`, and absolute URLs bypass it. If you convert services to relative URLs, add `/auth`, `/admin`, and `/usuarios` routes too.
-- Backend login returns full role names (`FUNCIONARIO_MUNICIPAL`, `INSPECTOR_CAMPO`, `ESPECIALISTA_TECNICO`), but `login.ts` redirects on short names (`FUNCIONARIO`, `INSPECTOR`, `ESPECIALISTA`). Keep that mapping in sync when touching auth.
+- Backend login returns full role names (`FUNCIONARIO_MUNICIPAL`, `INSPECTOR_CAMPO`, `ESPECIALISTA_TECNICO`); `AuthService.login()` normalizes them through `normalizarRol()` to the short names used by routing (`FUNCIONARIO`, `INSPECTOR`, `ESPECIALISTA`). Add new roles to that function and `RolUsuario` together.
 - `JwtService` hard-codes 30-minute token expiry; `jwt.expiration` / `JWT_EXPIRATION_MS` is not used there.
 - `@PreAuthorize` appears on several controllers, but `@EnableMethodSecurity` is not configured, so those annotations are inert. Actual authorization is the path matcher list in `SecurityConfig`; note `/admin/quejas/**` is currently `permitAll`, and `/admin/**` includes the unseeded `EMPLEADO` role.
 - The app is zoneless (`provideZonelessChangeDetection()`). Some pages use signals; older pages update state and call `ChangeDetectorRef.detectChanges()` manually. Follow the surrounding page's pattern.
